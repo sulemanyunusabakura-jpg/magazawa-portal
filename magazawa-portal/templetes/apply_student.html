@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html>
+<head><title>Student Admission - MAGAZAWA SKILLS AND TECHNOLOGY</title></head>
+<body style="font-family: Arial, sans-serif; margin: 40px;">
+    <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
+    <h3>Student Admission Form</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <h4>1. Personal Information</h4>
+        <input type="text" name="full_name" placeholder="Full Name" required><br><br>
+        <input type="email" name="email" placeholder="Email Address" required><br><br>
+        <input type="text" name="phone" placeholder="Phone Number" required><br><br>
+        <label>Date of Birth:</label><br>
+        <input type="date" name="dob" required><br><br>
+        <input type="password" name="password" placeholder="Create Password" required><br><br>
+        <h4>2. Educational Background & Certificates</h4>
+        <input type="text" name="primary_school" placeholder="Primary School Name" required><br><br>
+        <label>Primary Certificate File:</label><br>
+        <input type="file" name="primary_cert" required><br><br>
+        <input type="text" name="sec_school" placeholder="Secondary School Name" required><br><br>
+        <label>Secondary Certificate File:</label><br>
+        <input type="file" name="sec_cert" required><br><br>
+        <button type="submit">Submit Application</button>
+    </form>
+    <br><a href="/login">Back to Login</a>
+</body>
+</html>

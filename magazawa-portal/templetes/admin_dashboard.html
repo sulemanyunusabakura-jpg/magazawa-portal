@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head><title>Admin Dashboard - MAGAZAWA SKILLS AND TECHNOLOGY</title></head>
+<body style="font-family: Arial, sans-serif; margin: 40px;">
+    <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
+    <h2>System Admin Dashboard</h2>
+    <a href="/logout">Logout</a><hr>
+    <h3>1. Student Applicants</h3>
+    <table border="1" cellpadding="8">
+        <tr><th>Full Name</th><th>Email</th><th>Phone</th><th>Primary Cert</th><th>Secondary Cert</th><th>Admission Status</th><th>Remita RRR</th><th>Action</th></tr>
+        {% for s in students %}
+        <tr>
+            <td>{{ s.full_name }}</td><td>{{ s.email }}</td><td>{{ s.phone }}</td>
+            <td><a href="/static/uploads/{{ s.primary_cert }}" target="_blank">View Cert</a></td>
+            <td><a href="/static/uploads/{{ s.sec_cert }}" target="_blank">View Cert</a></td>
+            <td>{{ s.admission_status }}</td><td>{{ s.remita_invoice or 'Not Generated' }}</td>
+            <td>{% if not s.is_approved %}<a href="/admin/approve_student/{{ s.id }}">Give Admission & Generate RRR</a>{% else %}Approved{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h3>2. Lecturer Applications</h3>
+    <table border="1" cellpadding="8">
+        <tr><th>Full Name</th><th>Phone</th><th>Desired Courses</th><th>Status</th><th>Action</th></tr>
+        {% for l in lecturers %}
+        <tr>
+            <td>{{ l.full_name }}</td><td>{{ l.phone }}</td><td>{{ l.desired_courses }}</td>
+            <td>{{ 'Active' if l.is_approved else 'Pending' }}</td>
+            <td>{% if not l.is_approved %}<a href="/admin/approve_lecturer/{{ l.id }}">Approve Lecturer</a>{% else %}Approved{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

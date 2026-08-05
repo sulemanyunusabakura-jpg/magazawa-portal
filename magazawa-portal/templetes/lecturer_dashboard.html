@@ -1,1 +1,140 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Lecturer Dashboard - MAGAZAWA SKILLS AND TECHNOLOGY</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
+    <h2>Lecturer E-Learning & Messaging Center</h2>
+    <a href="/logout">Logout</a><hr>
 
+    <!-- SECTION 1: UPLOAD MATERIALS / VOICE NOTES -->
+    <div class="card">
+        <h3>1. Upload E-Learning PDF / Assignment or Voice Mail</h3>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="text" name="title" placeholder="Material / Voice Mail Title" required><br><br>
+            <select name="type">
+                <option value="Note">Lecture Note (PDF)</option>
+                <option value="Assignment">Assignment</option>
+                <option value="Voice Mail">Voice Mail Audio</option>
+            </select><br><br>
+            
+            <label>Upload File or Record Audio (PDF / MP3 / WAV):</label><br>
+            <input type="file" name="file" accept=".pdf, audio/*" capture="microphone"><br><br>
+            <button type="submit">Upload Material</button>
+        </form>
+    </div>
+
+    <!-- SECTION 2: LIVE BROWSER AUDIO RECORDER -->
+    <div class="card">
+        <h3>2. Record Voice Mail Live in Browser</h3>
+        <button id="recordBtn" class="record-btn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop Recording</button><br><br>
+        <audio id="audioPlayback" controls></audio>
+        <p><small>Record your voice explanation above, download or save the recording, and upload it via the form above.</small></p>
+    </div>
+
+    <!-- SECTION 3: INBOX & DIRECT MESSAGING -->
+    <div class="card">
+        <h3>3. Messaging System (Send to Admin / Student / Lecturer)</h3>
+        <form method="POST" action="/send_message">
+            <label>Select Receiver:</label><br>
+            <select name="receiver_id" required>
+                {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role.capitalize() }})</option>
+                {% endfor %}
+            </select><br><br>
+            <textarea name="content" placeholder="Type your message here..." rows="4" required></textarea><br><br>
+            <button type="submit">Send Message</button>
+        </form>
+
+        <h4>Inbox Messages</h4>
+        <ul>
+            {% for msg in messages %}
+                <li><strong>Message:</strong> {{ msg.content }} <small>({{ msg.timestamp }})</small></li>
+            {% else %}
+                <li>No messages in inbox.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- SECTION 4: UPLOADED CONTENT LIST -->
+    <div class="card">
+        <h3>4. My Uploaded E-Learning Materials</h3>
+        <ul>
+            {% for m in materials %}
+                <li>
+                    <strong>{{ m.title }}</strong> ({{ m.material_type }})
+                    {% if m.file_path %}
+                        - <a href="/static/uploads/{{ m.file_path }}" download>Download File</a>
+                    {% endif %}
+                </li>
+            {% else %}
+                <li>No materials uploaded yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- AUDIO RECORDING JAVASCRIPT ENGINE -->
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const audioPlayback = document.getElementById('audioPlayback');
+
+        recordBtn.addEventListener('click', async () => {
+            try {
+                // Cross-browser MediaDevices setup
+                if (!navigator.mediaDevices) {
+                    navigator.mediaDevices = {};
+                }
+
+                if (!navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia = function(constraints) {
+                        const legacyGetUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                        if (!legacyGetUserMedia) {
+                            return Promise.reject(new Error("Audio recording requires a secure connection (HTTPS or http://127.0.0.1:5000)."));
+                        }
+                        return new Promise((resolve, reject) => {
+                            legacyGetUserMedia.call(navigator, constraints, resolve, reject);
+                        });
+                    };
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                audioChunks = [];
+
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener("stop", () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioUrl;
+                });
+
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+                recordBtn.innerText = "Recording...";
+            } catch (err) {
+                alert("Microphone Access Error: " + err.message);
+                console.error(err);
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            recordBtn.innerText = "Start Recording";
+        });
+    </script>
+</body>
+</html>
