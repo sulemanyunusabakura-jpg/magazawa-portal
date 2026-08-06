@@ -296,6 +296,40 @@ def send_call_signal():
     db.session.add(msg)
     db.session.commit()
     return redirect(room_url)
+    # Route: Host Live Voice Lecture Room with Jitsi IFrame
+@app.route('/lecturer/live_class/<int:lecturer_id>')
+@login_required
+def live_class(lecturer_id):
+    room_name = f"MST_Lecture_Room_{lecturer_id}"
+    return render_template('live_class.html', room_name=room_name, user=current_user)
+
+# Route: Lecturer Submits Result to Admin
+@app.route('/lecturer/submit_result', methods=['POST'])
+@login_required
+def submit_result_to_admin():
+    if current_user.role != 'lecturer':
+        return redirect(url_for('login'))
+        
+    student_name = request.form.get('student_name')
+    reg_number = request.form.get('reg_number')
+    course_name = request.form.get('course_name')
+    score = request.form.get('score')
+    
+    # Send compiled result directly to Admin via Message system
+    admin = User.query.filter_by(role='admin').first()
+    if admin:
+        result_payload = (
+            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
+            f"- Student Name: {student_name}\n"
+            f"- Reg Number/Email: {reg_number}\n"
+            f"- Course: {course_name}\n"
+            f"- Score: {score}"
+        )
+        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
+        db.session.add(msg)
+        db.session.commit()
+        flash('Result successfully transmitted to Admin dashboard!', 'success')
+    return redirect(url_for('lecturer_dashboard'))
     
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
