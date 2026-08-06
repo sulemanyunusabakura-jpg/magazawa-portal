@@ -1,33 +1,94 @@
-﻿<!DOCTYPE html>
-<html>
-<head><title>Admin Dashboard - MAGAZAWA SKILLS AND TECHNOLOGY</title></head>
-<body style="font-family: Arial, sans-serif; margin: 40px;">
-    <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
-    <h2>System Admin Dashboard</h2>
-    <a href="/logout">Logout</a><hr>
-    <h3>1. Student Applicants</h3>
-    <table border="1" cellpadding="8">
-        <tr><th>Full Name</th><th>Email</th><th>Phone</th><th>Primary Cert</th><th>Secondary Cert</th><th>Admission Status</th><th>Remita RRR</th><th>Action</th></tr>
-        {% for s in students %}
-        <tr>
-            <td>{{ s.full_name }}</td><td>{{ s.email }}</td><td>{{ s.phone }}</td>
-            <td><a href="/static/uploads/{{ s.primary_cert }}" target="_blank">View Cert</a></td>
-            <td><a href="/static/uploads/{{ s.sec_cert }}" target="_blank">View Cert</a></td>
-            <td>{{ s.admission_status }}</td><td>{{ s.remita_invoice or 'Not Generated' }}</td>
-            <td>{% if not s.is_approved %}<a href="/admin/approve_student/{{ s.id }}">Give Admission & Generate RRR</a>{% else %}Approved{% endif %}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <h3>2. Lecturer Applications</h3>
-    <table border="1" cellpadding="8">
-        <tr><th>Full Name</th><th>Phone</th><th>Desired Courses</th><th>Status</th><th>Action</th></tr>
-        {% for l in lecturers %}
-        <tr>
-            <td>{{ l.full_name }}</td><td>{{ l.phone }}</td><td>{{ l.desired_courses }}</td>
-            <td>{{ 'Active' if l.is_approved else 'Pending' }}</td>
-            <td>{% if not l.is_approved %}<a href="/admin/approve_lecturer/{{ l.id }}">Approve Lecturer</a>{% else %}Approved{% endif %}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Admin Dashboard</title>
+    <style>
+        body {
+            background-color: #0b2b1a; /* Dark Green */
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #144229;
+            margin-bottom: 25px;
+        }
+        th, td {
+            border: 1px solid #2a6943;
+            padding: 10px;
+            text-align: left;
+        }
+        th { background-color: #051c10; }
+        input, select, textarea, button {
+            background: #1c5234;
+            color: #fff;
+            border: 1px solid #378556;
+            padding: 6px;
+            margin: 2px;
+        }
+        button { cursor: pointer; background: #2a6943; font-weight: bold; }
+        .card { background: #144229; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
+    <h3>System Admin Dashboard</h3>
+    <a href="/logout" style="color:#80ffb4;">Logout</a>
+
+    <!-- 1. Send Message Section -->
+    <div class="card">
+        <h3>Send Message to Lecturer / Student</h3>
+        <form action="/send_message" method="POST">
+            <select name="receiver_id" required>
+                <option value="">Select Recipient</option>
+                {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role }})</option>
+                {% endfor %}
+            </select><br><br>
+            <textarea name="content" placeholder="Write message..." rows="3" style="width:100%;" required></textarea><br>
+            <button type="submit">Send Message</button>
+        </form>
+    </div>
+
+    <!-- 2. Course & Result Management -->
+    <div class="card">
+        <h3>Manage Student Courses & Results</h3>
+        <table>
+            <tr>
+                <th>Student Name</th>
+                <th>Add Course</th>
+                <th>Add Result</th>
+            </tr>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.full_name }}</td>
+                <td>
+                    <form action="/manage_course" method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="text" name="course_code" placeholder="Code (e.g. COM111)" required>
+                        <input type="text" name="course_name" placeholder="Course Title" required>
+                        <button type="submit">Add</button>
+                    </form>
+                </td>
+                <td>
+                    <form action="/manage_result" method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="text" name="course_name" placeholder="Course Title" required>
+                        <input type="number" name="score" placeholder="Score" required>
+                        <input type="text" name="grade" placeholder="Grade (A/B/C)" required>
+                        <button type="submit">Upload Result</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
 </body>
-</html>
+                            </html>
