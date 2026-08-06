@@ -1,4 +1,4 @@
-import os
+Ioimport os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -221,7 +221,66 @@ def send_message():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+# Route 1: Direct Messaging
+@app.route('/send_message', methods=['POST'])
+@login_required
+def send_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content')
+    msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
+    db.session.add(msg)
+    db.session.commit()
+    flash('Message sent successfully!', 'success')
+    return redirect(request.referrer or url_for('admin_dashboard'))
 
+# Route 2: Course Management
+@app.route('/manage_course', methods=['POST'])
+@login_required
+def manage_course():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+    
+    if action == 'add':
+        course = Course(
+            student_id=student_id, 
+            course_name=request.form.get('course_name'), 
+            course_code=request.form.get('course_code')
+        )
+        db.session.add(course)
+    elif action == 'remove':
+        course_id = request.form.get('course_id')
+        Course.query.filter_by(id=course_id).delete()
+        
+    db.session.commit()
+    flash('Course updated successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# Route 3: Result Upload Management
+@app.route('/manage_result', methods=['POST'])
+@login_required
+def manage_result():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+    
+    if action == 'add':
+        res = Result(
+            student_id=student_id, 
+            course_name=request.form.get('course_name'), 
+            score=request.form.get('score'), 
+            grade=request.form.get('grade')
+        )
+        db.session.add(res)
+    elif action == 'remove':
+        result_id = request.form.get('result_id')
+        Result.query.filter_by(id=result_id).delete()
+        
+    db.session.commit()
+    flash('Result record updated successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
