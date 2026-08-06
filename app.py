@@ -1,4 +1,4 @@
-Ioimport os
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -24,7 +24,6 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    # FIXED: Replaced deprecated query.get() with db.session.get()
     return db.session.get(User, int(user_id))
 
 with app.app_context():
@@ -82,8 +81,8 @@ def apply_student():
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
         
-        p_filename = secure_filename(p_cert.filename) if p_cert else ""
-        s_filename = secure_filename(s_cert.filename) if s_cert else ""
+        p_filename = secure_filename(p_cert.filename) if p_cert and p_cert.filename != "" else ""
+        s_filename = secure_filename(s_cert.filename) if s_cert and s_cert.filename != "" else ""
         
         if p_cert and p_filename:
             p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
@@ -132,18 +131,23 @@ def apply_lecturer():
 def admin_dashboard():
     if current_user.role != 'admin': 
         return redirect(url_for('login'))
+    
     students = User.query.filter_by(role='student').all()
     lecturers = User.query.filter_by(role='lecturer').all()
-    users = User.query.filter(User.id != current_user.id).all()
+    all_users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).all()
-    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, users=users, messages=messages)
+    
+    return render_template('admin_dashboard.html', 
+                           students=students, 
+                           lecturers=lecturers, 
+                           all_users=all_users, 
+                           messages=messages)
 
 @app.route('/admin/approve_student/<int:id>')
 @login_required
 def approve_student(id):
     if current_user.role != 'admin': 
         return redirect(url_for('login'))
-    # FIXED: Updated deprecated query.get() to db.session.get()
     student = db.session.get(User, id)
     if student:
         student.is_approved = True
@@ -158,12 +162,70 @@ def approve_student(id):
 def approve_lecturer(id):
     if current_user.role != 'admin': 
         return redirect(url_for('login'))
-    # FIXED: Updated deprecated query.get() to db.session.get()
     lecturer = db.session.get(User, id)
     if lecturer:
         lecturer.is_approved = True
         db.session.commit()
         flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/send_message', methods=['POST'])
+@login_required
+def send_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content')
+    if receiver_id and content:
+        msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
+        db.session.add(msg)
+        db.session.commit()
+        flash('Message sent successfully!', 'success')
+    return redirect(request.referrer or url_for('admin_dashboard'))
+
+@app.route('/manage_course', methods=['POST'])
+@login_required
+def manage_course():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+    
+    if action == 'add':
+        course = Course(
+            student_id=student_id, 
+            course_name=request.form.get('course_name'), 
+            course_code=request.form.get('course_code')
+        )
+        db.session.add(course)
+    elif action == 'remove':
+        course_id = request.form.get('course_id')
+        Course.query.filter_by(id=course_id).delete()
+        
+    db.session.commit()
+    flash('Course updated successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/manage_result', methods=['POST'])
+@login_required
+def manage_result():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+    
+    if action == 'add':
+        res = Result(
+            student_id=student_id, 
+            course_name=request.form.get('course_name'), 
+            score=request.form.get('score'), 
+            grade=request.form.get('grade')
+        )
+        db.session.add(res)
+    elif action == 'remove':
+        result_id = request.form.get('result_id')
+        Result.query.filter_by(id=result_id).delete()
+        
+    db.session.commit()
+    flash('Result record updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/dashboard/lecturer', methods=['GET', 'POST'])
@@ -201,86 +263,18 @@ def student_dashboard():
     if current_user.role != 'student': 
         return redirect(url_for('login'))
     materials = Material.query.all()
+    courses = Course.query.filter_by(student_id=current_user.id).all()
+    results = Result.query.filter_by(student_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).all()
-    return render_template('student_dashboard.html', student=current_user, materials=materials, users=users, messages=messages)
-
-@app.route('/send_message', methods=['POST'])
-@login_required
-def send_message():
-    receiver_id = request.form['receiver_id']
-    content = request.form['content']
-    msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
-    db.session.add(msg)
-    db.session.commit()
-    flash('Message sent successfully!', 'success')
-    return redirect(request.referrer or url_for('login'))
+    return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
-# Route 1: Direct Messaging
-@app.route('/send_message', methods=['POST'])
-@login_required
-def send_message():
-    receiver_id = request.form.get('receiver_id')
-    content = request.form.get('content')
-    msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
-    db.session.add(msg)
-    db.session.commit()
-    flash('Message sent successfully!', 'success')
-    return redirect(request.referrer or url_for('admin_dashboard'))
 
-# Route 2: Course Management
-@app.route('/manage_course', methods=['POST'])
-@login_required
-def manage_course():
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    action = request.form.get('action')
-    student_id = request.form.get('student_id')
-    
-    if action == 'add':
-        course = Course(
-            student_id=student_id, 
-            course_name=request.form.get('course_name'), 
-            course_code=request.form.get('course_code')
-        )
-        db.session.add(course)
-    elif action == 'remove':
-        course_id = request.form.get('course_id')
-        Course.query.filter_by(id=course_id).delete()
-        
-    db.session.commit()
-    flash('Course updated successfully.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-# Route 3: Result Upload Management
-@app.route('/manage_result', methods=['POST'])
-@login_required
-def manage_result():
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    action = request.form.get('action')
-    student_id = request.form.get('student_id')
-    
-    if action == 'add':
-        res = Result(
-            student_id=student_id, 
-            course_name=request.form.get('course_name'), 
-            score=request.form.get('score'), 
-            grade=request.form.get('grade')
-        )
-        db.session.add(res)
-    elif action == 'remove':
-        result_id = request.form.get('result_id')
-        Result.query.filter_by(id=result_id).delete()
-        
-    db.session.commit()
-    flash('Result record updated successfully.', 'success')
-    return redirect(url_for('admin_dashboard'))
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
