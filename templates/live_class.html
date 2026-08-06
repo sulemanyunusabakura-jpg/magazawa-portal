@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MST Live Lecture Room</title>
+    <script src="https://meet.jit.si/external_api.js"></script>
+    <style>
+        body { background: #0b1329; color: #fff; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        #meet { width: 100%; height: 600px; border-radius: 8px; overflow: hidden; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
+    <h3>Live Lecture Room</h3>
+    <a href="/dashboard/lecturer" style="color: #00d2ff;">Back to Dashboard</a>
+    
+    <div id="meet"></div>
+
+    <script>
+        const domain = "meet.jit.si";
+        const options = {
+            roomName: "{{ room_name }}",
+            width: "100%",
+            height: 600,
+            parentNode: document.querySelector('#meet'),
+            userInfo: {
+                displayName: "{{ user.full_name }} ({{ user.username }})"
+            },
+            configOverwrite: { startWithVideoMuted: true }
+        };
+        const api = new JitsiMeetExternalAPI(domain, options);
+    </script>
+</body>
+</html>
