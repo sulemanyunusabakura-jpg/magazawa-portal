@@ -29,7 +29,9 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
-    if not User.query.filter_by(role='admin').first():
+    # Find existing admin or create a new one
+    admin = User.query.filter_by(role='admin').first()
+    if not admin:
         admin = User(
             username='admin',
             password=generate_password_hash('admin123'),
@@ -40,6 +42,11 @@ with app.app_context():
             is_approved=True
         )
         db.session.add(admin)
+        db.session.commit()
+    else:
+        # Guarantee admin password and approval are updated
+        admin.password = generate_password_hash('admin123')
+        admin.is_approved = True
         db.session.commit()
 
 @app.route('/')
