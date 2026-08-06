@@ -274,7 +274,29 @@ def student_dashboard():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+# Route: View / Print Admission Letter
+@app.route('/student/admission_letter')
+@login_required
+def admission_letter():
+    if current_user.role != 'student':
+        return redirect(url_for('login'))
+    return render_template('admission_letter.html', student=current_user)
 
+# Route: Initiate Live Voice Call Signal
+@app.route('/send_call_signal', methods=['POST'])
+@login_required
+def send_call_signal():
+    lecturer_id = request.form.get('lecturer_id')
+    room_url = f"https://meet.jit.si/MST_Lecture_{lecturer_id}"
+    msg = Message(
+        sender_id=current_user.id, 
+        receiver_id=lecturer_id, 
+        content=f"LIVE VOICE CALL STARTED: Click here to join call: {room_url}"
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return redirect(room_url)
+    
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
