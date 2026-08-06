@@ -1,4 +1,5 @@
-﻿from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 
 db = SQLAlchemy()
@@ -31,14 +32,6 @@ class Material(db.Model):
     material_type = db.Column(db.String(50), nullable=False)
     file_path = db.Column(db.String(300), nullable=False)
     lecturer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
-# ... (keep all your existing User and Material models at the top)
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
