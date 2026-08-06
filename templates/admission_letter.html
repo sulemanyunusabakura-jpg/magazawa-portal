@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Official Admission Letter - MST</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; color: #000; background: #fff; }
+        .letter-container { border: 2px solid #0b2b1a; padding: 30px; max-width: 700px; margin: auto; }
+        .header { text-align: center; border-bottom: 2px solid #0b2b1a; padding-bottom: 10px; }
+        .btn-print { margin-top: 20px; padding: 10px 20px; background: #0b2b1a; color: #fff; border: none; cursor: pointer; }
+        @media print { .btn-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="letter-container">
+        <div class="header">
+            <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
+            <p>OFFICIAL PROVISIONAL ADMISSION LETTER</p>
+        </div>
+        <p><strong>Date:</strong> August 7, 2026</p>
+        <p><strong>Name:</strong> {{ student.full_name }}</p>
+        <p><strong>Email:</strong> {{ student.email }}</p>
+        <p><strong>Remita RRR:</strong> {{ student.remita_invoice }}</p>
+        <hr>
+        <p>Dear {{ student.full_name }},</p>
+        <p>We are pleased to inform you that you have been offered provisional admission into <strong>Magazawa Skills and Technology</strong>. Please ensure all required fees are paid using your Remita RRR Invoice details provided above.</p>
+        <p>Congratulations!</p>
+        <br><br>
+        <p><strong>Registrar Office</strong><br>Magazawa Skills and Technology</p>
+        <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+</body>
+</html>
