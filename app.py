@@ -311,6 +311,7 @@ def start_voice_class():
         db.session.rollback()
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
+        
 # Route: Lecturer Submits Result to Admin
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
