@@ -135,7 +135,7 @@ def admin_dashboard():
     students = User.query.filter_by(role='student').all()
     lecturers = User.query.filter_by(role='lecturer').all()
     all_users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).all()
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     
     return render_template('admin_dashboard.html', 
                            students=students, 
@@ -254,7 +254,7 @@ def lecturer_dashboard():
         
     materials = Material.query.filter_by(lecturer_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).all()
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('lecturer_dashboard.html', materials=materials, users=users, messages=messages)
 
 @app.route('/dashboard/student')
@@ -266,21 +266,22 @@ def student_dashboard():
     courses = Course.query.filter_by(student_id=current_user.id).all()
     results = Result.query.filter_by(student_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).all()
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-# Route: View / Print Admission Letter
 @app.route('/student/admission_letter')
 @login_required
 def admission_letter():
     if current_user.role != 'student':
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
+
+# Route: Render Live Voice Call Room Template
+@app.route('/lecturer/live_class/<int:lecturer_id>')
+@login_required
+def live_class(lecturer_id):
+    room_name = f"MST_Lecture_{lecturer_id}"
+    return render_template('live_class.html', room_name=room_name, user=current_user)
 
 # Route: Lecturer Starts Voice Class & Automatically Notifies All Students
 @app.route('/lecturer/start_voice_class', methods=['POST'])
@@ -311,7 +312,7 @@ def start_voice_class():
         db.session.rollback()
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
-        
+
 # Route: Lecturer Submits Result to Admin
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
@@ -339,7 +340,13 @@ def submit_result_to_admin():
         db.session.commit()
         flash('Result successfully transmitted to Admin dashboard!', 'success')
     return redirect(url_for('lecturer_dashboard'))
-    
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
