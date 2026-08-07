@@ -20,11 +20,13 @@
     <h3>Lecturer E-Learning & Management Center</h3>
     <a href="/logout" style="color: #ff6b6b;">Logout</a>
 
-    <!-- 1. Start Voice Lecture & Live Attendance -->
+    <!-- 1. Start Voice Lecture (Lecturer Only) -->
     <div class="card">
         <h3>1. Launch Live Voice Lecture</h3>
-        <p>Click below to enter the live voice room. Students joining will show up live with their full name and registration email in the room roster.</p>
-        <a href="/lecturer/live_class/{{ current_user.id }}" target="_blank" class="btn btn-call">Start / Join Live Voice Call</a>
+        <p>Clicking the button below will open your live voice room and instantly send the join link to all students.</p>
+        <form action="/lecturer/start_voice_class" method="POST">
+            <button type="submit" class="btn btn-call" style="background:#28a745; font-size:16px;">Start Live Voice Call & Notify Students</button>
+        </form>
     </div>
 
     <!-- 2. Submit Student Results to Admin -->
