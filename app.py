@@ -282,26 +282,29 @@ def admission_letter():
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
 
-# Route: Initiate Live Voice Call Signal
-@app.route('/send_call_signal', methods=['POST'])
+# Route: Lecturer Starts Voice Class & Automatically Notifies All Students
+@app.route('/lecturer/start_voice_class', methods=['POST'])
 @login_required
-def send_call_signal():
-    lecturer_id = request.form.get('lecturer_id')
-    room_url = f"https://meet.jit.si/MST_Lecture_{lecturer_id}"
-    msg = Message(
-        sender_id=current_user.id, 
-        receiver_id=lecturer_id, 
-        content=f"LIVE VOICE CALL STARTED: Click here to join call: {room_url}"
-    )
-    db.session.add(msg)
+def start_voice_class():
+    if current_user.role != 'lecturer':
+        flash('Unauthorized: Only lecturers can initiate voice calls.', 'danger')
+        return redirect(url_for('student_dashboard'))
+
+    room_url = f"https://meet.jit.si/MST_Lecture_{current_user.id}"
+    
+    # Broadcast join link to all registered students
+    students = User.query.filter_by(role='student').all()
+    for student in students:
+        msg = Message(
+            sender_id=current_user.id, 
+            receiver_id=student.id, 
+            content=f"LIVE LECTURE STARTED by {current_user.full_name}: Click here to join: {room_url}"
+        )
+        db.session.add(msg)
+    
     db.session.commit()
-    return redirect(room_url)
-    # Route: Host Live Voice Lecture Room with Jitsi IFrame
-@app.route('/lecturer/live_class/<int:lecturer_id>')
-@login_required
-def live_class(lecturer_id):
-    room_name = f"MST_Lecture_Room_{lecturer_id}"
-    return render_template('live_class.html', room_name=room_name, user=current_user)
+    flash('Voice class started! All students have received the join link.', 'success')
+    return redirect(url_for('live_class', lecturer_id=current_user.id))
 
 # Route: Lecturer Submits Result to Admin
 @app.route('/lecturer/submit_result', methods=['POST'])
