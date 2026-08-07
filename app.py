@@ -288,24 +288,29 @@ def admission_letter():
 def start_voice_class():
     if current_user.role != 'lecturer':
         flash('Unauthorized: Only lecturers can initiate voice calls.', 'danger')
-        return redirect(url_for('student_dashboard'))
+        return redirect(url_for('login'))
 
-    room_url = f"https://meet.jit.si/MST_Lecture_{current_user.id}"
-    
-    # Broadcast join link to all registered students
-    students = User.query.filter_by(role='student').all()
-    for student in students:
-        msg = Message(
-            sender_id=current_user.id, 
-            receiver_id=student.id, 
-            content=f"LIVE LECTURE STARTED by {current_user.full_name}: Click here to join: {room_url}"
-        )
-        db.session.add(msg)
-    
-    db.session.commit()
-    flash('Voice class started! All students have received the join link.', 'success')
-    return redirect(url_for('live_class', lecturer_id=current_user.id))
-
+    try:
+        room_url = f"https://meet.jit.si/MST_Lecture_{current_user.id}"
+        
+        # Broadcast join link to all registered students
+        students = User.query.filter_by(role='student').all()
+        for student in students:
+            msg = Message(
+                sender_id=current_user.id, 
+                receiver_id=student.id, 
+                content=f"LIVE LECTURE STARTED by {current_user.full_name}: Click here to join: {room_url}"
+            )
+            db.session.add(msg)
+        
+        db.session.commit()
+        flash('Voice class started! All students have received the join link.', 'success')
+        return redirect(url_for('live_class', lecturer_id=current_user.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while starting the call: {str(e)}', 'danger')
+        return redirect(url_for('lecturer_dashboard'))
 # Route: Lecturer Submits Result to Admin
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
