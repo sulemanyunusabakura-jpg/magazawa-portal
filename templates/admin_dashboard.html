@@ -28,9 +28,11 @@
             border: 1px solid #378556;
             padding: 6px;
             margin: 2px;
+            box-sizing: border-box;
         }
         button { cursor: pointer; background: #2a6943; font-weight: bold; }
         .card { background: #144229; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .msg-box { background: #0b2b1a; padding: 10px; border: 1px solid #2a6943; margin-bottom: 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -54,14 +56,30 @@
         </form>
     </div>
 
-    <!-- 2. Course & Result Management -->
+    <!-- 2. Received Results Submissions from Lecturers -->
     <div class="card">
-        <h3>Manage Student Courses & Results</h3>
+        <h3>Received Student Results from Lecturers</h3>
+        {% for msg in messages %}
+            {% if "RESULT SUBMISSION FROM LECTURER" in msg.content %}
+                <div class="msg-box">
+                    <p><strong>From {{ msg.sender.full_name }}:</strong></p>
+                    <pre style="color: #80ffb4; font-family: inherit;">{{ msg.content }}</pre>
+                    <small>Received on: {{ msg.timestamp }}</small>
+                </div>
+            {% endif %}
+        {% else %}
+            <p>No result submissions received from lecturers yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- 3. Course & Result Management -->
+    <div class="card">
+        <h3>Manage Student Courses & Publish Results</h3>
         <table>
             <tr>
                 <th>Student Name</th>
                 <th>Add Course</th>
-                <th>Add Result</th>
+                <th>Publish Result to Student</th>
             </tr>
             {% for student in students %}
             <tr>
@@ -70,19 +88,19 @@
                     <form action="/manage_course" method="POST">
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <input type="text" name="course_code" placeholder="Code (e.g. COM111)" required>
-                        <input type="text" name="course_name" placeholder="Course Title" required>
-                        <button type="submit">Add</button>
+                        <input type="text" name="course_code" placeholder="Code (e.g. COM111)" required><br>
+                        <input type="text" name="course_name" placeholder="Course Title" required><br>
+                        <button type="submit">Add Course</button>
                     </form>
                 </td>
                 <td>
                     <form action="/manage_result" method="POST">
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <input type="text" name="course_name" placeholder="Course Title" required>
-                        <input type="number" name="score" placeholder="Score" required>
-                        <input type="text" name="grade" placeholder="Grade (A/B/C)" required>
-                        <button type="submit">Upload Result</button>
+                        <input type="text" name="course_name" placeholder="Course Title" required><br>
+                        <input type="number" step="0.1" name="score" placeholder="Score" required><br>
+                        <input type="text" name="grade" placeholder="Grade (A/B/C)" required><br>
+                        <button type="submit">Publish Result</button>
                     </form>
                 </td>
             </tr>
@@ -91,4 +109,4 @@
     </div>
 
 </body>
-                            </html>
+</html>
