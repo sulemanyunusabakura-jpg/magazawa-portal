@@ -30,20 +30,27 @@
         {% endif %}
     </div>
 
-    <!-- 2. Live Voice Call to Lecturer -->
+<!-- 2. Active Voice Classes (Student View Only) -->
     <div class="card">
-        <h3>2. Live Voice Call with Lecturer</h3>
-        <form action="/send_call_signal" method="POST" target="_blank">
-            <select name="lecturer_id" required>
-                <option value="">Select Lecturer to Call</option>
-                {% for u in users %}
-                    {% if u.role == 'lecturer' %}
-                        <option value="{{ u.id }}">{{ u.full_name }}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-call">Start Voice Call</button>
-        </form>
+        <h3>2. Live Voice Lectures</h3>
+        <p>You cannot initiate voice calls to lecturers. When your lecturer starts a live class, the join link will appear below or in your messages:</p>
+        
+        <h4>Join Class from Received Messages</h4>
+        <ul>
+            {% for msg in messages %}
+                {% if "LIVE LECTURE STARTED" in msg.content or "https://meet.jit.si" in msg.content %}
+                    <li style="margin-bottom: 10px;">
+                        <strong>{{ msg.sender.full_name }}:</strong> 
+                        <a href="{{ msg.content.split('Click here to join: ')[-1] }}" target="_blank" class="btn btn-call" style="background:#28a745; text-decoration:none; color:#fff; padding:5px 10px; border-radius:4px; display:inline-block;">
+                            Join Voice Call Live
+                        </a>
+                        <small>({{ msg.timestamp }})</small>
+                    </li>
+                {% endif %}
+            {% else %}
+                <li>No active voice class links available. Wait for your lecturer to start the call.</li>
+            {% endfor %}
+        </ul>
     </div>
 
     <!-- 3. Registered Courses -->
