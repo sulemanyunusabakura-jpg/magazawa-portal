@@ -51,6 +51,8 @@ with app.app_context():
         db.session.commit()
 
 @app.route('/')
+# Initialize Gemini Client
+gemini_client = genai.Client()
 def home():
     return redirect(url_for('login'))
 
@@ -145,6 +147,41 @@ def admin_dashboard():
                            all_users=all_users, 
                            messages=messages)
 
+@app.route('/admin/ask_gemini', methods=['POST'])
+@login_required
+def ask_gemini():
+    if current_user.role != 'admin':
+        return {"error": "Unauthorized access"}, 403
+
+    data = request.get_json()
+    user_prompt = data.get('prompt', '').strip()
+
+    if not user_prompt:
+        return {"error": "Prompt cannot be empty"}, 400
+
+    # Gather live portal stats to give Gemini context
+    total_students = User.query.filter_by(role='student').count()
+    total_lecturers = User.query.filter_by(role='lecturer').count()
+    pending_students = User.query.filter_by(role='student', is_approved=False).count()
+
+    portal_context = (
+        f"Live Portal Stats: Total Students = {total_students}, "
+        f"Total Lecturers = {total_lecturers}, "
+        f"Pending Student Approvals = {pending_students}."
+    )
+
+    try:
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=f"You are a helpful AI assistant integrated into the Magazawa Skills & Technology Admin Dashboard. {portal_context} Answer clearly and professionally."
+            )
+        )
+        return {"response": response.text}
+
+    except Exception as e:
+        return {"error": f"Gemini API Error: {str(e)}"}, 500
 @app.route('/admin/approve_student/<int:id>')
 @login_required
 def approve_student(id):
