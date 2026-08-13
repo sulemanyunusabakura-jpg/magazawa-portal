@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>System Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Admin Dashboard - Magazawa Skills & Technology</title>
     <style>
         body {
             background-color: #0b2b1a; /* Dark Green */
@@ -26,29 +27,71 @@
             background: #1c5234;
             color: #fff;
             border: 1px solid #378556;
-            padding: 6px;
+            padding: 8px;
             margin: 2px;
             box-sizing: border-box;
+            border-radius: 4px;
         }
         button { cursor: pointer; background: #2a6943; font-weight: bold; }
-        .card { background: #144229; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        button:hover { background: #378556; }
+        .card { background: #144229; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #2a6943; }
         .msg-box { background: #0b2b1a; padding: 10px; border: 1px solid #2a6943; margin-bottom: 10px; border-radius: 4px; }
+        .badge {
+            background-color: #27ae60;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        .badge-warning {
+            background-color: #e67e22;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        a { color: #80ffb4; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
     <h3>System Admin Dashboard</h3>
-    <a href="/logout" style="color:#80ffb4;">Logout</a>
+    <p><a href="/logout">Logout</a></p>
 
-    <!-- 1. Send Message Section -->
+    <!-- Flash Messages -->
+    {% with messages_flash = get_flashed_messages(with_categories=true) %}
+      {% if messages_flash %}
+        {% for category, msg in messages_flash %}
+          <div class="msg-box" style="border-color: #80ffb4;">
+             <strong>Notice:</strong> {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- 1. Gemini AI Assistant Section -->
+    <div class="card">
+        <h3>✨ Gemini AI Assistant</h3>
+        <div id="chat-history" style="height: 200px; overflow-y: auto; background: #0b2b1a; padding: 12px; border-radius: 6px; border: 1px solid #2a6943; margin-bottom: 10px;">
+            <p style="color: #a0d8b6; margin: 0;">Hello Admin! Ask me anything about portal stats, drafting student announcements, or course management.</p>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="gemini-prompt" style="flex: 1;" placeholder="Ask Gemini something..." onkeydown="if(event.key==='Enter') sendGeminiQuery()">
+            <button type="button" id="send-btn" onclick="sendGeminiQuery()">Ask Gemini</button>
+        </div>
+    </div>
+
+    <!-- 2. Send Direct Messages -->
     <div class="card">
         <h3>Send Message to Lecturer / Student</h3>
         <form action="/send_message" method="POST">
-            <select name="receiver_id" required>
+            <select name="receiver_id" required style="width: 100%; max-width: 400px;">
                 <option value="">Select Recipient</option>
                 {% for user in all_users %}
-                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role }})</option>
+                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role|capitalize }})</option>
                 {% endfor %}
             </select><br><br>
             <textarea name="content" placeholder="Write message..." rows="3" style="width:100%;" required></textarea><br>
@@ -56,122 +99,217 @@
         </form>
     </div>
 
-    <!-- 2. Received Results Submissions from Lecturers -->
+    <!-- 3. Pending Student Applications -->
     <div class="card">
-        <h3>Received Student Results from Lecturers</h3>
-        {% for msg in messages %}
-            {% if "RESULT SUBMISSION FROM LECTURER" in msg.content %}
-                <div class="msg-box">
-                    <p><strong>From {{ msg.sender.full_name }}:</strong></p>
-                    <pre style="color: #80ffb4; font-family: inherit;">{{ msg.content }}</pre>
-                    <small>Received on: {{ msg.timestamp }}</small>
-                </div>
-            {% endif %}
-        {% else %}
-            <p>No result submissions received from lecturers yet.</p>
-        {% endfor %}
+        <h3>Student Admission Applications</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Email / Phone</th>
+                    <th>Primary Cert</th>
+                    <th>Secondary Cert</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.full_name }}</td>
+                    <td>{{ student.email }}<br><small>{{ student.phone }}</small></td>
+                    <td>
+                        {% if student.primary_cert %}
+                            <a href="{{ url_for('static', filename='uploads/' + student.primary_cert) }}" target="_blank">View File</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.sec_cert %}
+                            <a href="{{ url_for('static', filename='uploads/' + student.sec_cert) }}" target="_blank">View File</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.is_approved %}
+                            <span class="badge">Approved</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not student.is_approved %}
+                            <a href="/admin/approve_student/{{ student.id }}" style="background:#2a6943; padding:5px 10px; border-radius:3px; color:#fff;">Approve Admission</a>
+                        {% else %}
+                            Approved
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">No student records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    <!-- 3. Course & Result Management -->
+    <!-- 4. Pending Lecturer Applications -->
+    <div class="card">
+        <h3>Lecturer Applications</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Desired Courses</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lecturer in lecturers %}
+                <tr>
+                    <td>{{ lecturer.full_name }}</td>
+                    <td>{{ lecturer.email }}</td>
+                    <td>{{ lecturer.desired_courses or 'Not specified' }}</td>
+                    <td>
+                        {% if lecturer.is_approved %}
+                            <span class="badge">Approved</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not lecturer.is_approved %}
+                            <a href="/admin/approve_lecturer/{{ lecturer.id }}" style="background:#2a6943; padding:5px 10px; border-radius:3px; color:#fff;">Approve Lecturer</a>
+                        {% else %}
+                            Approved
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">No lecturer records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. Received Result Transmissions from Lecturers -->
+    <div class="card">
+        <h3>Received Student Results from Lecturers</h3>
+        {% set ns = namespace(found=false) %}
+        {% for msg in messages %}
+            {% if "RESULT SUBMISSION FROM LECTURER" in msg.content %}
+                {% set ns.found = true %}
+                <div class="msg-box">
+                    <p style="margin-top:0;"><strong>From Lecturer:</strong> {{ msg.sender.full_name if msg.sender else 'System' }}</p>
+                    <pre style="color: #80ffb4; font-family: monospace; white-space: pre-wrap;">{{ msg.content }}</pre>
+                    <small style="color: #a0d8b6;">Received on: {{ msg.timestamp }}</small>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if not ns.found %}
+            <p>No result submissions received from lecturers yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 6. Course Assignment & Result Publishing -->
     <div class="card">
         <h3>Manage Student Courses & Publish Results</h3>
         <table>
-            <tr>
-                <th>Student Name</th>
-                <th>Add Course</th>
-                <th>Publish Result to Student</th>
-            </tr>
-            {% for student in students %}
-            <tr>
-                <td>{{ student.full_name }}</td>
-                <td>
-                    <form action="/manage_course" method="POST">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <input type="text" name="course_code" placeholder="Code (e.g. COM111)" required><br>
-                        <input type="text" name="course_name" placeholder="Course Title" required><br>
-                        <button type="submit">Add Course</button>
-                    </form>
-                </td>
-                <td>
-                    <form action="/manage_result" method="POST">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <input type="text" name="course_name" placeholder="Course Title" required><br>
-                        <input type="number" step="0.1" name="score" placeholder="Score" required><br>
-                        <input type="text" name="grade" placeholder="Grade (A/B/C)" required><br>
-                        <button type="submit">Publish Result</button>
-                    </form>
-                    <!-- ================= GEMINI AI ASSISTANT START ================= -->
-<div class="card my-4 shadow-sm border-primary">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">✨ Gemini AI Assistant</h5>
-        <span class="badge bg-success">Online</span>
-    </div>
-    <div class="card-body">
-        <div id="chat-history" style="height: 250px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 8px;" class="mb-3">
-            <p class="text-muted">Hello, Admin! Ask me anything about portal stats, drafting messages, or general questions.</p>
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="gemini-prompt" class="form-control" placeholder="Ask Gemini something..." onkeydown="if(event.key==='Enter') sendGeminiQuery()">
-            <button class="btn btn-primary" type="button" id="send-btn" onclick="sendGeminiQuery()">Ask Gemini</button>
-        </div>
-    </div>
-</div>
-
-<script>
-async function sendGeminiQuery() {
-    const inputEl = document.getElementById('gemini-prompt');
-    const historyEl = document.getElementById('chat-history');
-    const sendBtn = document.getElementById('send-btn');
-    const prompt = inputEl.value.trim();
-
-    if (!prompt) return;
-
-    // Render user message
-    historyEl.innerHTML += `<div class="text-end mb-2"><strong>You:</strong> <span class="bg-primary text-white p-2 rounded d-inline-block">${escapeHtml(prompt)}</span></div>`;
-    inputEl.value = '';
-
-    sendBtn.disabled = true;
-    sendBtn.innerText = 'Thinking...';
-    historyEl.scrollTop = historyEl.scrollHeight;
-
-    try {
-        const response = await fetch('/admin/ask_gemini', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: prompt })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            historyEl.innerHTML += `<div class="text-start mb-2"><strong>Gemini:</strong> <span class="bg-white border p-2 rounded d-inline-block">${escapeHtml(data.response)}</span></div>`;
-        } else {
-            historyEl.innerHTML += `<div class="text-start mb-2"><span class="bg-danger text-white p-2 rounded d-inline-block">Error: ${data.error}</span></div>`;
-        }
-    } catch (err) {
-        historyEl.innerHTML += `<div class="text-start mb-2"><span class="bg-danger text-white p-2 rounded d-inline-block">Failed to connect to backend server.</span></div>`;
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.innerText = 'Ask Gemini';
-        historyEl.scrollTop = historyEl.scrollHeight;
-    }
-}
-
-function escapeHtml(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-</script>
-<!-- ================= GEMINI AI ASSISTANT END ================= -->
-                </td>
-            </tr>
-            {% endfor %}
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Add Course</th>
+                    <th>Publish Result to Student</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><strong>{{ student.full_name }}</strong><br><small>({{ student.email }})</small></td>
+                    <td>
+                        <form action="/manage_course" method="POST">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <input type="text" name="course_code" placeholder="Code (e.g. COM111)" required><br>
+                            <input type="text" name="course_name" placeholder="Course Title" required><br>
+                            <button type="submit">Add Course</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form action="/manage_result" method="POST">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <input type="text" name="course_name" placeholder="Course Title" required><br>
+                            <input type="number" step="0.1" name="score" placeholder="Score (e.g. 75)" required><br>
+                            <input type="text" name="grade" placeholder="Grade (A/B/C)" required><br>
+                            <button type="submit">Publish Result</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3">No students available for course and result management.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
+
+    <!-- JavaScript for Gemini AJAX Chat -->
+    <script>
+    async function sendGeminiQuery() {
+        const inputEl = document.getElementById('gemini-prompt');
+        const historyEl = document.getElementById('chat-history');
+        const sendBtn = document.getElementById('send-btn');
+        const prompt = inputEl.value.trim();
+
+        if (!prompt) return;
+
+        // Render user prompt inside history box
+        historyEl.innerHTML += `<div style="text-align: right; margin-bottom: 8px;"><span style="background: #1c5234; padding: 6px 12px; border-radius: 6px; display: inline-block;"><strong>You:</strong> ${escapeHtml(prompt)}</span></div>`;
+        inputEl.value = '';
+
+        sendBtn.disabled = true;
+        sendBtn.innerText = 'Thinking...';
+        historyEl.scrollTop = historyEl.scrollHeight;
+
+        try {
+            const response = await fetch('/admin/ask_gemini', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: prompt })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                historyEl.innerHTML += `<div style="text-align: left; margin-bottom: 8px;"><span style="background: #051c10; border: 1px solid #2a6943; padding: 6px 12px; border-radius: 6px; display: inline-block; color: #80ffb4;"><strong>Gemini:</strong> ${escapeHtml(data.response)}</span></div>`;
+            } else {
+                historyEl.innerHTML += `<div style="text-align: left; margin-bottom: 8px;"><span style="background: #721c24; color: #f8d7da; padding: 6px 12px; border-radius: 6px; display: inline-block;">Error: ${escapeHtml(data.error)}</span></div>`;
+            }
+        } catch (err) {
+            historyEl.innerHTML += `<div style="text-align: left; margin-bottom: 8px;"><span style="background: #721c24; color: #f8d7da; padding: 6px 12px; border-radius: 6px; display: inline-block;">Failed to connect to backend server.</span></div>`;
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerText = 'Ask Gemini';
+            historyEl.scrollTop = historyEl.scrollHeight;
+        }
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    </script>
 
 </body>
 </html>
