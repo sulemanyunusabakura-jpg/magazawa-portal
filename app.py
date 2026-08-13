@@ -20,6 +20,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# INITIALIZE GEMINI CLIENT (Reads GEMINI_API_KEY from environment)
+gemini_client = genai.Client()
+
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -51,8 +54,6 @@ with app.app_context():
         db.session.commit()
 
 @app.route('/')
-# Initialize Gemini Client
-gemini_client = genai.Client()
 def home():
     return redirect(url_for('login'))
 
@@ -62,12 +63,12 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
-        
+
         if user and check_password_hash(user.password, password):
             if not user.is_approved and user.role != 'admin':
                 flash('Your account is pending approval by Magazawa Admin.', 'warning')
                 return redirect(url_for('login'))
-            
+
             login_user(user)
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
@@ -84,15 +85,15 @@ def apply_student():
     if request.method == 'POST':
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
-        
+
         p_filename = secure_filename(p_cert.filename) if p_cert and p_cert.filename != "" else ""
         s_filename = secure_filename(s_cert.filename) if s_cert and s_cert.filename != "" else ""
-        
+
         if p_cert and p_filename:
             p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
         if s_cert and s_filename:
             s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
-        
+
         new_student = User(
             username=request.form['email'],
             password=generate_password_hash(request.form['password']),
@@ -135,12 +136,12 @@ def apply_lecturer():
 def admin_dashboard():
     if current_user.role != 'admin': 
         return redirect(url_for('login'))
-    
+
     students = User.query.filter_by(role='student').all()
     lecturers = User.query.filter_by(role='lecturer').all()
     all_users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    
+
     return render_template('admin_dashboard.html', 
                            students=students, 
                            lecturers=lecturers, 
@@ -182,6 +183,7 @@ def ask_gemini():
 
     except Exception as e:
         return {"error": f"Gemini API Error: {str(e)}"}, 500
+
 @app.route('/admin/approve_student/<int:id>')
 @login_required
 def approve_student(id):
@@ -227,7 +229,7 @@ def manage_course():
         return redirect(url_for('login'))
     action = request.form.get('action')
     student_id = request.form.get('student_id')
-    
+
     if action == 'add':
         course = Course(
             student_id=student_id, 
@@ -238,7 +240,7 @@ def manage_course():
     elif action == 'remove':
         course_id = request.form.get('course_id')
         Course.query.filter_by(id=course_id).delete()
-        
+
     db.session.commit()
     flash('Course updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
@@ -250,7 +252,7 @@ def manage_result():
         return redirect(url_for('login'))
     action = request.form.get('action')
     student_id = request.form.get('student_id')
-    
+
     if action == 'add':
         res = Result(
             student_id=student_id, 
@@ -262,7 +264,7 @@ def manage_result():
     elif action == 'remove':
         result_id = request.form.get('result_id')
         Result.query.filter_by(id=result_id).delete()
-        
+
     db.session.commit()
     flash('Result record updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
@@ -272,14 +274,14 @@ def manage_result():
 def lecturer_dashboard():
     if current_user.role != 'lecturer': 
         return redirect(url_for('login'))
-    
+
     if request.method == 'POST':
         file = request.files.get('file')
         filename = ""
         if file and file.filename != "":
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            
+
         material = Material(
             title=request.form['title'],
             material_type=request.form['type'],
@@ -290,7 +292,7 @@ def lecturer_dashboard():
         db.session.commit()
         flash('Material / Voice Mail Uploaded Successfully.', 'success')
         return redirect(url_for('lecturer_dashboard'))
-        
+
     materials = Material.query.filter_by(lecturer_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
@@ -332,7 +334,7 @@ def start_voice_class():
 
     try:
         room_url = f"https://meet.jit.si/MST_Lecture_{current_user.id}"
-        
+
         # Broadcast join link to all registered students
         students = User.query.filter_by(role='student').all()
         for student in students:
@@ -342,11 +344,11 @@ def start_voice_class():
                 content=f"LIVE LECTURE STARTED by {current_user.full_name}: Click here to join: {room_url}"
             )
             db.session.add(msg)
-        
+
         db.session.commit()
         flash('Voice class started! All students have received the join link.', 'success')
         return redirect(url_for('live_class', lecturer_id=current_user.id))
-        
+
     except Exception as e:
         db.session.rollback()
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
@@ -358,12 +360,12 @@ def start_voice_class():
 def submit_result_to_admin():
     if current_user.role != 'lecturer':
         return redirect(url_for('login'))
-        
+
     student_name = request.form.get('student_name')
     reg_number = request.form.get('reg_number')
     course_name = request.form.get('course_name')
     score = request.form.get('score')
-    
+
     # Send compiled result directly to Admin via Message system
     admin = User.query.filter_by(role='admin').first()
     if admin:
