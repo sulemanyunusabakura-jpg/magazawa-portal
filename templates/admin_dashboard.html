@@ -102,6 +102,71 @@
                         <input type="text" name="grade" placeholder="Grade (A/B/C)" required><br>
                         <button type="submit">Publish Result</button>
                     </form>
+                    <!-- ================= GEMINI AI ASSISTANT START ================= -->
+<div class="card my-4 shadow-sm border-primary">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">✨ Gemini AI Assistant</h5>
+        <span class="badge bg-success">Online</span>
+    </div>
+    <div class="card-body">
+        <div id="chat-history" style="height: 250px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 8px;" class="mb-3">
+            <p class="text-muted">Hello, Admin! Ask me anything about portal stats, drafting messages, or general questions.</p>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="gemini-prompt" class="form-control" placeholder="Ask Gemini something..." onkeydown="if(event.key==='Enter') sendGeminiQuery()">
+            <button class="btn btn-primary" type="button" id="send-btn" onclick="sendGeminiQuery()">Ask Gemini</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function sendGeminiQuery() {
+    const inputEl = document.getElementById('gemini-prompt');
+    const historyEl = document.getElementById('chat-history');
+    const sendBtn = document.getElementById('send-btn');
+    const prompt = inputEl.value.trim();
+
+    if (!prompt) return;
+
+    // Render user message
+    historyEl.innerHTML += `<div class="text-end mb-2"><strong>You:</strong> <span class="bg-primary text-white p-2 rounded d-inline-block">${escapeHtml(prompt)}</span></div>`;
+    inputEl.value = '';
+
+    sendBtn.disabled = true;
+    sendBtn.innerText = 'Thinking...';
+    historyEl.scrollTop = historyEl.scrollHeight;
+
+    try {
+        const response = await fetch('/admin/ask_gemini', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: prompt })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            historyEl.innerHTML += `<div class="text-start mb-2"><strong>Gemini:</strong> <span class="bg-white border p-2 rounded d-inline-block">${escapeHtml(data.response)}</span></div>`;
+        } else {
+            historyEl.innerHTML += `<div class="text-start mb-2"><span class="bg-danger text-white p-2 rounded d-inline-block">Error: ${data.error}</span></div>`;
+        }
+    } catch (err) {
+        historyEl.innerHTML += `<div class="text-start mb-2"><span class="bg-danger text-white p-2 rounded d-inline-block">Failed to connect to backend server.</span></div>`;
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerText = 'Ask Gemini';
+        historyEl.scrollTop = historyEl.scrollHeight;
+    }
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+</script>
+<!-- ================= GEMINI AI ASSISTANT END ================= -->
                 </td>
             </tr>
             {% endfor %}
