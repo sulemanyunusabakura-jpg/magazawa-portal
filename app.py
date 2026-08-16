@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -56,6 +56,11 @@ with app.app_context():
 @app.route('/')
 def home():
     return redirect(url_for('login'))
+
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\n"
+    return Response(content, mimetype='text/plain')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -209,12 +214,6 @@ def approve_lecturer(id):
         db.session.commit()
         flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
-    from flask import Response
-
-@app.route('/robots.txt')
-def robots():
-    content = "User-agent: *\nAllow: /\n"
-    return Response(content, mimetype='text/plain')
 
 @app.route('/send_message', methods=['POST'])
 @login_required
@@ -323,14 +322,12 @@ def admission_letter():
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
 
-# Route: Render Live Voice Call Room Template
 @app.route('/lecturer/live_class/<int:lecturer_id>')
 @login_required
 def live_class(lecturer_id):
     room_name = f"MST_Lecture_{lecturer_id}"
     return render_template('live_class.html', room_name=room_name, user=current_user)
 
-# Route: Lecturer Starts Voice Class & Automatically Notifies All Students
 @app.route('/lecturer/start_voice_class', methods=['POST'])
 @login_required
 def start_voice_class():
@@ -360,7 +357,6 @@ def start_voice_class():
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
 
-# Route: Lecturer Submits Result to Admin
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
 def submit_result_to_admin():
@@ -372,7 +368,6 @@ def submit_result_to_admin():
     course_name = request.form.get('course_name')
     score = request.form.get('score')
 
-    # Send compiled result directly to Admin via Message system
     admin = User.query.filter_by(role='admin').first()
     if admin:
         result_payload = (
