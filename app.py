@@ -209,6 +209,12 @@ def approve_lecturer(id):
         db.session.commit()
         flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
+    from flask import Response
+
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\n"
+    return Response(content, mimetype='text/plain')
 
 @app.route('/send_message', methods=['POST'])
 @login_required
