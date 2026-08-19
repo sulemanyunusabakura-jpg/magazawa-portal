@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrar Dashboard</title>
+    <style>
+        body { background-color: #0b1329; color: #ffffff; font-family: Arial, sans-serif; margin: 20px; }
+        .card { background: #131d38; padding: 20px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #23345c; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #0c152b; }
+        th, td { border: 1px solid #23345c; padding: 10px; text-align: left; }
+        th { background: #060a17; }
+    </style>
+</head>
+<body>
+    <h2>REGISTRAR DASHBOARD</h2>
+    <p>Official School Records & Transmitted Admin Data</p>
+    <a href="/logout" style="color: #ff6b6b;">Logout</a>
+    <hr style="border-color: #23345c; margin-bottom: 20px;">
+
+    <!-- Transmitted Data Box -->
+    <div class="card" style="border: 1px solid #28a745;">
+        <h3>Transmitted Data Reports from Admin</h3>
+        {% for msg in messages %}
+            <div style="background: #070d1c; padding: 12px; margin-bottom: 10px; border-radius: 4px; white-space: pre-line;">
+                <strong>Received on {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}:</strong>
+                <p>{{ msg.content }}</p>
+            </div>
+        {% else %}
+            <p>No official reports transmitted from Admin yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Active Lecturers Summary -->
+    <div class="card">
+        <h3>Active Lecturers Count: {{ lecturers|length }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lecturer Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lec in lecturers %}
+                <tr>
+                    <td>{{ lec.full_name }}</td>
+                    <td>{{ lec.email }}</td>
+                    <td>{{ lec.phone }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Active Students Summary -->
+    <div class="card">
+        <h3>Registered Students Count: {{ students|length }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Email</th>
+                    <th>Admission Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for std in students %}
+                <tr>
+                    <td>{{ std.full_name }}</td>
+                    <td>{{ std.email }}</td>
+                    <td>{{ std.admission_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+  </html>
