@@ -54,6 +54,53 @@ with app.app_context():
         admin.is_approved = True
         db.session.commit()
 
+with app.app_context():
+    db.create_all()
+    
+    # 1. ADMIN ACCOUNT
+    admin = User.query.filter_by(role='admin').first()
+    if not admin:
+        admin = User(
+            username='admin',
+            password=generate_password_hash('admin123'),
+            role='admin',
+            full_name='MST System Administrator',
+            email='admin@magazawa.edu.ng',
+            phone='08000000000',
+            is_approved=True
+        )
+        db.session.add(admin)
+
+    # 2. CREATOR ACCOUNT
+    creator = User.query.filter_by(role='creator').first()
+    if not creator:
+        creator = User(
+            username='creator',
+            password=generate_password_hash('creator123'),
+            role='creator',
+            full_name='System Creator',
+            email='creator@magazawa.edu.ng',
+            phone='08000000001',
+            is_approved=True
+        )
+        db.session.add(creator)
+
+    # 3. REGISTRAR ACCOUNT
+    registrar = User.query.filter_by(role='registrar').first()
+    if not registrar:
+        registrar = User(
+            username='registrar',
+            password=generate_password_hash('registrar123'),
+            role='registrar',
+            full_name='MST Registrar Office',
+            email='registrar@magazawa.edu.ng',
+            phone='08000000002',
+            is_approved=True
+        )
+        db.session.add(registrar)
+
+    db.session.commit()
+    
 @app.route('/')
 def home():
     return redirect(url_for('login'))
