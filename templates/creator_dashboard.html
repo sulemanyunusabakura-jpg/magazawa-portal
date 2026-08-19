@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Creator Overview Dashboard</title>
+    <style>
+        body { background-color: #0b1329; color: #ffffff; font-family: Arial, sans-serif; margin: 20px; }
+        .card { background: #131d38; padding: 20px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #23345c; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .stat-box { background: #0c152b; padding: 15px; border-radius: 6px; text-align: center; border: 1px solid #23345c; }
+        .stat-box h2 { font-size: 32px; color: #28a745; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h2>SYSTEM CREATOR DASHBOARD</h2>
+    <p>System Overview & Master Statistics</p>
+    <a href="/logout" style="color: #ff6b6b;">Logout</a> | 
+    <a href="/master_access" style="color: #28a745;">Master Switcher</a>
+    <hr style="border-color: #23345c; margin-bottom: 20px;">
+
+    <div class="card">
+        <h3>School Enrollment Statistics</h3>
+        <div class="grid-3">
+            <div class="stat-box">
+                <h4>Total Lecturers</h4>
+                <h2>{{ total_lecturers }}</h2>
+                <small>Approved: {{ approved_lecturers }}</small>
+            </div>
+            <div class="stat-box">
+                <h4>Total Students</h4>
+                <h2>{{ total_students }}</h2>
+                <small>Approved: {{ approved_students }}</small>
+            </div>
+            <div class="stat-box">
+                <h4>System Administrators</h4>
+                <h2>{{ total_admins }}</h2>
+                <small>Active Controls</small>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
