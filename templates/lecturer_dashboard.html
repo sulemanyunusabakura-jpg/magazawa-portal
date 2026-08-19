@@ -28,6 +28,9 @@
             <button type="submit" class="btn btn-call" style="background:#28a745; font-size:16px;">Start Live Voice Call & Notify Students</button>
         </form>
     </div>
+    <a href="{{ url_for('end_lecture', lecturer_id=lecturer.id) }}" class="btn btn-danger">
+    End Lecture
+</a>
 
     <!-- 2. Submit Student Results to Admin -->
     <div class="card">
