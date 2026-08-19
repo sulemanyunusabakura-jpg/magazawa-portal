@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Access Portal</title>
+    <style>
+        body { background: #0b1329; color: #fff; font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #131d38; padding: 30px; border-radius: 8px; border: 1px solid #23345c; width: 350px; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 12px; background: #070d1c; color: #fff; border: 1px solid #23345c; border-radius: 4px; box-sizing: border-box; }
+        button { background: #28a745; font-weight: bold; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h3 style="text-align: center;">Master Dashboard Access</h3>
+        <form method="POST">
+            <label>Master Password:</label>
+            <input type="password" name="master_password" placeholder="Enter Master Password" required>
+
+            <label>Select Dashboard to Enter:</label>
+            <select name="target_role" required>
+                <option value="creator">Creator Dashboard</option>
+                <option value="registrar">Registrar Dashboard</option>
+                <option value="admin">Admin Dashboard</option>
+                <option value="lecturer">Lecturer Dashboard</option>
+                <option value="student">Student Dashboard</option>
+            </select>
+
+            <button type="submit">Unlock Dashboard</button>
+        </form>
+    </div>
+</body>
+</html>
