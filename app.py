@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -314,6 +314,16 @@ def student_dashboard():
     users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
+
+# ROUTE TO DOWNLOAD LECTURE MATERIALS
+@app.route('/download_material/<path:filename>')
+@login_required
+def download_material(filename):
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+    except FileNotFoundError:
+        flash('Requested material file was not found on the server.', 'danger')
+        return redirect(url_for('student_dashboard'))
 
 @app.route('/student/admission_letter')
 @login_required
