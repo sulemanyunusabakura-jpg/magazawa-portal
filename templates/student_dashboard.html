@@ -351,20 +351,28 @@
                 <div class="modal-body">
                     <h6 class="fw-bold mb-3">Live Class Broadcast Messages:</h6>
                     {% if messages %}
-                        <div class="list-group">
-                            {% for msg in messages %}
-                                {% if "LIVE LECTURE STARTED" in msg.content or "http" in msg.content %}
-                                    <div class="list-group-item list-group-item-action border-primary mb-2">
-                                        <p class="mb-1 text-dark">{{ msg.content }}</p>
-                                        <small class="text-muted"><i class="far fa-clock"></i> {{ msg.timestamp }}</small>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No active live voice call invites from your lecturers at the moment.</p>
-                    {% endif %}
-                </div>
+                       <!-- Inside student_dashboard.html in the Messages section -->
+<div class="list-group">
+  {% for msg in messages %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <p class="mb-1"><strong>From:</strong> {{ msg.sender.full_name if msg.sender else 'Lecturer' }}</p>
+        <p class="mb-1">{{ msg.content }}</p>
+        <small class="text-muted">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp }}</small>
+      </div>
+
+      <!-- IF MESSAGE IS A LIVE CLASS NOTIFICATION, SHOW JOIN BUTTON -->
+      {% if 'LIVE LECTURE STARTED' in msg.content %}
+        <a href="{{ url_for('live_class', room_name='MST_Lecture_' ~ msg.sender_id) }}" 
+           class="btn btn-success btn-sm fw-bold" target="_blank">
+           <i class="bi bi-telephone-inbound-fill"></i> Join Call Now
+        </a>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="text-muted">No messages received yet.</p>
+  {% endfor %}
+</div>
             </div>
         </div>
     </div>
