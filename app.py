@@ -336,10 +336,11 @@ def admission_letter():
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
 
-@app.route('/lecturer/live_class/<int:lecturer_id>')
+# UPDATED LIVE CLASS ROUTE IN app.py
+@app.route('/live_class/<room_name>')
 @login_required
-def live_class(lecturer_id):
-    room_name = f"MST_Lecture_{lecturer_id}"
+def live_class(room_name):
+    # Allow both students and lecturers to access the room
     return render_template('live_class.html', room_name=room_name, user=current_user)
 
 @app.route('/lecturer/start_voice_class', methods=['POST'])
@@ -350,27 +351,27 @@ def start_voice_class():
         return redirect(url_for('login'))
 
     try:
-        room_url = f"https://meet.jit.si/MST_Lecture_{current_user.id}"
-
-        # Broadcast join link to all registered students
+        room_name = f"MST_Lecture_{current_user.id}"
+        
+        # Broadcast message with a clean join tag
         students = User.query.filter_by(role='student').all()
         for student in students:
             msg = Message(
                 sender_id=current_user.id, 
                 receiver_id=student.id, 
-                content=f"LIVE LECTURE STARTED by {current_user.full_name}: Click here to join: {room_url}"
+                content=f"LIVE LECTURE STARTED by {current_user.full_name}! Click the join button in your Messages section."
             )
             db.session.add(msg)
 
         db.session.commit()
-        flash('Voice class started! All students have received the join link.', 'success')
-        return redirect(url_for('live_class', lecturer_id=current_user.id))
+        flash('Voice class started! All students have been notified.', 'success')
+        return redirect(url_for('live_class', room_name=room_name))
 
     except Exception as e:
         db.session.rollback()
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
-
+        
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
 def submit_result_to_admin():
