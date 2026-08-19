@@ -11,6 +11,7 @@
         th { background: #060a17; }
         .btn { background: #1b6899; color: #fff; padding: 8px 14px; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; display: inline-block; }
         .btn-call { background: #28a745; font-weight: bold; }
+        .btn-danger { background: #dc3545; font-weight: bold; }
         select, textarea, input { background: #070d1c; color: #fff; border: 1px solid #23345c; padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
     </style>
 </head>
@@ -20,17 +21,17 @@
     <h3>Lecturer E-Learning & Management Center</h3>
     <a href="/logout" style="color: #ff6b6b;">Logout</a>
 
-    <!-- 1. Start Voice Lecture (Lecturer Only) -->
+    <!-- 1. Start / End Voice Lecture (Lecturer Only) -->
     <div class="card">
         <h3>1. Launch Live Voice Lecture</h3>
         <p>Clicking the button below will open your live voice room and instantly send the join link to all students.</p>
-        <form action="/lecturer/start_voice_class" method="POST">
-            <button type="submit" class="btn btn-call" style="background:#28a745; font-size:16px;">Start Live Voice Call & Notify Students</button>
-        </form>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <form action="/lecturer/start_voice_class" method="POST" style="margin: 0;">
+                <button type="submit" class="btn btn-call" style="font-size:16px;">Start Live Voice Call & Notify Students</button>
+            </form>
+            <a href="{{ url_for('end_lecture', lecturer_id=lecturer.id) }}" class="btn btn-danger" style="font-size:16px;">End Lecture</a>
+        </div>
     </div>
-    <a href="{{ url_for('end_lecture', lecturer_id=lecturer.id) }}" class="btn btn-danger">
-    End Lecture
-</a>
 
     <!-- 2. Submit Student Results to Admin -->
     <div class="card">
@@ -84,4 +85,4 @@
     </div>
 
 </body>
-                </html>
+</html>
