@@ -21,7 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# INITIALIZE GEMINI CLIENT (Reads GEMINI_API_KEY from environment)
+# INITIALIZE GEMINI CLIENT
 gemini_client = genai.Client()
 
 db.init_app(app)
@@ -166,7 +166,6 @@ def ask_gemini():
     if not user_prompt:
         return {"error": "Prompt cannot be empty"}, 400
 
-    # Gather live portal stats to give Gemini context
     total_students = User.query.filter_by(role='student').count()
     total_lecturers = User.query.filter_by(role='lecturer').count()
     pending_students = User.query.filter_by(role='student', is_approved=False).count()
@@ -302,7 +301,14 @@ def lecturer_dashboard():
     materials = Material.query.filter_by(lecturer_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    return render_template('lecturer_dashboard.html', materials=materials, users=users, messages=messages)
+    
+    return render_template(
+        'lecturer_dashboard.html', 
+        lecturer=current_user, 
+        materials=materials, 
+        users=users, 
+        messages=messages
+    )
 
 @app.route('/dashboard/student')
 @login_required
@@ -316,7 +322,6 @@ def student_dashboard():
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
 
-# RELIABLE DOWNLOAD ROUTE WITH FILE CHECKS
 @app.route('/download_material/<path:filename>')
 @login_required
 def download_material(filename):
@@ -336,11 +341,9 @@ def admission_letter():
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
 
-# UPDATED LIVE CLASS ROUTE IN app.py
 @app.route('/live_class/<room_name>')
 @login_required
 def live_class(room_name):
-    # Allow both students and lecturers to access the room
     return render_template('live_class.html', room_name=room_name, user=current_user)
 
 @app.route('/lecturer/start_voice_class', methods=['POST'])
@@ -352,8 +355,6 @@ def start_voice_class():
 
     try:
         room_name = f"MST_Lecture_{current_user.id}"
-        
-        # Broadcast message with a clean join tag
         students = User.query.filter_by(role='student').all()
         for student in students:
             msg = Message(
@@ -372,18 +373,26 @@ def start_voice_class():
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
 
-# Call this route when the lecturer stops the lecture
 @app.route('/end_lecture/<int:lecturer_id>')
+@login_required
 def end_lecture(lecturer_id):
-    msg = Message(
-        sender_id=lecturer_id,
-        receiver_id=0, # broadcast to students
-        content="LIVE LECTURE HAS ENDED. Thank you for participating."
-    )
-    db.session.add(msg)
-    db.session.commit()
-    return redirect(url_for('lecturer_dashboard'))
+    if current_user.role != 'lecturer' or current_user.id != lecturer_id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('lecturer_dashboard'))
+
+    students = User.query.filter_by(role='student').all()
+    for student in students:
+        msg = Message(
+            sender_id=lecturer_id,
+            receiver_id=student.id,
+            content="LIVE LECTURE HAS ENDED. Thank you for participating."
+        )
+        db.session.add(msg)
     
+    db.session.commit()
+    flash('Lecture ended successfully.', 'info')
+    return redirect(url_for('lecturer_dashboard'))
+
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
 def submit_result_to_admin():
