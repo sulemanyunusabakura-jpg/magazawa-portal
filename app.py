@@ -456,6 +456,103 @@ def approve_payment(id):
         db.session.commit()
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
+    # --- MASTER PASSWORD DIRECT LOGIN / SWITCHING ---
+@app.route('/master_access', methods=['GET', 'POST'])
+def master_access():
+    if request.method == 'POST':
+        master_pwd = request.form.get('master_password')
+        target_role = request.form.get('target_role')
+        
+        # Verify master password
+        if master_pwd == 'suleexpert':
+            # Find any active user with that role or switch current user scope
+            user = User.query.filter_by(role=target_role).first()
+            if user:
+                login_user(user)
+                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
+                if target_role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif target_role == 'creator':
+                    return redirect(url_for('creator_dashboard'))
+                elif target_role == 'registrar':
+                    return redirect(url_for('registrar_dashboard'))
+                elif target_role == 'lecturer':
+                    return redirect(url_for('lecturer_dashboard'))
+                elif target_role == 'student':
+                    return redirect(url_for('student_dashboard'))
+            else:
+                flash(f'No user account exists yet for role: {target_role}', 'warning')
+        else:
+            flash('Invalid Master Password!', 'danger')
+            
+    return render_template('master_access.html')
+
+
+# --- SEND ALL SCHOOL DATA TO REGISTRAR ---
+@app.route('/admin/send_to_registrar', methods=['POST'])
+@login_required
+def send_to_registrar():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+
+    registrar = User.query.filter_by(role='registrar').first()
+    if not registrar:
+        flash('No Registrar account found in database. Create one first.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    # Aggregate counts and stats
+    total_students = User.query.filter_by(role='student', is_approved=True).count()
+    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+    total_courses = Course.query.count()
+    total_results = Result.query.count()
+
+    summary_report = (
+        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
+        f"----------------------------------------\n"
+        f"• Total Approved Lecturers: {total_lecturers}\n"
+        f"• Total Approved Students: {total_students}\n"
+        f"• Total Active Courses: {total_courses}\n"
+        f"• Total Results Logged: {total_results}\n"
+        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
+    )
+
+    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
+    db.session.add(msg)
+    db.session.commit()
+
+    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# --- CREATOR DASHBOARD ---
+@app.route('/dashboard/creator')
+@login_required
+def creator_dashboard():
+    total_students = User.query.filter_by(role='student').count()
+    total_lecturers = User.query.filter_by(role='lecturer').count()
+    total_admins = User.query.filter_by(role='admin').count()
+    approved_students = User.query.filter_by(role='student', is_approved=True).count()
+    approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+
+    return render_template('creator_dashboard.html',
+                           total_students=total_students,
+                           total_lecturers=total_lecturers,
+                           total_admins=total_admins,
+                           approved_students=approved_students,
+                           approved_lecturers=approved_lecturers)
+
+# --- REGISTRAR DASHBOARD ---
+@app.route('/dashboard/registrar')
+@login_required
+def registrar_dashboard():
+    students = User.query.filter_by(role='student', is_approved=True).all()
+    lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+    return render_template('registrar_dashboard.html',
+                           students=students,
+                           lecturers=lecturers,
+                           messages=messages)
     
 @app.route('/logout')
 @login_required
