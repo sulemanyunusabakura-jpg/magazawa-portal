@@ -55,3 +55,11 @@ class Result(db.Model):
     course_name = db.Column(db.String(100), nullable=False)
     score = db.Column(db.Float, nullable=False)
     grade = db.Column(db.String(5), nullable=False)
+
+# Ensure your User model supports 'creator' and 'registrar' roles.
+# Example addition to Message or Data Transfer table if needed:
+class SchoolDataTransfer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+    payload = db.Column(db.Text, nullable=False)
+    sent_by = db.Column(db.String(100), default="Admin")
