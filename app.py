@@ -17,7 +17,8 @@ if db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+# ABSOLUTE PATH FOR UPLOAD DIRECTORY
+app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # INITIALIZE GEMINI CLIENT (Reads GEMINI_API_KEY from environment)
@@ -315,15 +316,18 @@ def student_dashboard():
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
 
-# ROUTE TO DOWNLOAD LECTURE MATERIALS
+# RELIABLE DOWNLOAD ROUTE WITH FILE CHECKS
 @app.route('/download_material/<path:filename>')
 @login_required
 def download_material(filename):
-    try:
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-    except FileNotFoundError:
-        flash('Requested material file was not found on the server.', 'danger')
+    clean_filename = os.path.basename(filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
+
+    if not os.path.exists(file_path):
+        flash(f'File "{clean_filename}" was not found on the server directory.', 'danger')
         return redirect(url_for('student_dashboard'))
+
+    return send_from_directory(app.config['UPLOAD_FOLDER'], clean_filename, as_attachment=True)
 
 @app.route('/student/admission_letter')
 @login_required
