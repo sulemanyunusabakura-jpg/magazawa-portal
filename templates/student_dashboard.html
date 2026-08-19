@@ -93,28 +93,28 @@
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white">
                 <ul class="nav nav-tabs card-header-tabs" id="portalTabs" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab">
                             <i class="fas fa-book"></i> Course Code
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
                             <i class="fas fa-file-download"></i> Lecture Materials
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab">
                             <i class="fas fa-poll-h"></i> Results
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">
                             <i class="fas fa-comments"></i> Messages
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
                             <i class="fas fa-key"></i> Account Settings
                         </button>
                     </li>
@@ -124,7 +124,7 @@
             <div class="card-body tab-content">
                 
                 <!-- 1. Course Code Section -->
-                <div class="tab-pane fade show active" id="courses">
+                <div class="tab-pane fade show active" id="courses" role="tabpanel">
                     <h5 class="card-title mb-3">Semester Registered Courses</h5>
                     {% if courses %}
                         <div class="table-responsive">
@@ -153,7 +153,7 @@
                 </div>
 
                 <!-- 2. Lecture Materials -->
-                <div class="tab-pane fade" id="materials">
+                <div class="tab-pane fade" id="materials" role="tabpanel">
                     <h5 class="card-title mb-3">Course Lecture Materials & Downloads</h5>
                     {% if materials %}
                         <div class="table-responsive">
@@ -190,7 +190,7 @@
                 </div>
 
                 <!-- 3. Academic Results Section -->
-                <div class="tab-pane fade" id="results">
+                <div class="tab-pane fade" id="results" role="tabpanel">
                     <h5 class="card-title mb-3">Academic Results</h5>
                     {% if results %}
                         <div class="table-responsive">
@@ -225,7 +225,7 @@
                 </div>
 
                 <!-- 4. Messages Center -->
-                <div class="tab-pane fade" id="messages">
+                <div class="tab-pane fade" id="messages" role="tabpanel">
                     <div class="row">
                         <!-- Send Message Form -->
                         <div class="col-md-5 mb-4">
@@ -273,7 +273,7 @@
                 </div>
 
                 <!-- 5. Account Settings Section -->
-                <div class="tab-pane fade" id="settings">
+                <div class="tab-pane fade" id="settings" role="tabpanel">
                     <h5 class="card-title mb-3">Security & Password Management</h5>
                     <div class="row">
                         <div class="col-md-6">
@@ -301,12 +301,12 @@
     </div>
 
     <!-- Payment Modal -->
-    <div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title"><i class="fas fa-university"></i> School Fee Payment</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-success text-center">
@@ -340,12 +340,12 @@
     </div>
 
     <!-- Live Classroom Modal -->
-    <div class="modal fade" id="liveClassModal" tabindex="-1">
+    <div class="modal fade" id="liveClassModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title"><i class="fas fa-headset"></i> Live Voice Classes</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <h6 class="fw-bold mb-3">Live Class Broadcast Messages:</h6>
@@ -356,7 +356,13 @@
                                     <div>
                                         <p class="mb-1"><strong>From:</strong> {{ msg.sender.full_name if msg.sender else 'Lecturer' }}</p>
                                         <p class="mb-1">{{ msg.content }}</p>
-                                        <small class="text-muted">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp }}</small>
+                                        <small class="text-muted">
+                                            {% if msg.timestamp and msg.timestamp.strftime is defined %}
+                                                {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                            {% else %}
+                                                {{ msg.timestamp }}
+                                            {% endif %}
+                                        </small>
                                     </div>
 
                                     {% if 'LIVE LECTURE STARTED' in msg.content %}
