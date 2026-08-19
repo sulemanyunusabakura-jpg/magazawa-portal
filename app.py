@@ -371,7 +371,19 @@ def start_voice_class():
         db.session.rollback()
         flash(f'An error occurred while starting the call: {str(e)}', 'danger')
         return redirect(url_for('lecturer_dashboard'))
-        
+
+# Call this route when the lecturer stops the lecture
+@app.route('/end_lecture/<int:lecturer_id>')
+def end_lecture(lecturer_id):
+    msg = Message(
+        sender_id=lecturer_id,
+        receiver_id=0, # broadcast to students
+        content="LIVE LECTURE HAS ENDED. Thank you for participating."
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return redirect(url_for('lecturer_dashboard'))
+    
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
 def submit_result_to_admin():
