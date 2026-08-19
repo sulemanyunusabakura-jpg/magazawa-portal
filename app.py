@@ -418,7 +418,45 @@ def submit_result_to_admin():
         db.session.commit()
         flash('Result successfully transmitted to Admin dashboard!', 'success')
     return redirect(url_for('lecturer_dashboard'))
+# --- REJECT STUDENT ---
+@app.route('/admin/reject_student/<int:id>')
+@login_required
+def reject_student(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        db.session.delete(student)
+        db.session.commit()
+        flash('Student application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
 
+# --- REJECT LECTURER ---
+@app.route('/admin/reject_lecturer/<int:id>')
+@login_required
+def reject_lecturer(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    lecturer = db.session.get(User, id)
+    if lecturer:
+        db.session.delete(lecturer)
+        db.session.commit()
+        flash('Lecturer application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+# --- TOGGLE PAYMENT STATUS ---
+@app.route('/admin/approve_payment/<int:id>')
+@login_required
+def approve_payment(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        student.payment_status = "Paid"
+        db.session.commit()
+        flash(f'Payment confirmed for {student.full_name}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+    
 @app.route('/logout')
 @login_required
 def logout():
