@@ -171,6 +171,16 @@
         </div>
     </div>
 
+    <div class="card" style="border: 1px solid #28a745;">
+    <h3>Transmit School Data to Registrar</h3>
+    <p>Click below once all admin setup (admissions, courses, results) is complete.</p>
+    <form action="{{ url_for('send_to_registrar') }}" method="POST">
+        <button type="submit" class="btn btn-success" style="font-size: 15px;">
+            Send All School Data to Registrar
+        </button>
+    </form>
+</div>
+
     <!-- 6. MESSAGING SYSTEM (Lecturers & Students) -->
     <div class="card">
         <h3>6. Internal Messaging (Lecturers & Students)</h3>
