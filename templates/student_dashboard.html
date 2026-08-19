@@ -39,49 +39,37 @@
         <div class="row g-3 mb-4">
             
             <!-- 1. Admission Letter -->
-            <div class="col-md-3 col-sm-6">
+            <div class="col-md-4 col-sm-6">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body">
                         <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
                         <h5 class="card-title">Admission Letter</h5>
-                        <p class="text-muted small">View & print admission letter.</p>
-                        <a href="{{ url_for('admission_letter') }}" class="btn btn-outline-danger w-100 btn-sm">View Letter</a>
+                        <p class="text-muted small">View and print your official admission letter.</p>
+                        <a href="{{ url_for('admission_letter') }}" class="btn btn-outline-danger w-100">View Letter</a>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. School Fee Payment -->
-            <div class="col-md-3 col-sm-6">
+            <!-- 2. School Fee Payment Info -->
+            <div class="col-md-4 col-sm-6">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body">
                         <i class="fas fa-credit-card fa-3x text-success mb-3"></i>
                         <h5 class="card-title">Online Payment</h5>
-                        <p class="text-muted small">Pay school fee (₦5,000).</p>
-                        <button class="btn btn-outline-success w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#paymentModal">Make Payment</button>
+                        <p class="text-muted small">Pay school fee (₦5,000) & view account details.</p>
+                        <button class="btn btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#paymentModal">Make Payment</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. NEW: Lecture Materials -->
-            <div class="col-md-3 col-sm-6">
-                <div class="card h-100 shadow-sm border-0 text-center p-3">
-                    <div class="card-body">
-                        <i class="fas fa-folder-open fa-3x text-warning mb-3"></i>
-                        <h5 class="card-title">Lecture Materials</h5>
-                        <p class="text-muted small">Download slides & PDFs.</p>
-                        <button class="btn btn-outline-warning w-100 btn-sm text-dark" onclick="activateTab('materials-tab')">View Materials</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. Virtual Classroom (Voice/Live Calls) -->
-            <div class="col-md-3 col-sm-6">
+            <!-- 6. Virtual Classroom (Voice/Live Calls) -->
+            <div class="col-md-4 col-sm-6">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body">
                         <i class="fas fa-headset fa-3x text-primary mb-3"></i>
                         <h5 class="card-title">Classroom</h5>
-                        <p class="text-muted small">Join live voice classes.</p>
-                        <button class="btn btn-outline-primary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#liveClassModal">Join Live Class</button>
+                        <p class="text-muted small">Join live voice classes & lecture links.</p>
+                        <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#liveClassModal">Join Live Class</button>
                     </div>
                 </div>
             </div>
@@ -92,28 +80,19 @@
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white">
                 <ul class="nav nav-tabs card-header-tabs" id="portalTabs" role="tablist">
+                    <!-- 3. Registered Courses -->
                     <li class="nav-item">
                         <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button">
                             <i class="fas fa-book"></i> Course Code
                         </button>
                     </li>
-                    <!-- NEW TAB: Lecture Materials -->
-                    <li class="nav-item">
-                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
-                            <i class="fas fa-file-download"></i> Lecture Materials
-                        </button>
-                    </li>
+                    <!-- 4. Academic Results -->
                     <li class="nav-item">
                         <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button">
                             <i class="fas fa-poll-h"></i> Results
                         </button>
                     </li>
-                    <!-- NEW TAB: Messages Center -->
-                    <li class="nav-item">
-                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button">
-                            <i class="fas fa-comments"></i> Messages
-                        </button>
-                    </li>
+                    <!-- 5. Account / Password Settings -->
                     <li class="nav-item">
                         <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">
                             <i class="fas fa-key"></i> Account Settings
@@ -124,7 +103,7 @@
 
             <div class="card-body tab-content">
                 
-                <!-- 1. Course Code Section -->
+                <!-- 3. Course Code Section -->
                 <div class="tab-pane fade show active" id="courses">
                     <h5 class="card-title mb-3">Semester Registered Courses</h5>
                     {% if courses %}
@@ -153,44 +132,7 @@
                     {% endif %}
                 </div>
 
-                <!-- 2. NEW SECTION: Lecture Materials (View & Download) -->
-                <div class="tab-pane fade" id="materials">
-                    <h5 class="card-title mb-3">Course Lecture Materials & Downloads</h5>
-                    {% if materials %}
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-warning">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Title / Description</th>
-                                        <th>Course Code</th>
-                                        <th>Uploaded Date</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for material in materials %}
-                                    <tr>
-                                        <td>{{ loop.index }}</td>
-                                        <td><strong>{{ material.title }}</strong></td>
-                                        <td><span class="badge bg-dark">{{ material.course_code }}</span></td>
-                                        <td><small class="text-muted">{{ material.upload_date }}</small></td>
-                                        <td>
-                                            <a href="{{ url_for('download_material', filename=material.filename) }}" class="btn btn-sm btn-success">
-                                                <i class="fas fa-download"></i> Download File
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-warning">No lecture materials or study resources uploaded yet.</div>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Academic Results Section -->
+                <!-- 4. Results Section -->
                 <div class="tab-pane fade" id="results">
                     <h5 class="card-title mb-3">Academic Results</h5>
                     {% if results %}
@@ -225,55 +167,7 @@
                     {% endif %}
                 </div>
 
-                <!-- 4. NEW SECTION: Messages Center (Send & Receive) -->
-                <div class="tab-pane fade" id="messages">
-                    <div class="row">
-                        <!-- Send Message Form -->
-                        <div class="col-md-5 mb-4">
-                            <div class="card bg-light border-0 p-3">
-                                <h6 class="fw-bold mb-3"><i class="fas fa-paper-plane text-primary"></i> Send Message to Admin/Lecturer</h6>
-                                <form action="{{ url_for('send_message') }}" method="POST">
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Recipient</label>
-                                        <select class="form-select" name="receiver_id" required>
-                                            <option value="1">Admin / Management</option>
-                                            <option value="2">Lecturer Support</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Message Text</label>
-                                        <textarea class="form-control" name="content" rows="4" placeholder="Type your message or inquiry here..." required></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane"></i> Send Message</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Received / Sent Messages Inbox -->
-                        <div class="col-md-7">
-                            <h6 class="fw-bold mb-3"><i class="fas fa-inbox text-secondary"></i> Communication History</h6>
-                            {% if messages %}
-                                <div class="list-group style-scroll" style="max-height: 400px; overflow-y: auto;">
-                                    {% for msg in messages %}
-                                        <div class="list-group-item mb-2 rounded shadow-sm border-start border-4 {% if msg.sender_id == student.id %}border-primary bg-white{% else %}border-success bg-light{% endif %}">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <small class="fw-bold {% if msg.sender_id == student.id %}text-primary{% else %}text-success{% endif %}">
-                                                    {% if msg.sender_id == student.id %}You (Sent){% else %}From: Lecturer/Admin{% endif %}
-                                                </small>
-                                                <small class="text-muted"><i class="far fa-clock"></i> {{ msg.timestamp }}</small>
-                                            </div>
-                                            <p class="mb-1 text-dark mt-2">{{ msg.content }}</p>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="alert alert-info">No message history available. Send your first message to Admin or Lecturers!</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 5. Account Settings Section -->
+                <!-- 5. Password & Account Security -->
                 <div class="tab-pane fade" id="settings">
                     <h5 class="card-title mb-3">Security & Password Management</h5>
                     <div class="row">
@@ -301,7 +195,7 @@
         </div>
     </div>
 
-    <!-- Payment Modal -->
+    <!-- Modal for Online Fee Payment Details (Feature 2) -->
     <div class="modal fade" id="paymentModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -331,7 +225,7 @@
                         <input type="hidden" name="receiver_id" value="1">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Submit Payment Receipt / Reference</label>
-                            <textarea class="form-control" name="content" rows="2" placeholder="Paste transaction reference or payment message here..." required></textarea>
+                            <textarea class="form-control" name="content" rows="2" placeholder="Paste transaction reference or payment message here to notify Admin..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-success w-100"><i class="fas fa-paper-plane"></i> Send Proof to Admin</button>
                     </form>
@@ -340,7 +234,7 @@
         </div>
     </div>
 
-    <!-- Live Classroom Modal -->
+    <!-- Modal for Live Classroom Messages (Feature 6) -->
     <div class="modal fade" id="liveClassModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -370,14 +264,5 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function activateTab(tabId) {
-            const tabBtn = document.getElementById(tabId);
-            if (tabBtn) {
-                const tab = new bootstrap.Tab(tabBtn);
-                tab.show();
-            }
-        }
-    </script>
 </body>
 </html>
