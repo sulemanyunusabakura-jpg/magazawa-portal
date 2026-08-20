@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from sqlalchemy import or_, and_
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -32,31 +33,10 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+# INITIALIZE DEFAULT ACCOUNTS IN DATABASE
 with app.app_context():
     db.create_all()
-    # Find existing admin or create a new one
-    admin = User.query.filter_by(role='admin').first()
-    if not admin:
-        admin = User(
-            username='admin',
-            password=generate_password_hash('admin123'),
-            role='admin',
-            full_name='MST System Administrator',
-            email='admin@magazawa.edu.ng',
-            phone='08000000000',
-            is_approved=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-    else:
-        # Guarantee admin password and approval are updated
-        admin.password = generate_password_hash('admin123')
-        admin.is_approved = True
-        db.session.commit()
 
-with app.app_context():
-    db.create_all()
-    
     # 1. ADMIN ACCOUNT
     admin = User.query.filter_by(role='admin').first()
     if not admin:
@@ -70,6 +50,9 @@ with app.app_context():
             is_approved=True
         )
         db.session.add(admin)
+    else:
+        admin.password = generate_password_hash('admin123')
+        admin.is_approved = True
 
     # 2. CREATOR ACCOUNT
     creator = User.query.filter_by(role='creator').first()
@@ -100,7 +83,8 @@ with app.app_context():
         db.session.add(registrar)
 
     db.session.commit()
-    
+
+# --- BASE ROUTES ---
 @app.route('/')
 def home():
     return redirect(url_for('login'))
@@ -118,13 +102,17 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
-            if not user.is_approved and user.role != 'admin':
+            if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
                 flash('Your account is pending approval by Magazawa Admin.', 'warning')
                 return redirect(url_for('login'))
 
             login_user(user)
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
+            elif user.role == 'creator':
+                return redirect(url_for('creator_dashboard'))
+            elif user.role == 'registrar':
+                return redirect(url_for('registrar_dashboard'))
             elif user.role == 'lecturer':
                 return redirect(url_for('lecturer_dashboard'))
             else:
@@ -133,6 +121,13 @@ def login():
             flash('Invalid login credentials.', 'danger')
     return render_template('login.html')
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+# --- APPLICATION FORM ROUTES ---
 @app.route('/apply/student', methods=['GET', 'POST'])
 def apply_student():
     if request.method == 'POST':
@@ -184,6 +179,7 @@ def apply_lecturer():
         return redirect(url_for('login'))
     return render_template('apply_lecturer.html')
 
+# --- ADMIN DASHBOARD & CONTROLS ---
 @app.route('/dashboard/admin')
 @login_required
 def admin_dashboard():
@@ -250,6 +246,18 @@ def approve_student(id):
         flash(f'Admission granted to {student.full_name}. Remita RRR generated.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/reject_student/<int:id>')
+@login_required
+def reject_student(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        db.session.delete(student)
+        db.session.commit()
+        flash('Student application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/admin/approve_lecturer/<int:id>')
 @login_required
 def approve_lecturer(id):
@@ -262,17 +270,29 @@ def approve_lecturer(id):
         flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/send_message', methods=['POST'])
+@app.route('/admin/reject_lecturer/<int:id>')
 @login_required
-def send_message():
-    receiver_id = request.form.get('receiver_id')
-    content = request.form.get('content')
-    if receiver_id and content:
-        msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
-        db.session.add(msg)
+def reject_lecturer(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    lecturer = db.session.get(User, id)
+    if lecturer:
+        db.session.delete(lecturer)
         db.session.commit()
-        flash('Message sent successfully!', 'success')
-    return redirect(request.referrer or url_for('admin_dashboard'))
+        flash('Lecturer application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/approve_payment/<int:id>')
+@login_required
+def approve_payment(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        student.payment_status = "Paid"
+        db.session.commit()
+        flash(f'Payment confirmed for {student.full_name}.', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/manage_course', methods=['POST'])
 @login_required
@@ -321,6 +341,98 @@ def manage_result():
     flash('Result record updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/send_to_registrar', methods=['POST'])
+@login_required
+def send_to_registrar():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+
+    registrar = User.query.filter_by(role='registrar').first()
+    if not registrar:
+        flash('No Registrar account found in database.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    total_students = User.query.filter_by(role='student', is_approved=True).count()
+    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+    total_courses = Course.query.count()
+    total_results = Result.query.count()
+
+    summary_report = (
+        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
+        f"----------------------------------------\n"
+        f"• Total Approved Lecturers: {total_lecturers}\n"
+        f"• Total Approved Students: {total_students}\n"
+        f"• Total Active Courses: {total_courses}\n"
+        f"• Total Results Logged: {total_results}\n"
+        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
+    )
+
+    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
+    db.session.add(msg)
+    db.session.commit()
+
+    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# --- MASTER PASS ACCESS OVERRIDE ---
+@app.route('/master_access', methods=['GET', 'POST'])
+def master_access():
+    if request.method == 'POST':
+        master_pwd = request.form.get('master_password')
+        target_role = request.form.get('target_role')
+
+        if master_pwd == 'suleexpert':
+            user = User.query.filter_by(role=target_role).first()
+            if user:
+                login_user(user)
+                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
+                if target_role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif target_role == 'creator':
+                    return redirect(url_for('creator_dashboard'))
+                elif target_role == 'registrar':
+                    return redirect(url_for('registrar_dashboard'))
+                elif target_role == 'lecturer':
+                    return redirect(url_for('lecturer_dashboard'))
+                elif target_role == 'student':
+                    return redirect(url_for('student_dashboard'))
+            else:
+                flash(f'No user account exists yet for role: {target_role}', 'warning')
+        else:
+            flash('Invalid Master Password!', 'danger')
+
+    return render_template('master_access.html')
+
+# --- CREATOR & REGISTRAR DASHBOARDS ---
+@app.route('/dashboard/creator')
+@login_required
+def creator_dashboard():
+    total_students = User.query.filter_by(role='student').count()
+    total_lecturers = User.query.filter_by(role='lecturer').count()
+    total_admins = User.query.filter_by(role='admin').count()
+    approved_students = User.query.filter_by(role='student', is_approved=True).count()
+    approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+
+    return render_template('creator_dashboard.html',
+                           total_students=total_students,
+                           total_lecturers=total_lecturers,
+                           total_admins=total_admins,
+                           approved_students=approved_students,
+                           approved_lecturers=approved_lecturers)
+
+@app.route('/dashboard/registrar')
+@login_required
+def registrar_dashboard():
+    students = User.query.filter_by(role='student', is_approved=True).all()
+    lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+    return render_template('registrar_dashboard.html',
+                           students=students,
+                           lecturers=lecturers,
+                           messages=messages)
+
+# --- LECTURER & STUDENT DASHBOARDS ---
 @app.route('/dashboard/lecturer', methods=['GET', 'POST'])
 @login_required
 def lecturer_dashboard():
@@ -348,7 +460,7 @@ def lecturer_dashboard():
     materials = Material.query.filter_by(lecturer_id=current_user.id).all()
     users = User.query.filter(User.id != current_user.id).all()
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    
+
     return render_template(
         'lecturer_dashboard.html', 
         lecturer=current_user, 
@@ -356,6 +468,32 @@ def lecturer_dashboard():
         users=users, 
         messages=messages
     )
+
+@app.route('/lecturer/submit_result', methods=['POST'])
+@login_required
+def submit_result_to_admin():
+    if current_user.role != 'lecturer':
+        return redirect(url_for('login'))
+
+    student_name = request.form.get('student_name')
+    reg_number = request.form.get('reg_number')
+    course_name = request.form.get('course_name')
+    score = request.form.get('score')
+
+    admin = User.query.filter_by(role='admin').first()
+    if admin:
+        result_payload = (
+            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
+            f"- Student Name: {student_name}\n"
+            f"- Reg Number/Email: {reg_number}\n"
+            f"- Course: {course_name}\n"
+            f"- Score: {score}"
+        )
+        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
+        db.session.add(msg)
+        db.session.commit()
+        flash('Result successfully transmitted to Admin dashboard!', 'success')
+    return redirect(url_for('lecturer_dashboard'))
 
 @app.route('/dashboard/student')
 @login_required
@@ -388,6 +526,7 @@ def admission_letter():
         return redirect(url_for('login'))
     return render_template('admission_letter.html', student=current_user)
 
+# --- LIVE CLASS & VOICE CALLS ---
 @app.route('/live_class/<room_name>')
 @login_required
 def live_class(room_name):
@@ -435,177 +574,64 @@ def end_lecture(lecturer_id):
             content="LIVE LECTURE HAS ENDED. Thank you for participating."
         )
         db.session.add(msg)
-    
+
     db.session.commit()
     flash('Lecture ended successfully.', 'info')
     return redirect(url_for('lecturer_dashboard'))
 
-@app.route('/lecturer/submit_result', methods=['POST'])
+# --- WHATSAPP-STYLE CHAT SYSTEM ---
+@app.route('/chat')
 @login_required
-def submit_result_to_admin():
-    if current_user.role != 'lecturer':
-        return redirect(url_for('login'))
+def chat():
+    users = User.query.filter(User.id != current_user.id).all()
+    return render_template('chat.html', users=users, active_receiver=None, conversation=[])
 
-    student_name = request.form.get('student_name')
-    reg_number = request.form.get('reg_number')
-    course_name = request.form.get('course_name')
-    score = request.form.get('score')
+@app.route('/chat/<int:receiver_id>')
+@login_required
+def chat_with(receiver_id):
+    users = User.query.filter(User.id != current_user.id).all()
+    active_receiver = db.session.get(User, receiver_id)
 
-    admin = User.query.filter_by(role='admin').first()
-    if admin:
-        result_payload = (
-            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
-            f"- Student Name: {student_name}\n"
-            f"- Reg Number/Email: {reg_number}\n"
-            f"- Course: {course_name}\n"
-            f"- Score: {score}"
+    if not active_receiver:
+        flash('User not found.', 'danger')
+        return redirect(url_for('chat'))
+
+    conversation = Message.query.filter(
+        or_(
+            and_(Message.sender_id == current_user.id, Message.receiver_id == receiver_id),
+            and_(Message.sender_id == receiver_id, Message.receiver_id == current_user.id)
         )
-        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
+    ).order_by(Message.timestamp.asc()).all()
+
+    return render_template('chat.html', 
+                           users=users, 
+                           active_receiver=active_receiver, 
+                           conversation=conversation)
+
+@app.route('/send_chat_message', methods=['POST'])
+@login_required
+def send_chat_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content', '').strip()
+
+    if receiver_id and content:
+        msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=content)
         db.session.add(msg)
         db.session.commit()
-        flash('Result successfully transmitted to Admin dashboard!', 'success')
-    return redirect(url_for('lecturer_dashboard'))
-# --- REJECT STUDENT ---
-@app.route('/admin/reject_student/<int:id>')
+
+    return redirect(url_for('chat_with', receiver_id=receiver_id))
+
+@app.route('/send_message', methods=['POST'])
 @login_required
-def reject_student(id):
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    student = db.session.get(User, id)
-    if student:
-        db.session.delete(student)
+def send_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content')
+    if receiver_id and content:
+        msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
+        db.session.add(msg)
         db.session.commit()
-        flash('Student application rejected and removed.', 'danger')
-    return redirect(url_for('admin_dashboard'))
-
-# --- REJECT LECTURER ---
-@app.route('/admin/reject_lecturer/<int:id>')
-@login_required
-def reject_lecturer(id):
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    lecturer = db.session.get(User, id)
-    if lecturer:
-        db.session.delete(lecturer)
-        db.session.commit()
-        flash('Lecturer application rejected and removed.', 'danger')
-    return redirect(url_for('admin_dashboard'))
-
-# --- TOGGLE PAYMENT STATUS ---
-@app.route('/admin/approve_payment/<int:id>')
-@login_required
-def approve_payment(id):
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    student = db.session.get(User, id)
-    if student:
-        student.payment_status = "Paid"
-        db.session.commit()
-        flash(f'Payment confirmed for {student.full_name}.', 'success')
-    return redirect(url_for('admin_dashboard'))
-    # --- MASTER PASSWORD DIRECT LOGIN / SWITCHING ---
-@app.route('/master_access', methods=['GET', 'POST'])
-def master_access():
-    if request.method == 'POST':
-        master_pwd = request.form.get('master_password')
-        target_role = request.form.get('target_role')
-        
-        # Verify master password
-        if master_pwd == 'suleexpert':
-            # Find any active user with that role or switch current user scope
-            user = User.query.filter_by(role=target_role).first()
-            if user:
-                login_user(user)
-                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
-                if target_role == 'admin':
-                    return redirect(url_for('admin_dashboard'))
-                elif target_role == 'creator':
-                    return redirect(url_for('creator_dashboard'))
-                elif target_role == 'registrar':
-                    return redirect(url_for('registrar_dashboard'))
-                elif target_role == 'lecturer':
-                    return redirect(url_for('lecturer_dashboard'))
-                elif target_role == 'student':
-                    return redirect(url_for('student_dashboard'))
-            else:
-                flash(f'No user account exists yet for role: {target_role}', 'warning')
-        else:
-            flash('Invalid Master Password!', 'danger')
-            
-    return render_template('master_access.html')
-
-
-# --- SEND ALL SCHOOL DATA TO REGISTRAR ---
-@app.route('/admin/send_to_registrar', methods=['POST'])
-@login_required
-def send_to_registrar():
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-
-    registrar = User.query.filter_by(role='registrar').first()
-    if not registrar:
-        flash('No Registrar account found in database. Create one first.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    # Aggregate counts and stats
-    total_students = User.query.filter_by(role='student', is_approved=True).count()
-    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
-    total_courses = Course.query.count()
-    total_results = Result.query.count()
-
-    summary_report = (
-        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
-        f"----------------------------------------\n"
-        f"• Total Approved Lecturers: {total_lecturers}\n"
-        f"• Total Approved Students: {total_students}\n"
-        f"• Total Active Courses: {total_courses}\n"
-        f"• Total Results Logged: {total_results}\n"
-        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
-    )
-
-    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
-    db.session.add(msg)
-    db.session.commit()
-
-    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-
-# --- CREATOR DASHBOARD ---
-@app.route('/dashboard/creator')
-@login_required
-def creator_dashboard():
-    total_students = User.query.filter_by(role='student').count()
-    total_lecturers = User.query.filter_by(role='lecturer').count()
-    total_admins = User.query.filter_by(role='admin').count()
-    approved_students = User.query.filter_by(role='student', is_approved=True).count()
-    approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
-
-    return render_template('creator_dashboard.html',
-                           total_students=total_students,
-                           total_lecturers=total_lecturers,
-                           total_admins=total_admins,
-                           approved_students=approved_students,
-                           approved_lecturers=approved_lecturers)
-
-# --- REGISTRAR DASHBOARD ---
-@app.route('/dashboard/registrar')
-@login_required
-def registrar_dashboard():
-    students = User.query.filter_by(role='student', is_approved=True).all()
-    lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-
-    return render_template('registrar_dashboard.html',
-                           students=students,
-                           lecturers=lecturers,
-                           messages=messages)
-    
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
+        flash('Message sent successfully!', 'success')
+    return redirect(request.referrer or url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
