@@ -580,6 +580,26 @@ def student_dashboard():
         materials=materials
     )
 
+@app.route('/send_message', methods=['POST'])
+@login_required
+def send_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content', '').strip()
+    
+    if content and receiver_id:
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_id=int(receiver_id),
+            content=content
+        )
+        db.session.add(msg)
+        db.session.commit()
+        flash('Message sent successfully!', 'success')
+    else:
+        flash('Message content cannot be empty.', 'warning')
+        
+    return redirect(request.referrer or url_for('admin_dashboard'))
+    
 @app.route('/student/download/<filename>')
 @login_required
 @payment_required
