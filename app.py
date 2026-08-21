@@ -599,7 +599,7 @@ def send_message():
         flash('Message content cannot be empty.', 'warning')
         
     return redirect(request.referrer or url_for('admin_dashboard'))
-    
+
 @app.route('/student/download/<filename>')
 @login_required
 @payment_required
