@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -36,6 +37,16 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+# --- CUSTOM DECORATOR: FEES PAYMENT CHECK ---
+def payment_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.role == 'student' and getattr(current_user, 'payment_status', '') != 'Paid':
+            flash("Access Restricted: Please complete your school fees payment to unlock this section.", "warning")
+            return redirect(url_for('student_dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
 def auto_migrate_db():
@@ -237,13 +248,13 @@ def admin_dashboard():
 @login_required
 def ask_gemini():
     if current_user.role != 'admin':
-        return {"error": "Unauthorized access"}, 403
+        return jsonify({"error": "Unauthorized access"}), 403
 
     data = request.get_json()
     user_prompt = data.get('prompt', '').strip()
 
     if not user_prompt:
-        return {"error": "Prompt cannot be empty"}, 400
+        return jsonify({"error": "Prompt cannot be empty"}), 400
 
     total_students = User.query.filter_by(role='student').count()
     total_lecturers = User.query.filter_by(role='lecturer').count()
@@ -263,10 +274,10 @@ def ask_gemini():
                 system_instruction=f"You are a helpful AI assistant integrated into the Magazawa Skills & Technology Admin Dashboard. {portal_context} Answer clearly and professionally."
             )
         )
-        return {"response": response.text}
+        return jsonify({"response": response.text})
 
     except Exception as e:
-        return {"error": f"Gemini API Error: {str(e)}"}, 500
+        return jsonify({"error": f"Gemini API Error: {str(e)}"}), 500
 
 @app.route('/admin/approve_student/<int:id>')
 @login_required
@@ -468,7 +479,7 @@ def registrar_dashboard():
                            lecturers=lecturers,
                            messages=messages)
 
-# --- LECTURER & STUDENT DASHBOARDS ---
+# --- LECTURER DASHBOARD & ACTIONS ---
 @app.route('/dashboard/lecturer', methods=['GET', 'POST'])
 @login_required
 def lecturer_dashboard():
@@ -528,190 +539,36 @@ def submit_result_to_admin():
         msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
         db.session.add(msg)
         db.session.commit()
-        flash('Result successfully transmitted to Admin dashboard!', 'success')
+        flash('Student result submitted directly to Admin inbox.', 'success')
+    else:
+        flash('Unable to forward result. Admin account not found.', 'danger')
+
     return redirect(url_for('lecturer_dashboard'))
 
+# --- STUDENT DASHBOARD & PROTECTED ROUTES ---
 @app.route('/dashboard/student')
 @login_required
 def student_dashboard():
-    if current_user.role != 'student': 
-        return redirect(url_for('login'))
-    materials = Material.query.all()
-    courses = Course.query.filter_by(student_id=current_user.id).all()
-    results = Result.query.filter_by(student_id=current_user.id).all()
-    users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
-
-@app.route('/update_password', methods=['POST'])
-@login_required
-def update_password():
-    current_password = request.form.get('current_password')
-    new_password = request.form.get('new_password')
-
-    if not check_password_hash(current_user.password, current_password):
-        flash('Current password is incorrect.', 'danger')
-        return redirect(url_for('student_dashboard'))
-
-    current_user.password = generate_password_hash(new_password)
-    db.session.commit()
-    flash('Password updated successfully!', 'success')
-    return redirect(url_for('student_dashboard'))
-
-@app.route('/download_material/<path:filename>')
-@login_required
-def download_material(filename):
-    clean_filename = os.path.basename(filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
-
-    if not os.path.exists(file_path):
-        flash(f'File "{clean_filename}" was not found on the server directory.', 'danger')
-        return redirect(url_for('student_dashboard'))
-
-    return send_from_directory(app.config['UPLOAD_FOLDER'], clean_filename, as_attachment=True)
-
-@app.route('/student/admission_letter')
-@login_required
-def admission_letter():
     if current_user.role != 'student':
         return redirect(url_for('login'))
-    return render_template('admission_letter.html', student=current_user)
 
-# --- LIVE CLASS & VOICE CALLS ---
-@app.route('/live_class/<room_name>')
+    courses = Course.query.filter_by(student_id=current_user.id).all()
+    results = Result.query.filter_by(student_id=current_user.id).all()
+    materials = Material.query.all() if current_user.payment_status == "Paid" else []
+
+    return render_template(
+        'student_dashboard.html',
+        student=current_user,
+        courses=courses,
+        results=results,
+        materials=materials
+    )
+
+@app.route('/student/download/<filename>')
 @login_required
-def live_class(room_name):
-    return render_template('live_class.html', room_name=room_name, user=current_user)
-
-@app.route('/lecturer/start_voice_class', methods=['POST'])
-@login_required
-def start_voice_class():
-    if current_user.role != 'lecturer':
-        flash('Unauthorized: Only lecturers can initiate voice calls.', 'danger')
-        return redirect(url_for('login'))
-
-    try:
-        room_name = f"MST_Lecture_{current_user.id}"
-        students = User.query.filter_by(role='student').all()
-        for student in students:
-            msg = Message(
-                sender_id=current_user.id, 
-                receiver_id=student.id, 
-                content=f"LIVE LECTURE STARTED by {current_user.full_name}! Click the join button in your Messages section."
-            )
-            db.session.add(msg)
-
-        db.session.commit()
-        flash('Voice class started! All students have been notified.', 'success')
-        return redirect(url_for('live_class', room_name=room_name))
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f'An error occurred while starting the call: {str(e)}', 'danger')
-        return redirect(url_for('lecturer_dashboard'))
-
-@app.route('/end_lecture/<int:lecturer_id>')
-@login_required
-def end_lecture(lecturer_id):
-    if current_user.role != 'lecturer' or current_user.id != lecturer_id:
-        flash('Unauthorized action.', 'danger')
-        return redirect(url_for('lecturer_dashboard'))
-
-    students = User.query.filter_by(role='student').all()
-    for student in students:
-        msg = Message(
-            sender_id=lecturer_id,
-            receiver_id=student.id,
-            content="LIVE LECTURE HAS ENDED. Thank you for participating."
-        )
-        db.session.add(msg)
-
-    db.session.commit()
-    flash('Lecture ended successfully.', 'info')
-    return redirect(url_for('lecturer_dashboard'))
-
-# --- ENHANCED CAMPUS COMMUNITY CHAT SYSTEM ---
-@app.route('/chat')
-@login_required
-def chat():
-    users = User.query.filter(User.id != current_user.id).all()
-    global_messages = Message.query.filter_by(receiver_id=None).order_by(Message.timestamp.asc()).all()
-    return render_template('chat.html', users=users, active_receiver=None, conversation=global_messages)
-
-@app.route('/chat/<int:receiver_id>')
-@login_required
-def chat_with(receiver_id):
-    users = User.query.filter(User.id != current_user.id).all()
-    active_receiver = db.session.get(User, receiver_id)
-
-    if not active_receiver:
-        flash('User not found.', 'danger')
-        return redirect(url_for('chat'))
-
-    conversation = Message.query.filter(
-        or_(
-            and_(Message.sender_id == current_user.id, Message.receiver_id == receiver_id),
-            and_(Message.sender_id == receiver_id, Message.receiver_id == current_user.id)
-        )
-    ).order_by(Message.timestamp.asc()).all()
-
-    return render_template('chat.html', 
-                           users=users, 
-                           active_receiver=active_receiver, 
-                           conversation=conversation)
-
-@app.route('/send_chat_message', methods=['POST'])
-@login_required
-def send_chat_message():
-    receiver_id = request.form.get('receiver_id')
-    content = request.form.get('content', '').strip()
-    file = request.files.get('file')
-    
-    file_filename = ""
-    msg_type = 'text'
-
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        file_filename = filename
-        
-        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
-        if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
-            msg_type = 'image'
-        elif ext in ['webm', 'mp3', 'wav', 'ogg', 'm4a']:
-            msg_type = 'audio'
-        else:
-            msg_type = 'file'
-
-    target_receiver = int(receiver_id) if receiver_id and receiver_id.isdigit() else None
-
-    if content or file_filename:
-        msg = Message(
-            sender_id=current_user.id,
-            receiver_id=target_receiver,
-            content=content,
-            file_path=file_filename,
-            msg_type=msg_type
-        )
-        db.session.add(msg)
-        db.session.commit()
-
-    if target_receiver:
-        return redirect(url_for('chat_with', receiver_id=target_receiver))
-    return redirect(url_for('chat'))
-
-@app.route('/send_message', methods=['POST'])
-@login_required
-def send_message():
-    receiver_id = request.form.get('receiver_id')
-    content = request.form.get('content')
-    if receiver_id and content:
-        msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=content)
-        db.session.add(msg)
-        db.session.commit()
-        flash('Message sent successfully!', 'success')
-    return redirect(request.referrer or url_for('admin_dashboard'))
+@payment_required
+def download_material(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
