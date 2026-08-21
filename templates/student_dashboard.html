@@ -35,14 +35,17 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Payment Status Check Variable -->
+        {% set is_paid = (student.payment_status and student.payment_status.lower() == 'paid') %}
+
         <!-- Unpaid Student Warning Banner -->
-        {% if not student.has_paid %}
+        {% if not is_paid %}
             <div class="alert alert-warning border-start border-4 border-warning shadow-sm mb-4" role="alert">
                 <div class="d-flex align-items-center">
                     <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
                     <div>
                         <h5 class="alert-heading fw-bold mb-1">School Fees Payment Required</h5>
-                        <p class="mb-0">Your portal features (Courses, Lecture Materials, Classroom, Results, and Chat) are currently locked. Please complete your school fees payment of ₦5,000 to unlock full access.</p>
+                        <p class="mb-0">Your portal features are currently restricted. Please complete your school fees payment to unlock full access.</p>
                     </div>
                 </div>
             </div>
@@ -52,7 +55,7 @@
         <h4 class="mb-3 text-secondary"><i class="fas fa-th-large me-2"></i>Student Services</h4>
         <div class="row g-3 mb-4">
             
-            <!-- 1. Admission Letter (ALWAYS ACCESSIBLE) -->
+            <!-- 1. Admission Letter -->
             <div class="col-sm-6 col-md-4 col-lg">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
@@ -61,21 +64,21 @@
                             <h5 class="card-title fs-6 fw-bold">Admission Letter</h5>
                             <p class="text-muted small">View & print letter.</p>
                         </div>
-                        <a href="{{ url_for('admission_letter') }}" class="btn btn-outline-danger w-100 btn-sm mt-2">View Letter</a>
+                        <button class="btn btn-outline-danger w-100 btn-sm mt-2" onclick="alert('Admission Letter Status: ' + '{{ student.admission_status or 'Admitted' }}')">View Letter</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. School Fee Payment (ALWAYS ACCESSIBLE) -->
+            <!-- 2. School Fee Payment -->
             <div class="col-sm-6 col-md-4 col-lg">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
                         <div>
                             <i class="fas fa-credit-card fa-3x text-success mb-3"></i>
                             <h5 class="card-title fs-6 fw-bold">Online Payment</h5>
-                            <p class="text-muted small">Pay school fee (₦5,000).</p>
+                            <p class="text-muted small">RRR: {{ student.remita_invoice or 'N/A' }}</p>
                         </div>
-                        {% if student.has_paid %}
+                        {% if is_paid %}
                             <button class="btn btn-success w-100 btn-sm mt-2" disabled><i class="fas fa-check-circle me-1"></i> Paid</button>
                         {% else %}
                             <button type="button" class="btn btn-outline-success w-100 btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#paymentModal">Make Payment</button>
@@ -84,16 +87,16 @@
                 </div>
             </div>
 
-            <!-- 3. Lecture Materials (LOCKED IF UNPAID) -->
+            <!-- 3. Lecture Materials -->
             <div class="col-sm-6 col-md-4 col-lg">
-                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not student.has_paid %}opacity-75 bg-light{% endif %}">
+                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not is_paid %}opacity-75 bg-light{% endif %}">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
                         <div>
-                            <i class="fas {% if student.has_paid %}fa-folder-open text-warning{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3"></i>
+                            <i class="fas {% if is_paid %}fa-folder-open text-warning{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3"></i>
                             <h5 class="card-title fs-6 fw-bold">Lecture Materials</h5>
                             <p class="text-muted small">Download PDFs & slides.</p>
                         </div>
-                        {% if student.has_paid %}
+                        {% if is_paid %}
                             <button type="button" class="btn btn-outline-warning w-100 btn-sm text-dark mt-2" onclick="activateTab('materials-tab')">View Materials</button>
                         {% else %}
                             <button class="btn btn-secondary w-100 btn-sm mt-2" disabled><i class="fas fa-lock me-1"></i> Locked</button>
@@ -102,17 +105,17 @@
                 </div>
             </div>
 
-            <!-- 4. Virtual Classroom (LOCKED IF UNPAID) -->
+            <!-- 4. Virtual Classroom -->
             <div class="col-sm-6 col-md-4 col-lg">
-                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not student.has_paid %}opacity-75 bg-light{% endif %}">
+                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not is_paid %}opacity-75 bg-light{% endif %}">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
                         <div>
-                            <i class="fas {% if student.has_paid %}fa-headset text-primary{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3"></i>
+                            <i class="fas {% if is_paid %}fa-headset text-primary{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3"></i>
                             <h5 class="card-title fs-6 fw-bold">Classroom</h5>
                             <p class="text-muted small">Join live voice classes.</p>
                         </div>
-                        {% if student.has_paid %}
-                            <button type="button" class="btn btn-outline-primary w-100 btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#liveClassModal">Join Live Class</button>
+                        {% if is_paid %}
+                            <button type="button" class="btn btn-outline-primary w-100 btn-sm mt-2" onclick="alert('Classroom active!')">Join Live Class</button>
                         {% else %}
                             <button class="btn btn-secondary w-100 btn-sm mt-2" disabled><i class="fas fa-lock me-1"></i> Locked</button>
                         {% endif %}
@@ -120,17 +123,17 @@
                 </div>
             </div>
 
-            <!-- 5. Open Campus Chat (LOCKED IF UNPAID) -->
+            <!-- 5. Open Campus Chat -->
             <div class="col-sm-6 col-md-4 col-lg">
-                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not student.has_paid %}opacity-75 bg-light{% endif %}">
+                <div class="card h-100 shadow-sm border-0 text-center p-3 {% if not is_paid %}opacity-75 bg-light{% endif %}">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
                         <div>
-                            <i class="fas {% if student.has_paid %}fa-comments{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3" style="{% if student.has_paid %}color: #00a884;{% endif %}"></i>
+                            <i class="fas {% if is_paid %}fa-comments{% else %}fa-lock text-secondary{% endif %} fa-3x mb-3" style="{% if is_paid %}color: #00a884;{% endif %}"></i>
                             <h5 class="card-title fs-6 fw-bold">Campus Chat</h5>
                             <p class="text-muted small">Live student group chat.</p>
                         </div>
-                        {% if student.has_paid %}
-                            <a href="{{ url_for('chat') }}" class="btn text-white w-100 btn-sm mt-2" style="background-color: #00a884; border: none;">💬 Open Campus Chat</a>
+                        {% if is_paid %}
+                            <button class="btn text-white w-100 btn-sm mt-2" style="background-color: #00a884; border: none;" onclick="activateTab('messages-tab')">💬 Private Messages</button>
                         {% else %}
                             <button class="btn btn-secondary w-100 btn-sm mt-2" disabled><i class="fas fa-lock me-1"></i> Locked</button>
                         {% endif %}
@@ -140,73 +143,68 @@
 
         </div>
 
-        <!-- Tabbed Sections / Payment Restriction Container -->
-        {% if student.has_paid %}
-            <div class="card shadow-sm border-0" id="portalContentCard">
-                <div class="card-header bg-white">
-                    <ul class="nav nav-tabs card-header-tabs" id="portalTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab">
-                                <i class="fas fa-book me-1"></i> Course Code
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
-                                <i class="fas fa-file-download me-1"></i> Lecture Materials
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab">
-                                <i class="fas fa-poll-h me-1"></i> Results
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">
-                                <i class="fas fa-comments me-1"></i> Messages
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
-                                <i class="fas fa-key me-1"></i> Account Settings
-                            </button>
-                        </li>
-                    </ul>
+        <!-- Tabbed Sections Container -->
+        <div class="card shadow-sm border-0" id="portalContentCard">
+            <div class="card-header bg-white">
+                <ul class="nav nav-tabs card-header-tabs" id="portalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab">
+                            <i class="fas fa-book me-1"></i> Registered Courses
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                            <i class="fas fa-file-download me-1"></i> Lecture Materials
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab">
+                            <i class="fas fa-poll-h me-1"></i> Results
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">
+                            <i class="fas fa-comments me-1"></i> Messages
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body tab-content">
+                
+                <!-- 1. Course Code Section -->
+                <div class="tab-pane fade show active" id="courses" role="tabpanel">
+                    <h5 class="card-title mb-3">Semester Registered Courses</h5>
+                    {% if courses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td><span class="badge bg-secondary">{{ course.course_code }}</span></td>
+                                        <td>{{ course.course_name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">No courses uploaded yet by the administrator for this semester.</div>
+                    {% endif %}
                 </div>
 
-                <div class="card-body tab-content">
-                    
-                    <!-- 1. Course Code Section -->
-                    <div class="tab-pane fade show active" id="courses" role="tabpanel">
-                        <h5 class="card-title mb-3">Semester Registered Courses</h5>
-                        {% if courses %}
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead class="table-primary">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Course Code</th>
-                                            <th>Course Name</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for course in courses %}
-                                        <tr>
-                                            <td>{{ loop.index }}</td>
-                                            <td><span class="badge bg-secondary">{{ course.course_code }}</span></td>
-                                            <td>{{ course.course_name }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info mb-0">No courses uploaded yet by the administrator for this semester.</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- 2. Lecture Materials -->
-                    <div class="tab-pane fade" id="materials" role="tabpanel">
-                        <h5 class="card-title mb-3">Course Lecture Materials & Downloads</h5>
+                <!-- 2. Lecture Materials -->
+                <div class="tab-pane fade" id="materials" role="tabpanel">
+                    <h5 class="card-title mb-3">Course Lecture Materials & Downloads</h5>
+                    {% if is_paid %}
                         {% if materials %}
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
@@ -214,8 +212,7 @@
                                         <tr>
                                             <th>#</th>
                                             <th>Title / Description</th>
-                                            <th>Course Code</th>
-                                            <th>Uploaded Date</th>
+                                            <th>Type</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -224,10 +221,9 @@
                                         <tr>
                                             <td>{{ loop.index }}</td>
                                             <td><strong>{{ material.title }}</strong></td>
-                                            <td><span class="badge bg-dark">{{ material.course_code }}</span></td>
-                                            <td><small class="text-muted">{{ material.upload_date }}</small></td>
+                                            <td><span class="badge bg-dark">{{ material.material_type or 'Document' }}</span></td>
                                             <td>
-                                                <a href="{{ url_for('download_material', filename=material.filename) }}" class="btn btn-sm btn-success">
+                                                <a href="{{ url_for('download_material', filename=material.file_path) }}" class="btn btn-sm btn-success">
                                                     <i class="fas fa-download me-1"></i> Download File
                                                 </a>
                                             </td>
@@ -237,83 +233,116 @@
                                 </table>
                             </div>
                         {% else %}
-                            <div class="alert alert-warning mb-0">No lecture materials or study resources uploaded yet.</div>
+                            <div class="alert alert-warning mb-0">No lecture materials uploaded yet.</div>
                         {% endif %}
-                    </div>
+                    {% else %}
+                        <div class="alert alert-danger mb-0"><i class="fas fa-lock me-2"></i>Please complete your school fees payment to access download materials.</div>
+                    {% endif %}
+                </div>
 
-                    <!-- 3. Academic Results Section -->
-                    <div class="tab-pane fade" id="results" role="tabpanel">
-                        <h5 class="card-title mb-3">Academic Results</h5>
-                        {% if results %}
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle">
-                                    <thead class="table-success">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Course Name</th>
-                                            <th>Score</th>
-                                            <th>Grade</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for result in results %}
-                                        <tr>
-                                            <td>{{ loop.index }}</td>
-                                            <td>{{ result.course_name }}</td>
-                                            <td>{{ result.score }}</td>
-                                            <td>
-                                                <span class="badge bg-{% if result.grade == 'A' %}success{% elif result.grade == 'F' %}danger{% else %}warning{% endif %}">
-                                                    {{ result.grade }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-warning mb-0">No examination results have been published by the admin yet.</div>
-                        {% endif %}
-                    </div>
+                <!-- 3. Academic Results Section -->
+                <div class="tab-pane fade" id="results" role="tabpanel">
+                    <h5 class="card-title mb-3">Academic Results</h5>
+                    {% if results %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Course Name</th>
+                                        <th>Score</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ result.course_name }}</td>
+                                        <td>{{ result.score }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if result.grade == 'A' %}success{% elif result.grade == 'F' %}danger{% else %}warning{% endif %}">
+                                                {{ result.grade }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mb-0">No examination results have been published yet.</div>
+                    {% endif %}
+                </div>
 
-                    <!-- 4. Messages Center -->
-                    <div class="tab-pane fade" id="messages" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-4 border border-success-subtle shadow-sm">
-                            <div>
-                                <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-users me-2" style="color:#00a884;"></i>Live Campus Community Chat</h6>
-                                <small class="text-muted">Chat directly with all active students and lecturers in real-time.</small>
+                <!-- 4. Messages Center -->
+                <div class="tab-pane fade" id="messages" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-5 mb-4 mb-md-0">
+                            <div class="card bg-light border-0 p-3">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-paper-plane text-primary me-1"></i> Send Private Message</h6>
+                                <form action="{{ url_for('send_message') }}" method="POST">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Recipient ID</label>
+                                        <input type="number" class="form-control" name="receiver_id" placeholder="Enter Receiver User ID" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Message Text</label>
+                                        <textarea class="form-control" name="content" rows="4" placeholder="Type your message or inquiry here..." required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-1"></i> Send Message</button>
+                                </form>
                             </div>
-                            <a href="{{ url_for('chat') }}" class="btn btn-primary fw-bold" style="background-color:#00a884; border:none; text-decoration:none; padding:8px 16px; color:#fff; border-radius:4px;">
-                                💬 Open Campus Chat
-                            </a>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-5 mb-4 mb-md-0">
-                                <div class="card bg-light border-0 p-3">
-                                    <h6 class="fw-bold mb-3"><i class="fas fa-paper-plane text-primary me-1"></i> Send Private Message to Admin/Lecturer</h6>
-                                    <form action="{{ url_for('send_message') }}" method="POST">
-                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Recipient</label>
-                                            <select class="form-select" name="receiver_id" required>
-                                                <option value="1">Admin / Management</option>
-                                                <option value="2">Lecturer Support</option>
-                                            </select>
+                        <div class="col-md-7">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-inbox text-secondary me-1"></i> Message Inbox</h6>
+                            {% if messages %}
+                                <div class="list-group pe-1" style="max-height: 400px; overflow-y: auto;">
+                                    {% for msg in messages %}
+                                        <div class="list-group-item mb-2 rounded shadow-sm border-start border-4 border-primary bg-white">
+                                            <p class="mb-1 text-dark">{{ msg.content }}</p>
+                                            <small class="text-muted"><i class="far fa-clock me-1"></i>{{ msg.timestamp }}</small>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Message Text</label>
-                                            <textarea class="form-control" name="content" rows="4" placeholder="Type your message or inquiry here..." required></textarea>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-1"></i> Send Message</button>
-                                    </form>
+                                    {% endfor %}
                                 </div>
-                            </div>
+                            {% else %}
+                                <div class="alert alert-secondary mb-0">No messages in your inbox.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-md-7">
-                                <h6 class="fw-bold mb-3"><i class="fas fa-inbox text-secondary me-1"></i> Private Message History</h6>
-                                {% if messages %}
-                                    <div class="list-group pe-1" style="max-height: 400px; overflow-y: auto;">
-                                        {% for msg in messages %}
-                                            <div class="list-group-item mb-2 rounded shadow-sm border-start border-4 {% if msg.sender_id == student.id %}border-primary bg-white{% else %}border-success bg-light{% endif %}">
- 
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Pay School Fees</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-1">Remita RRR Retrieval:</p>
+                    <h4 class="text-success fw-bold">{{ student.remita_invoice or 'MST-RRR-8823192' }}</h4>
+                    <p class="text-muted small">Please proceed to payment or submit to administrator for manual verification.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function activateTab(tabId) {
+            var tabBtn = document.getElementById(tabId);
+            if (tabBtn) {
+                var tab = new bootstrap.Tab(tabBtn);
+                tab.show();
+            }
+        }
+    </script>
+</body>
+</html>
