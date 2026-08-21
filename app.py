@@ -59,34 +59,35 @@ def auto_migrate_db():
         with db.engine.connect() as conn:
             if 'msg_type' not in columns:
                 try:
-                    conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
-                    conn.commit()
+                    with conn.begin():
+                        conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
                 except Exception as e:
                     print(f"Migration error (msg_type): {e}")
 
             if 'file_path' not in columns:
                 try:
-                    conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
-                    conn.commit()
+                    with conn.begin():
+                        conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
                 except Exception as e:
                     print(f"Migration error (file_path): {e}")
 
-    # 2. MIGRATE USER TABLE (FIXES THE SERVER ERROR)
+    # 2. MIGRATE USER TABLE
     if 'user' in inspector.get_table_names():
         user_columns = [col['name'] for col in inspector.get_columns('user')]
         with db.engine.connect() as conn:
             if 'payment_status' not in user_columns:
                 try:
-                    conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                    conn.commit()
+                    with conn.begin():
+                        conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
                     print("Successfully added missing column 'payment_status' to 'user' table.")
                 except Exception as e:
                     # Fallback syntax for standard SQL/SQLite
                     try:
-                        conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                        conn.commit()
+                        with conn.begin():
+                            conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
                     except Exception as ex:
                         print(f"Migration error (payment_status): {ex}")
+
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
     db.create_all()
