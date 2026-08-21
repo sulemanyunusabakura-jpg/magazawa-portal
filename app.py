@@ -566,7 +566,10 @@ def student_dashboard():
 
     courses = Course.query.filter_by(student_id=current_user.id).all()
     results = Result.query.filter_by(student_id=current_user.id).all()
-    materials = Material.query.all() if current_user.payment_status == "Paid" else []
+    
+    # Safe payment status check
+    has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
+    materials = Material.query.all() if has_paid else []
 
     return render_template(
         'student_dashboard.html',
