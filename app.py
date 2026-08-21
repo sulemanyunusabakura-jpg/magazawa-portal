@@ -11,7 +11,7 @@ from google.genai import types
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
 
-# DATABASE URI CONFIGURATION FOR RENDER
+# DATABASE URI CONFIGURATION FOR RENDER & LOCAL DEVS
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -20,7 +20,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ABSOLUTE PATH FOR UPLOAD DIRECTORY
 app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp3', 'wav', 'mp4', 'webm'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # INITIALIZE GEMINI CLIENT
 gemini_client = genai.Client()
@@ -38,7 +42,6 @@ def auto_migrate_db():
     """Inspects existing tables and automatically adds missing columns without dropping data."""
     inspector = inspect(db.engine)
     
-    # Check if 'message' table exists
     if 'message' in inspector.get_table_names():
         columns = [col['name'] for col in inspector.get_columns('message')]
         
@@ -64,7 +67,7 @@ def auto_migrate_db():
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
     db.create_all()
-    auto_migrate_db()  # Automatically patch schema on startup
+    auto_migrate_db()
 
     # 1. ADMIN ACCOUNT
     admin = User.query.filter_by(role='admin').first()
@@ -111,7 +114,11 @@ with app.app_context():
         )
         db.session.add(registrar)
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Startup initialization error: {e}")
 
 # --- BASE ROUTES ---
 @app.route('/')
@@ -163,8 +170,8 @@ def apply_student():
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
 
-        p_filename = secure_filename(p_cert.filename) if p_cert and p_cert.filename != "" else ""
-        s_filename = secure_filename(s_cert.filename) if s_cert and s_cert.filename != "" else ""
+        p_filename = secure_filename(p_cert.filename) if p_cert and allowed_file(p_cert.filename) else ""
+        s_filename = secure_filename(s_cert.filename) if s_cert and allowed_file(s_cert.filename) else ""
 
         if p_cert and p_filename:
             p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
@@ -471,7 +478,7 @@ def lecturer_dashboard():
     if request.method == 'POST':
         file = request.files.get('file')
         filename = ""
-        if file and file.filename != "":
+        if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
@@ -663,7 +670,7 @@ def send_chat_message():
     file_filename = ""
     msg_type = 'text'
 
-    if file and file.filename != "":
+    if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         file_filename = filename
