@@ -36,9 +36,11 @@ class Material(db.Model):
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Nullable for global campus chat
+    content = db.Column(db.Text, nullable=True)
+    file_path = db.Column(db.String(255), nullable=True)
+    msg_type = db.Column(db.String(20), default='text') # 'text', 'image', 'audio', 'file'
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
