@@ -27,8 +27,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# INITIALIZE GEMINI CLIENT
-gemini_client = genai.Client()
+# SAFE GEMINI CLIENT INITIALIZATION
+gemini_api_key = os.environ.get('GEMINI_API_KEY')
+gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
 
 db.init_app(app)
 login_manager = LoginManager(app)
@@ -237,7 +238,7 @@ def apply_lecturer():
         return redirect(url_for('login'))
     return render_template('apply_lecturer.html')
 
-# --- ADMIN DASHBOARD & CONTROLS ---
+# --- DASHBOARD ROUTES ---
 @app.route('/dashboard/admin')
 @login_required
 def admin_dashboard():
@@ -251,20 +252,104 @@ def admin_dashboard():
         messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     except Exception as e:
         db.session.rollback()
-        flash("Database sync error occurred. Please refresh the page.", "danger")
+        flash(f"Database sync warning: {str(e)}", "warning")
         students, lecturers, all_users, messages = [], [], [], []
 
-    return render_template('admin_dashboard.html', 
-                           students=students, 
-                           lecturers=lecturers, 
-                           all_users=all_users, 
-                           messages=messages)
+    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages)
 
+@app.route('/dashboard/creator')
+@login_required
+def creator_dashboard():
+    try:
+        total_students = User.query.filter_by(role='student').count()
+        total_lecturers = User.query.filter_by(role='lecturer').count()
+        total_admins = User.query.filter_by(role='admin').count()
+        approved_students = User.query.filter_by(role='student', is_approved=True).count()
+        approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+    except Exception:
+        db.session.rollback()
+        total_students = total_lecturers = total_admins = approved_students = approved_lecturers = 0
+
+    return render_template('creator_dashboard.html',
+                           total_students=total_students,
+                           total_lecturers=total_lecturers,
+                           total_admins=total_admins,
+                           approved_students=approved_students,
+                           approved_lecturers=approved_lecturers)
+
+@app.route('/dashboard/registrar')
+@login_required
+def registrar_dashboard():
+    try:
+        students = User.query.filter_by(role='student', is_approved=True).all()
+        lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    except Exception:
+        db.session.rollback()
+        students, lecturers, messages = [], [], []
+
+    return render_template('registrar_dashboard.html', students=students, lecturers=lecturers, messages=messages)
+
+@app.route('/dashboard/lecturer', methods=['GET', 'POST'])
+@login_required
+def lecturer_dashboard():
+    if current_user.role != 'lecturer': 
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        file = request.files.get('file')
+        filename = ""
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        material = Material(
+            title=request.form['title'],
+            material_type=request.form['type'],
+            file_path=filename,
+            lecturer_id=current_user.id
+        )
+        db.session.add(material)
+        db.session.commit()
+        flash('Material Uploaded Successfully.', 'success')
+        return redirect(url_for('lecturer_dashboard'))
+
+    try:
+        materials = Material.query.filter_by(lecturer_id=current_user.id).all()
+        users = User.query.filter(User.id != current_user.id).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    except Exception:
+        db.session.rollback()
+        materials, users, messages = [], [], []
+
+    return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
+
+@app.route('/dashboard/student')
+@login_required
+def student_dashboard():
+    if current_user.role != 'student':
+        return redirect(url_for('login'))
+
+    try:
+        courses = Course.query.filter_by(student_id=current_user.id).all()
+        results = Result.query.filter_by(student_id=current_user.id).all()
+        has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
+        materials = Material.query.all() if has_paid else []
+    except Exception:
+        db.session.rollback()
+        courses, results, materials = [], [], []
+
+    return render_template('student_dashboard.html', student=current_user, courses=courses, results=results, materials=materials)
+
+# --- ADMIN ACTIONS ---
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
 def ask_gemini():
     if current_user.role != 'admin':
         return jsonify({"error": "Unauthorized access"}), 403
+
+    if not gemini_client:
+        return jsonify({"error": "Gemini API key is not configured in environment variables."}), 500
 
     data = request.get_json()
     user_prompt = data.get('prompt', '').strip()
@@ -466,72 +551,7 @@ def master_access():
 
     return render_template('master_access.html')
 
-# --- CREATOR & REGISTRAR DASHBOARDS ---
-@app.route('/dashboard/creator')
-@login_required
-def creator_dashboard():
-    total_students = User.query.filter_by(role='student').count()
-    total_lecturers = User.query.filter_by(role='lecturer').count()
-    total_admins = User.query.filter_by(role='admin').count()
-    approved_students = User.query.filter_by(role='student', is_approved=True).count()
-    approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
-
-    return render_template('creator_dashboard.html',
-                           total_students=total_students,
-                           total_lecturers=total_lecturers,
-                           total_admins=total_admins,
-                           approved_students=approved_students,
-                           approved_lecturers=approved_lecturers)
-
-@app.route('/dashboard/registrar')
-@login_required
-def registrar_dashboard():
-    students = User.query.filter_by(role='student', is_approved=True).all()
-    lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-
-    return render_template('registrar_dashboard.html',
-                           students=students,
-                           lecturers=lecturers,
-                           messages=messages)
-
-# --- LECTURER DASHBOARD & ACTIONS ---
-@app.route('/dashboard/lecturer', methods=['GET', 'POST'])
-@login_required
-def lecturer_dashboard():
-    if current_user.role != 'lecturer': 
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        file = request.files.get('file')
-        filename = ""
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-        material = Material(
-            title=request.form['title'],
-            material_type=request.form['type'],
-            file_path=filename,
-            lecturer_id=current_user.id
-        )
-        db.session.add(material)
-        db.session.commit()
-        flash('Material / Voice Mail Uploaded Successfully.', 'success')
-        return redirect(url_for('lecturer_dashboard'))
-
-    materials = Material.query.filter_by(lecturer_id=current_user.id).all()
-    users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-
-    return render_template(
-        'lecturer_dashboard.html', 
-        lecturer=current_user, 
-        materials=materials, 
-        users=users, 
-        messages=messages
-    )
-
+# --- LECTURER ACTIONS & MESSAGING ---
 @app.route('/lecturer/submit_result', methods=['POST'])
 @login_required
 def submit_result_to_admin():
@@ -561,27 +581,6 @@ def submit_result_to_admin():
 
     return redirect(url_for('lecturer_dashboard'))
 
-# --- STUDENT DASHBOARD & PROTECTED ROUTES ---
-@app.route('/dashboard/student')
-@login_required
-def student_dashboard():
-    if current_user.role != 'student':
-        return redirect(url_for('login'))
-
-    courses = Course.query.filter_by(student_id=current_user.id).all()
-    results = Result.query.filter_by(student_id=current_user.id).all()
-    
-    has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
-    materials = Material.query.all() if has_paid else []
-
-    return render_template(
-        'student_dashboard.html',
-        student=current_user,
-        courses=courses,
-        results=results,
-        materials=materials
-    )
-
 @app.route('/send_message', methods=['POST'])
 @login_required
 def send_message():
@@ -601,110 +600,6 @@ def send_message():
         flash('Message content cannot be empty.', 'warning')
         
     return redirect(request.referrer or url_for('admin_dashboard'))
-
-# --- SAFE DASHBOARD ROUTE IMPLEMENTATIONS ---
-
-@app.route('/dashboard/admin')
-@login_required
-def admin_dashboard():
-    if current_user.role != 'admin': 
-        return redirect(url_for('login'))
-
-    try:
-        students = User.query.filter_by(role='student').all()
-        lecturers = User.query.filter_by(role='lecturer').all()
-        all_users = User.query.filter(User.id != current_user.id).all()
-        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Database error recovered: {str(e)}", "danger")
-        students, lecturers, all_users, messages = [], [], [], []
-
-    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages)
-
-@app.route('/dashboard/creator')
-@login_required
-def creator_dashboard():
-    try:
-        total_students = User.query.filter_by(role='student').count()
-        total_lecturers = User.query.filter_by(role='lecturer').count()
-        total_admins = User.query.filter_by(role='admin').count()
-        approved_students = User.query.filter_by(role='student', is_approved=True).count()
-        approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
-    except Exception:
-        db.session.rollback()
-        total_students = total_lecturers = total_admins = approved_students = approved_lecturers = 0
-
-    return render_template('creator_dashboard.html',
-                           total_students=total_students,
-                           total_lecturers=total_lecturers,
-                           total_admins=total_admins,
-                           approved_students=approved_students,
-                           approved_lecturers=approved_lecturers)
-
-@app.route('/dashboard/registrar')
-@login_required
-def registrar_dashboard():
-    try:
-        students = User.query.filter_by(role='student', is_approved=True).all()
-        lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
-        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    except Exception:
-        db.session.rollback()
-        students, lecturers, messages = [], [], []
-
-    return render_template('registrar_dashboard.html', students=students, lecturers=lecturers, messages=messages)
-
-@app.route('/dashboard/lecturer', methods=['GET', 'POST'])
-@login_required
-def lecturer_dashboard():
-    if current_user.role != 'lecturer': 
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        file = request.files.get('file')
-        filename = ""
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-        material = Material(
-            title=request.form['title'],
-            material_type=request.form['type'],
-            file_path=filename,
-            lecturer_id=current_user.id
-        )
-        db.session.add(material)
-        db.session.commit()
-        flash('Material Uploaded Successfully.', 'success')
-        return redirect(url_for('lecturer_dashboard'))
-
-    try:
-        materials = Material.query.filter_by(lecturer_id=current_user.id).all()
-        users = User.query.filter(User.id != current_user.id).all()
-        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-    except Exception:
-        db.session.rollback()
-        materials, users, messages = [], [], []
-
-    return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
-
-@app.route('/dashboard/student')
-@login_required
-def student_dashboard():
-    if current_user.role != 'student':
-        return redirect(url_for('login'))
-
-    try:
-        courses = Course.query.filter_by(student_id=current_user.id).all()
-        results = Result.query.filter_by(student_id=current_user.id).all()
-        has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
-        materials = Material.query.all() if has_paid else []
-    except Exception:
-        db.session.rollback()
-        courses, results, materials = [], [], []
-
-    return render_template('student_dashboard.html', student=current_user, courses=courses, results=results, materials=materials)
 
 @app.route('/student/download/<filename>')
 @login_required
