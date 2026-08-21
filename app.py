@@ -1,4 +1,5 @@
 import os
+import uuid
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -52,40 +53,35 @@ def payment_required(f):
 # --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
 def auto_migrate_db():
     """Inspects existing tables and automatically adds missing columns without dropping data."""
-    inspector = inspect(db.engine)
-    
-    # 1. MIGRATE MESSAGE TABLE
-    if 'message' in inspector.get_table_names():
-        columns = [col['name'] for col in inspector.get_columns('message')]
-        with db.engine.connect() as conn:
-            if 'msg_type' not in columns:
-                try:
-                    with conn.begin():
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+
+            # 1. MIGRATE MESSAGE TABLE
+            if 'message' in tables:
+                columns = [col['name'] for col in inspector.get_columns('message')]
+                with db.engine.connect() as conn:
+                    if 'msg_type' not in columns:
                         conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
-                except Exception as e:
-                    print(f"Migration error (msg_type): {e}")
-
-            if 'file_path' not in columns:
-                try:
-                    with conn.begin():
+                        conn.commit()
+                    if 'file_path' not in columns:
                         conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
-                except Exception as e:
-                    print(f"Migration error (file_path): {e}")
+                        conn.commit()
 
-    # 2. MIGRATE USER TABLE
-    if 'user' in inspector.get_table_names():
-        user_columns = [col['name'] for col in inspector.get_columns('user')]
-        with db.engine.connect() as conn:
-            if 'payment_status' not in user_columns:
-                try:
-                    with conn.begin():
-                        conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                except Exception as e:
-                    try:
-                        with conn.begin():
+            # 2. MIGRATE USER TABLE
+            if 'user' in tables:
+                user_columns = [col['name'] for col in inspector.get_columns('user')]
+                with db.engine.connect() as conn:
+                    if 'payment_status' not in user_columns:
+                        try:
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
+                            conn.commit()
+                        except Exception:
                             conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                    except Exception as ex:
-                        print(f"Migration error (payment_status): {ex}")
+                            conn.commit()
+        except Exception as e:
+            print(f"Schema auto-migration notice: {e}")
 
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
@@ -106,7 +102,6 @@ with app.app_context():
         )
         db.session.add(admin)
     else:
-        admin.password = generate_password_hash('admin123')
         admin.is_approved = True
 
     # 2. CREATOR ACCOUNT
@@ -186,6 +181,7 @@ def login():
             flash('Invalid login credentials.', 'danger')
             
     return render_template('login.html')
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -199,12 +195,16 @@ def apply_student():
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
 
-        p_filename = secure_filename(p_cert.filename) if p_cert and allowed_file(p_cert.filename) else ""
-        s_filename = secure_filename(s_cert.filename) if s_cert and allowed_file(s_cert.filename) else ""
+        p_filename, s_filename = "", ""
 
-        if p_cert and p_filename:
+        if p_cert and allowed_file(p_cert.filename):
+            ext = p_cert.filename.rsplit('.', 1)[1].lower()
+            p_filename = secure_filename(f"primary_{uuid.uuid4().hex[:8]}.{ext}")
             p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
-        if s_cert and s_filename:
+
+        if s_cert and allowed_file(s_cert.filename):
+            ext = s_cert.filename.rsplit('.', 1)[1].lower()
+            s_filename = secure_filename(f"sec_{uuid.uuid4().hex[:8]}.{ext}")
             s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
 
         new_student = User(
@@ -306,7 +306,8 @@ def lecturer_dashboard():
         file = request.files.get('file')
         filename = ""
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = secure_filename(f"material_{uuid.uuid4().hex[:8]}.{ext}")
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         material = Material(
@@ -357,7 +358,7 @@ def ask_gemini():
     if not gemini_client:
         return jsonify({"error": "Gemini API key is not configured in environment variables."}), 500
 
-    data = request.get_json()
+    data = request.get_json() or {}
     user_prompt = data.get('prompt', '').strip()
 
     if not user_prompt:
