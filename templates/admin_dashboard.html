@@ -674,7 +674,7 @@
                     </div>
 
                     <!-- Direct Form Action or AJAX Chat Trigger -->
-                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatSubmit(event)">
+                   <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatS...
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
                         
