@@ -507,6 +507,21 @@ def student_dashboard():
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
     return render_template('student_dashboard.html', student=current_user, materials=materials, courses=courses, results=results, users=users, messages=messages)
 
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+
+    if not check_password_hash(current_user.password, current_password):
+        flash('Current password is incorrect.', 'danger')
+        return redirect(url_for('student_dashboard'))
+
+    current_user.password = generate_password_hash(new_password)
+    db.session.commit()
+    flash('Password updated successfully!', 'success')
+    return redirect(url_for('student_dashboard'))
+
 @app.route('/download_material/<path:filename>')
 @login_required
 def download_material(filename):
@@ -627,7 +642,7 @@ def send_message():
     receiver_id = request.form.get('receiver_id')
     content = request.form.get('content')
     if receiver_id and content:
-        msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content)
+        msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=content)
         db.session.add(msg)
         db.session.commit()
         flash('Message sent successfully!', 'success')
