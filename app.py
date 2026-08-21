@@ -357,7 +357,7 @@ def student_dashboard():
         results = Result.query.filter_by(student_id=current_user.id).all()
         
         payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
-        has_paid = payment_status.strip().lower() == 'paid'
+        has_paid = str(payment_status).strip().lower() == 'paid'
         
         materials = Material.query.all() if has_paid else []
         
@@ -501,4 +501,4 @@ def manage_course():
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
-    if current_user.ro
+    if current_us
