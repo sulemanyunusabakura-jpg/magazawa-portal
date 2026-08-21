@@ -21,11 +21,9 @@
             --danger-hover: #bb2d3b;
             --warning: #ffc107;
             --warning-text: #000000;
-            --whatsapp-green: #25d366;
-            --whatsapp-hover: #1da851;
-            --whatsapp-bg: #0b141a;
-            --whatsapp-bubble-in: #202c33;
-            --whatsapp-bubble-out: #005c4b;
+            --chat-bg: #070d1c;
+            --chat-bubble-in: #1c2b4d;
+            --chat-bubble-out: #0d6efd;
         }
 
         * {
@@ -142,13 +140,8 @@
             letter-spacing: 0.5px;
         }
 
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
         .btn {
             padding: 8px 14px;
@@ -172,8 +165,6 @@
         .btn-danger:hover { background: var(--danger-hover); }
         .btn-primary { background: var(--primary); }
         .btn-primary:hover { background: var(--primary-hover); }
-        .btn-whatsapp { background: var(--whatsapp-green); color: #000; font-weight: 700; }
-        .btn-whatsapp:hover { background: var(--whatsapp-hover); color: #fff; }
 
         .btn-group {
             display: flex;
@@ -221,7 +212,7 @@
             border-left: 4px solid var(--success);
         }
 
-        /* Tabs Navigation */
+        /* TABS STYLING */
         .tab-nav {
             display: flex;
             gap: 12px;
@@ -247,167 +238,143 @@
             border: 1px solid var(--border-color);
         }
 
-        .tab-content {
-            display: none;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .tab-content.active {
-            display: block;
-        }
-
-        /* WhatsApp UI Dashboard Section */
-        .whatsapp-container {
+        /* IN-SITE LIVE CHAT COMPONENT STYLING */
+        .webchat-widget {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: 280px 1fr;
             height: 520px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             overflow: hidden;
-            background: var(--whatsapp-bg);
+            background: var(--chat-bg);
         }
 
         @media (max-width: 768px) {
-            .whatsapp-container {
+            .webchat-widget {
                 grid-template-columns: 1fr;
-                height: 600px;
+                height: 580px;
             }
-            .whatsapp-chat-panel {
-                display: none;
-            }
-            .whatsapp-container.chat-active .whatsapp-contacts-panel {
-                display: none;
-            }
-            .whatsapp-container.chat-active .whatsapp-chat-panel {
-                display: flex;
-            }
+            .chat-main-area { display: none; }
+            .webchat-widget.chat-open .chat-sidebar { display: none; }
+            .webchat-widget.chat-open .chat-main-area { display: flex; }
         }
 
-        .whatsapp-contacts-panel {
+        .chat-sidebar {
+            background: #091022;
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            background: #111b21;
         }
 
-        .whatsapp-search {
-            padding: 10px;
+        .chat-sidebar-header {
+            padding: 12px;
             border-bottom: 1px solid var(--border-color);
         }
 
-        .whatsapp-contact-list {
+        .chat-user-list {
             flex: 1;
             overflow-y: auto;
         }
 
-        .whatsapp-contact-item {
+        .chat-user-item {
             padding: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(35, 52, 92, 0.4);
             cursor: pointer;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             transition: background 0.2s ease;
         }
 
-        .whatsapp-contact-item:hover, .whatsapp-contact-item.active {
-            background: #202c33;
+        .chat-user-item:hover, .chat-user-item.active {
+            background: var(--bg-card);
         }
 
-        .contact-info h4 {
+        .user-details h4 {
             font-size: 0.875rem;
             color: var(--text-main);
         }
 
-        .contact-info p {
+        .user-details p {
             font-size: 0.75rem;
             color: var(--text-muted);
         }
 
-        .whatsapp-chat-panel {
-            display: flex;
-            flex-direction: column;
-            background: #0b141a;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6c757d;
+            display: inline-block;
         }
 
-        .whatsapp-chat-header {
-            padding: 12px 16px;
-            background: #202c33;
+        .status-dot.online { background: #28a745; }
+
+        .chat-main-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-table);
+        }
+
+        .chat-header {
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
         }
 
-        .whatsapp-messages {
+        .chat-messages-container {
             flex: 1;
             padding: 16px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.in {
+            background: var(--chat-bubble-in);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.out {
+            background: var(--chat-bubble-out);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+            color: #fff;
+        }
+
+        .chat-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-input-bar {
+            padding: 12px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
             gap: 10px;
         }
 
-        .message-bubble {
-            max-width: 70%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            line-height: 1.4;
-            position: relative;
-        }
-
-        .message-in {
-            background: var(--whatsapp-bubble-in);
-            align-self: flex-start;
-            color: #e9edef;
-        }
-
-        .message-out {
-            background: var(--whatsapp-bubble-out);
-            align-self: flex-end;
-            color: #e9edef;
-        }
-
-        .message-time {
-            font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.6);
-            text-align: right;
-            margin-top: 4px;
-        }
-
-        .whatsapp-input-area {
-            padding: 10px;
-            background: #202c33;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .quick-template-bar {
-            padding: 6px 12px;
-            background: #111b21;
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .template-chip {
-            background: #202c33;
-            color: var(--text-muted);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .template-chip:hover {
-            color: var(--text-main);
-            background: #2a3942;
-        }
-
-        /* Modal Styles */
+        /* MODAL */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -465,10 +432,7 @@
                     {% for lec in lecturers %}
                     <tr>
                         <td>{{ lec.full_name }}</td>
-                        <td>
-                            {{ lec.email }}<br>
-                            <small style="color: var(--text-muted);">{{ lec.phone }}</small>
-                        </td>
+                        <td>{{ lec.email }}<br><small style="color: var(--text-muted);">{{ lec.phone }}</small></td>
                         <td>{{ lec.desired_courses or 'Not specified' }}</td>
                         <td>
                             {% if lec.is_approved %}
@@ -478,17 +442,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            <div class="btn-group">
-                                {% if not lec.is_approved %}
+                            {% if not lec.is_approved %}
+                                <div class="btn-group">
                                     <button onclick="confirmAction('{{ url_for('approve_lecturer', id=lec.id) }}', 'Approve Lecturer', 'Are you sure you want to approve this lecturer application?')" class="btn btn-success">Approve</button>
                                     <button onclick="confirmAction('{{ url_for('reject_lecturer', id=lec.id) }}', 'Reject Lecturer', 'Are you sure you want to reject this lecturer application?')" class="btn btn-danger">Reject</button>
-                                {% else %}
-                                    <span style="color: var(--text-muted); padding-top: 4px;">Active</span>
-                                {% endif %}
-                                <a href="https://wa.me/{{ lec.phone | replace('+', '') | replace(' ', '') }}?text=Hello%20{{ lec.full_name | urlencode }},%20regarding%20your%20Lecturer%20application%20at%20MST%20Portal..." target="_blank" class="btn btn-whatsapp">
-                                    WhatsApp
-                                </a>
-                            </div>
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted);">Active</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% else %}
@@ -545,10 +506,6 @@
                                 {% if std.payment_status != 'Paid' %}
                                     <button onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment receipt for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
                                 {% endif %}
-
-                                <a href="https://wa.me/{{ std.phone | replace('+', '') | replace(' ', '') if std.phone else '' }}?text=Hello%20{{ std.full_name | urlencode }},%20regarding%20your%20student%20status%20at%20MST%20Portal..." target="_blank" class="btn btn-whatsapp">
-                                    WhatsApp
-                                </a>
                             </div>
                         </td>
                     </tr>
@@ -645,7 +602,7 @@
         </section>
     </div>
 
-    <!-- DATA TRANSMISSION -->
+    <!-- TRANSMISSION -->
     <section class="card action-card">
         <h3 class="card-title">Transmit School Data to Registrar</h3>
         <p style="color: var(--text-muted); font-size: 0.875rem; margin: 8px 0 16px 0;">
@@ -659,96 +616,97 @@
         </form>
     </section>
 
-    <!-- 6. MESSAGING & WHATSAPP CENTER -->
+    <!-- 6. COMMUNICATION HUB (EMBEDDED LIVE CHAT & FORM MESSAGING) -->
     <section class="card">
-        <h3 class="card-title" style="margin-bottom: 16px;">6. Communication Hub</h3>
-        
+        <h3 class="card-title" style="margin-bottom: 16px;">6. Messaging & Live Student Chat</h3>
+
         <div class="tab-nav">
-            <button class="tab-btn active" onclick="switchTab('whatsapp-tab', this)">WhatsApp Chat Center</button>
-            <button class="tab-btn" onclick="switchTab('internal-msg-tab', this)">Internal System Messages</button>
+            <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">Portal Live Web Chat</button>
+            <button class="tab-btn" onclick="switchTab('system-msg-tab', this)">Broadcast Form Message</button>
         </div>
 
-        <!-- TAB 1: WHATSAPP CHAT CENTER -->
-        <div id="whatsapp-tab" class="tab-content active">
-            <div class="whatsapp-container" id="waContainer">
-                <div class="whatsapp-contacts-panel">
-                    <div class="whatsapp-search">
-                        <input type="text" id="waContactSearch" placeholder="Search contacts..." onkeyup="filterContacts()" style="margin-bottom: 0;">
+        <!-- TAB 1: EMBEDDED LIVE WEB CHAT COMPONENT -->
+        <div id="live-chat-tab" class="tab-content active">
+            <div class="webchat-widget" id="chatWidget">
+                <div class="chat-sidebar">
+                    <div class="chat-sidebar-header">
+                        <input type="text" id="chatUserFilter" placeholder="Search user..." onkeyup="filterChatUsers()" style="margin-bottom: 0;">
                     </div>
-                    <div class="whatsapp-contact-list" id="contactList">
+                    <div class="chat-user-list" id="chatUserList">
                         {% for u in all_users %}
-                        <div class="whatsapp-contact-item" onclick="selectContact('{{ u.full_name }}', '{{ u.phone if u.phone else '' }}', '{{ u.role | upper }}', this)">
-                            <div class="contact-info">
+                        <div class="chat-user-item" onclick="openChatSession('{{ u.id }}', '{{ u.full_name }}', '{{ u.role | upper }}', this)">
+                            <div class="user-details">
                                 <h4>{{ u.full_name }}</h4>
-                                <p>{{ u.role | upper }} • {{ u.phone or 'No Phone' }}</p>
+                                <p>{{ u.role | upper }}</p>
                             </div>
-                            <span class="badge bg-success" style="font-size:0.65rem;">WA</span>
+                            <span class="status-dot online"></span>
                         </div>
                         {% else %}
-                        <div class="whatsapp-contact-item">
-                            <div class="contact-info">
+                        <div class="chat-user-item active" onclick="openChatSession('0', 'Demo Student', 'STUDENT', this)">
+                            <div class="user-details">
                                 <h4>Demo Student</h4>
-                                <p>STUDENT • +2348000000000</p>
+                                <p>STUDENT</p>
                             </div>
+                            <span class="status-dot online"></span>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
 
-                <div class="whatsapp-chat-panel">
-                    <div class="whatsapp-chat-header">
+                <div class="chat-main-area">
+                    <div class="chat-header">
                         <div>
-                            <h4 id="activeContactName" style="font-size: 0.9375rem;">Select a contact</h4>
-                            <p id="activeContactRole" style="font-size: 0.75rem; color: var(--text-muted);">WhatsApp Direct Communication</p>
+                            <h4 id="activeChatUser" style="font-size: 0.9375rem;">Select a Student or Lecturer</h4>
+                            <p id="activeChatRole" style="font-size: 0.75rem; color: var(--text-muted);">Portal In-Site Messenger</p>
                         </div>
-                        <button onclick="backToContacts()" class="btn btn-primary" style="display: none;" id="waBackBtn">Back</button>
+                        <button class="btn btn-primary" id="chatBackBtn" onclick="closeMobileChat()" style="display: none;">Back</button>
                     </div>
 
-                    <div class="quick-template-bar">
-                        <span class="template-chip" onclick="useTemplate('Your admission at MST Portal has been approved! Check your student portal.')">Admission Approved</span>
-                        <span class="template-chip" onclick="useTemplate('Your fee payment receipt has been confirmed. Thank you!')">Payment Confirmed</span>
-                        <span class="template-chip" onclick="useTemplate('Please submit your outstanding course registration documents.')">Document Request</span>
-                    </div>
-
-                    <div class="whatsapp-messages" id="chatMessages">
-                        <div class="message-bubble message-in">
-                            Hello Admin, I submitted my admission payment receipt.
-                            <div class="message-time">10:42 AM</div>
+                    <div class="chat-messages-container" id="chatThread">
+                        <div class="chat-bubble in">
+                            Hello Admin! I need help with my assigned course registration.
+                            <div class="chat-time">10:14 AM</div>
                         </div>
-                        <div class="message-bubble message-out">
-                            Thanks for reaching out! We are processing your verification now.
-                            <div class="message-time">10:45 AM</div>
+                        <div class="chat-bubble out">
+                            Hello! Which course code is missing on your dashboard?
+                            <div class="chat-time">10:15 AM</div>
                         </div>
                     </div>
 
-                    <div class="whatsapp-input-area">
-                        <input type="text" id="waMessageInput" placeholder="Type WhatsApp message..." style="margin-bottom: 0;">
-                        <button onclick="sendWhatsAppMessage()" class="btn btn-whatsapp" style="white-space: nowrap;">Send via WA</button>
-                    </div>
+                    <!-- Direct Form Action or AJAX Chat Trigger -->
+                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatSubmit(event)">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
+                        
+                        <div class="chat-input-bar">
+                            <input type="text" id="chatMessageInput" name="content" placeholder="Type message..." required style="margin-bottom: 0;">
+                            <button type="submit" class="btn btn-primary" style="white-space: nowrap;">Send</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: INTERNAL MESSAGING SYSTEM -->
-        <div id="internal-msg-tab" class="tab-content">
+        <!-- TAB 2: SYSTEM FORM BROADCAST MESSAGING -->
+        <div id="system-msg-tab" class="tab-content">
             <form action="{{ url_for('send_message') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
 
                 <label for="receiver_id">Recipient</label>
                 <select name="receiver_id" id="receiver_id" required>
-                    <option value="">-- Select Lecturer or Student --</option>
+                    <option value="">-- Select Recipient --</option>
                     {% for u in all_users %}
                         <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role | upper }})</option>
                     {% endfor %}
                 </select>
 
                 <label for="content">Message Content</label>
-                <textarea id="content" name="content" rows="3" placeholder="Type internal message..." required></textarea>
+                <textarea id="content" name="content" rows="3" placeholder="Type internal broadcast message..." required></textarea>
 
-                <button type="submit" class="btn btn-primary">Send Internal Message</button>
+                <button type="submit" class="btn btn-primary">Send Form Message</button>
             </form>
 
-            <h4 style="margin: 24px 0 12px 0; font-size: 1rem;">Inbox</h4>
+            <h4 style="margin: 24px 0 12px 0; font-size: 1rem;">System Inbox</h4>
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -777,7 +735,7 @@
         </div>
     </section>
 
-    <!-- Confirmation Modal Dialogue -->
+    <!-- Modal Dialogue -->
     <div id="confirmModal" class="modal-overlay">
         <div class="modal">
             <h3 id="modalTitle" class="modal-title">Confirm Action</h3>
@@ -790,8 +748,6 @@
     </div>
 
     <script>
-        let currentSelectedPhone = "";
-
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -799,64 +755,53 @@
             btn.classList.add('active');
         }
 
-        function selectContact(name, phone, role, el) {
-            document.querySelectorAll('.whatsapp-contact-item').forEach(item => item.classList.remove('active'));
-            if(el) el.classList.add('active');
+        function openChatSession(userId, userName, userRole, element) {
+            document.querySelectorAll('.chat-user-item').forEach(item => item.classList.remove('active'));
+            if (element) element.classList.add('active');
 
-            currentSelectedPhone = phone;
-            document.getElementById('activeContactName').innerText = name;
-            document.getElementById('activeContactRole').innerText = role + (phone ? ' • ' + phone : ' • No Phone Number');
+            document.getElementById('chat_receiver_id').value = userId;
+            document.getElementById('activeChatUser').innerText = userName;
+            document.getElementById('activeChatRole').innerText = userRole + ' • Connected Live';
 
             if (window.innerWidth <= 768) {
-                document.getElementById('waContainer').classList.add('chat-active');
-                document.getElementById('waBackBtn').style.display = 'block';
+                document.getElementById('chatWidget').classList.add('chat-open');
+                document.getElementById('chatBackBtn').style.display = 'block';
             }
         }
 
-        function backToContacts() {
-            document.getElementById('waContainer').classList.remove('chat-active');
-            document.getElementById('waBackBtn').style.display = 'none';
+        function closeMobileChat() {
+            document.getElementById('chatWidget').classList.remove('chat-open');
+            document.getElementById('chatBackBtn').style.display = 'none';
         }
 
-        function useTemplate(text) {
-            document.getElementById('waMessageInput').value = text;
-        }
+        function handleChatSubmit(e) {
+            const receiverId = document.getElementById('chat_receiver_id').value;
+            const input = document.getElementById('chatMessageInput');
+            const messageText = input.value.trim();
 
-        function sendWhatsAppMessage() {
-            const input = document.getElementById('waMessageInput');
-            const message = input.value.trim();
-
-            if (!message) {
-                alert('Please enter a message.');
-                return;
+            if (!receiverId) {
+                e.preventDefault();
+                alert('Please select a user from the chat sidebar list first.');
+                return false;
             }
 
-            if (!currentSelectedPhone) {
-                alert('Please select a contact with a valid phone number or enter one.');
-                return;
+            // Append chat bubble to thread UI
+            if (messageText) {
+                const thread = document.getElementById('chatThread');
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble out';
+                
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                bubble.innerHTML = `${messageText}<div class="chat-time">${time}</div>`;
+                
+                thread.appendChild(bubble);
+                thread.scrollTop = thread.scrollHeight;
             }
-
-            // Append outgoing message visual bubble inside dashboard
-            const chatBox = document.getElementById('chatMessages');
-            const newBubble = document.createElement('div');
-            newBubble.className = 'message-bubble message-out';
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            newBubble.innerHTML = `${message}<div class="message-time">${timeStr}</div>`;
-            chatBox.appendChild(newBubble);
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            // Trigger WhatsApp web API link directly
-            const cleanPhone = currentSelectedPhone.replace(/[^0-9]/g, '');
-            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-            window.open(waUrl, '_blank');
-
-            input.value = '';
         }
 
-        function filterContacts() {
-            const filter = document.getElementById('waContactSearch').value.toLowerCase();
-            const items = document.querySelectorAll('.whatsapp-contact-item');
+        function filterChatUsers() {
+            const filter = document.getElementById('chatUserFilter').value.toLowerCase();
+            const items = document.querySelectorAll('.chat-user-item');
             items.forEach(item => {
                 const text = item.innerText.toLowerCase();
                 item.style.display = text.includes(filter) ? 'flex' : 'none';
