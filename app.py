@@ -158,7 +158,13 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
+        
+        try:
+            user = User.query.filter_by(username=username).first()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database error encountered. Please try logging in again.', 'danger')
+            return render_template('login.html')
 
         if user and check_password_hash(user.password, password):
             if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
@@ -178,8 +184,8 @@ def login():
                 return redirect(url_for('student_dashboard'))
         else:
             flash('Invalid login credentials.', 'danger')
+            
     return render_template('login.html')
-
 @app.route('/logout')
 @login_required
 def logout():
