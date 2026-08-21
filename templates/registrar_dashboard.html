@@ -2,78 +2,620 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Registrar Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Dashboard - MST</title>
     <style>
-        body { background-color: #0b1329; color: #ffffff; font-family: Arial, sans-serif; margin: 20px; }
-        .card { background: #131d38; padding: 20px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #23345c; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #0c152b; }
-        th, td { border: 1px solid #23345c; padding: 10px; text-align: left; }
-        th { background: #060a17; }
+        :root {
+            --bg-base: #0b1329;
+            --bg-card: #131d38;
+            --bg-table: #0c152b;
+            --bg-input: #070d1c;
+            --border-color: #23345c;
+            --text-main: #ffffff;
+            --text-muted: #8a99ad;
+            --primary: #0d6efd;
+            --primary-hover: #0b5ed7;
+            --success: #28a745;
+            --success-hover: #218838;
+            --danger: #dc3545;
+            --danger-hover: #bb2d3b;
+            --warning: #ffc107;
+            --warning-text: #000000;
+            --chat-bg: #070d1c;
+            --chat-bubble-in: #1c2b4d;
+            --chat-bubble-out: #0d6efd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+        }
+
+        .header-title h2 {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .btn-logout {
+            color: #ff6b6b;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: #ff6b6b;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .search-box {
+            max-width: 280px;
+        }
+
+        .transmitted-card {
+            border: 1px solid var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-table);
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            background: #060a17;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+
+        .bg-warning { background: var(--warning); color: var(--warning-text); }
+        .bg-success { background: var(--success); color: #fff; }
+
+        select, input, textarea {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        /* TABS STYLING */
+        .tab-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* IN-SITE LIVE CHAT COMPONENT STYLING */
+        .webchat-widget {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--chat-bg);
+        }
+
+        @media (max-width: 768px) {
+            .webchat-widget {
+                grid-template-columns: 1fr;
+                height: 550px;
+            }
+            .chat-main-area { display: none; }
+            .webchat-widget.chat-open .chat-sidebar { display: none; }
+            .webchat-widget.chat-open .chat-main-area { display: flex; }
+        }
+
+        .chat-sidebar {
+            background: #091022;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chat-user-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-user-item {
+            padding: 12px;
+            border-bottom: 1px solid rgba(35, 52, 92, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s ease;
+        }
+
+        .chat-user-item:hover, .chat-user-item.active {
+            background: var(--bg-card);
+        }
+
+        .user-details h4 {
+            font-size: 0.875rem;
+            color: var(--text-main);
+        }
+
+        .user-details p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6c757d;
+            display: inline-block;
+        }
+
+        .status-dot.online { background: #28a745; }
+
+        .chat-main-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-table);
+        }
+
+        .chat-header {
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.in {
+            background: var(--chat-bubble-in);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.out {
+            background: var(--chat-bubble-out);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+            color: #fff;
+        }
+
+        .chat-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-input-bar {
+            padding: 12px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
-    <h2>REGISTRAR DASHBOARD</h2>
-    <p>Official School Records & Transmitted Admin Data</p>
-    <a href="/logout" style="color: #ff6b6b;">Logout</a>
-    <hr style="border-color: #23345c; margin-bottom: 20px;">
 
-    <!-- Transmitted Data Box -->
-    <div class="card" style="border: 1px solid #28a745;">
-        <h3>Transmitted Data Reports from Admin</h3>
+    <header class="header">
+        <div class="header-title">
+            <h1>REGISTRAR DASHBOARD</h1>
+            <h2>Official School Records & Transmitted Admin Data</h2>
+        </div>
+        <a href="{{ url_for('logout') if url_for else '/logout' }}" class="btn-logout">Logout</a>
+    </header>
+
+    <!-- 1. TRANSMITTED DATA REPORTS FROM ADMIN -->
+    <section class="card transmitted-card">
+        <h3 class="card-title" style="color: #28a745;">Transmitted Data Reports from Admin</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; margin-bottom: 16px;">
+            Official records synchronized directly from the System Administrator.
+        </p>
+        
         {% for msg in messages %}
-            <div style="background: #070d1c; padding: 12px; margin-bottom: 10px; border-radius: 4px; white-space: pre-line;">
-                <strong>Received on {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}:</strong>
-                <p>{{ msg.content }}</p>
+            <div style="background: var(--bg-input); padding: 14px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); white-space: pre-line;">
+                <strong style="color: var(--primary);">Received on {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp and msg.timestamp.strftime else msg.timestamp }}:</strong>
+                <p style="margin-top: 6px; font-size: 0.9rem;">{{ msg.content }}</p>
             </div>
         {% else %}
-            <p>No official reports transmitted from Admin yet.</p>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">No official reports transmitted from Admin yet.</p>
         {% endfor %}
-    </div>
+    </section>
 
-    <!-- Active Lecturers Summary -->
-    <div class="card">
-        <h3>Active Lecturers Count: {{ lecturers|length }}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Lecturer Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for lec in lecturers %}
-                <tr>
-                    <td>{{ lec.full_name }}</td>
-                    <td>{{ lec.email }}</td>
-                    <td>{{ lec.phone }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <!-- 2. ACTIVE LECTURERS SUMMARY -->
+    <section class="card">
+        <div class="card-header">
+            <h3 class="card-title">Active Lecturers Count: {{ lecturers|length }}</h3>
+            <input type="text" id="lecturerSearch" class="search-box" placeholder="Filter lecturers..." onkeyup="filterTable('lecturerSearch', 'lecturerTable')">
+        </div>
+        <div class="table-responsive">
+            <table id="lecturerTable">
+                <thead>
+                    <tr>
+                        <th>Lecturer Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lec in lecturers %}
+                    <tr>
+                        <td><strong>{{ lec.full_name }}</strong></td>
+                        <td>{{ lec.email }}</td>
+                        <td>{{ lec.phone or 'N/A' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No active lecturers found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-    <!-- Active Students Summary -->
-    <div class="card">
-        <h3>Registered Students Count: {{ students|length }}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Student Name</th>
-                    <th>Email</th>
-                    <th>Admission Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for std in students %}
-                <tr>
-                    <td>{{ std.full_name }}</td>
-                    <td>{{ std.email }}</td>
-                    <td>{{ std.admission_status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <!-- 3. ACTIVE STUDENTS SUMMARY -->
+    <section class="card">
+        <div class="card-header">
+            <h3 class="card-title">Registered Students Count: {{ students|length }}</h3>
+            <input type="text" id="studentSearch" class="search-box" placeholder="Filter students..." onkeyup="filterTable('studentSearch', 'studentTable')">
+        </div>
+        <div class="table-responsive">
+            <table id="studentTable">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Email</th>
+                        <th>Admission Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for std in students %}
+                    <tr>
+                        <td><strong>{{ std.full_name }}</strong></td>
+                        <td>{{ std.email }}</td>
+                        <td>
+                            {% if std.admission_status == 'Admitted' or std.is_approved %}
+                                <span class="badge bg-success">Admitted</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No registered students found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 4. COMMUNICATION HUB (EMBEDDED LIVE CHAT & DIRECT MESSAGING) -->
+    <section class="card">
+        <h3 class="card-title" style="margin-bottom: 16px;">Registrar Messaging & Live Student Chat</h3>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">Portal Live Web Chat</button>
+            <button class="tab-btn" onclick="switchTab('system-msg-tab', this)">Send Form Message</button>
+        </div>
+
+        <!-- TAB 1: EMBEDDED LIVE WEB CHAT COMPONENT -->
+        <div id="live-chat-tab" class="tab-content active">
+            <div class="webchat-widget" id="chatWidget">
+                <div class="chat-sidebar">
+                    <div class="chat-sidebar-header">
+                        <input type="text" id="chatUserFilter" placeholder="Search user..." onkeyup="filterChatUsers()" style="margin-bottom: 0;">
+                    </div>
+                    <div class="chat-user-list" id="chatUserList">
+                        {% for u in users %}
+                        <div class="chat-user-item" onclick="openChatSession('{{ u.id }}', '{{ u.full_name }}', '{{ u.role | upper }}', this)">
+                            <div class="user-details">
+                                <h4>{{ u.full_name }}</h4>
+                                <p>{{ u.role | upper }}</p>
+                            </div>
+                            <span class="status-dot online"></span>
+                        </div>
+                        {% else %}
+                        <div class="chat-user-item active" onclick="openChatSession('0', 'Demo Student', 'STUDENT', this)">
+                            <div class="user-details">
+                                <h4>Demo Student</h4>
+                                <p>STUDENT</p>
+                            </div>
+                            <span class="status-dot online"></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="chat-main-area">
+                    <div class="chat-header">
+                        <div>
+                            <h4 id="activeChatUser" style="font-size: 0.9375rem;">Select a Contact to Chat</h4>
+                            <p id="activeChatRole" style="font-size: 0.75rem; color: var(--text-muted);">Registrar In-Site Messenger</p>
+                        </div>
+                        <button class="btn btn-primary" id="chatBackBtn" onclick="closeMobileChat()" style="display: none;">Back</button>
+                    </div>
+
+                    <div class="chat-messages-container" id="chatThread">
+                        <div class="chat-bubble in">
+                            Hello Registrar Office! I am inquiring about my official transcript status.
+                            <div class="chat-time">10:14 AM</div>
+                        </div>
+                        <div class="chat-bubble out">
+                            Hello! Transcripts are currently being processed after admin data verification.
+                            <div class="chat-time">10:15 AM</div>
+                        </div>
+                    </div>
+
+                    <form id="liveChatForm" action="/send_message" method="POST" onsubmit="handleChatSubmit(event)">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
+                        
+                        <div class="chat-input-bar">
+                            <input type="text" id="chatMessageInput" name="content" placeholder="Type message..." required style="margin-bottom: 0;">
+                            <button type="submit" class="btn btn-primary" style="white-space: nowrap;">Send</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DIRECT FORM MESSAGING -->
+        <div id="system-msg-tab" class="tab-content">
+            <form action="/send_message" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+                <label for="receiver_id">Recipient</label>
+                <select name="receiver_id" id="receiver_id" required>
+                    <option value="">-- Select Recipient --</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role | upper }})</option>
+                    {% endfor %}
+                </select>
+
+                <label for="content">Message Content</label>
+                <textarea id="content" name="content" rows="3" placeholder="Type message to student or staff..." required></textarea>
+
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <script>
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function openChatSession(userId, userName, userRole, element) {
+            document.querySelectorAll('.chat-user-item').forEach(item => item.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            document.getElementById('chat_receiver_id').value = userId;
+            document.getElementById('activeChatUser').innerText = userName;
+            document.getElementById('activeChatRole').innerText = userRole + ' • Connected Live';
+
+            if (window.innerWidth <= 768) {
+                document.getElementById('chatWidget').classList.add('chat-open');
+                document.getElementById('chatBackBtn').style.display = 'block';
+            }
+        }
+
+        function closeMobileChat() {
+            document.getElementById('chatWidget').classList.remove('chat-open');
+            document.getElementById('chatBackBtn').style.display = 'none';
+        }
+
+        function handleChatSubmit(e) {
+            const receiverId = document.getElementById('chat_receiver_id').value;
+            const input = document.getElementById('chatMessageInput');
+            const messageText = input.value.trim();
+
+            if (!receiverId) {
+                e.preventDefault();
+                alert('Please select a user from the chat sidebar list first.');
+                return false;
+            }
+
+            if (messageText) {
+                const thread = document.getElementById('chatThread');
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble out';
+                
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                bubble.innerHTML = `${messageText}<div class="chat-time">${time}</div>`;
+                
+                thread.appendChild(bubble);
+                thread.scrollTop = thread.scrollHeight;
+            }
+        }
+
+        function filterChatUsers() {
+            const filter = document.getElementById('chatUserFilter').value.toLowerCase();
+            const items = document.querySelectorAll('.chat-user-item');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(filter) ? 'flex' : 'none';
+            });
+        }
+
+        function filterTable(inputId, tableId) {
+            const input = document.getElementById(inputId);
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < trs.length; i++) {
+                const tr = trs[i];
+                const text = tr.textContent || tr.innerText;
+                tr.style.display = text.toLowerCase().includes(filter) ? "" : "none";
+            }
+        }
+    </script>
 </body>
-  </html>
+</html>
