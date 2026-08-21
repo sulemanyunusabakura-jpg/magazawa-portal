@@ -594,12 +594,14 @@ def end_lecture(lecturer_id):
     flash('Lecture ended successfully.', 'info')
     return redirect(url_for('lecturer_dashboard'))
 
-# --- WHATSAPP-STYLE CHAT SYSTEM ---
+# --- ENHANCED CAMPUS COMMUNITY CHAT SYSTEM ---
 @app.route('/chat')
 @login_required
 def chat():
     users = User.query.filter(User.id != current_user.id).all()
-    return render_template('chat.html', users=users, active_receiver=None, conversation=[])
+    # Fetch global campus community messages (receiver_id is None)
+    global_messages = Message.query.filter_by(receiver_id=None).order_by(Message.timestamp.asc()).all()
+    return render_template('chat.html', users=users, active_receiver=None, conversation=global_messages)
 
 @app.route('/chat/<int:receiver_id>')
 @login_required
@@ -628,13 +630,41 @@ def chat_with(receiver_id):
 def send_chat_message():
     receiver_id = request.form.get('receiver_id')
     content = request.form.get('content', '').strip()
+    file = request.files.get('file')
+    
+    file_filename = ""
+    msg_type = 'text'
 
-    if receiver_id and content:
-        msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=content)
+    if file and file.filename != "":
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        file_filename = filename
+        
+        # Categorize media files
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
+            msg_type = 'image'
+        elif ext in ['webm', 'mp3', 'wav', 'ogg', 'm4a']:
+            msg_type = 'audio'
+        else:
+            msg_type = 'file'
+
+    target_receiver = int(receiver_id) if receiver_id and receiver_id.isdigit() else None
+
+    if content or file_filename:
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_id=target_receiver,
+            content=content,
+            file_path=file_filename,
+            msg_type=msg_type
+        )
         db.session.add(msg)
         db.session.commit()
 
-    return redirect(url_for('chat_with', receiver_id=receiver_id))
+    if target_receiver:
+        return redirect(url_for('chat_with', receiver_id=target_receiver))
+    return redirect(url_for('chat'))
 
 @app.route('/send_message', methods=['POST'])
 @login_required
