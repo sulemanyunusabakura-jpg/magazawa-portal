@@ -65,3 +65,14 @@ class SchoolDataTransfer(db.Model):
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
     payload = db.Column(db.Text, nullable=False)
     sent_by = db.Column(db.String(100), default="Admin")
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+    
+    # ... your existing fields ...
+    
+    # ADD THIS COLUMN
+    payment_status = db.Column(db.String(20), default='Unpaid')
