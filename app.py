@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, inspect, text
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -33,9 +33,38 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-# INITIALIZE DEFAULT ACCOUNTS IN DATABASE
+# --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
+def auto_migrate_db():
+    """Inspects existing tables and automatically adds missing columns without dropping data."""
+    inspector = inspect(db.engine)
+    
+    # Check if 'message' table exists
+    if 'message' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('message')]
+        
+        with db.engine.connect() as conn:
+            # 1. Add 'msg_type' if missing
+            if 'msg_type' not in columns:
+                try:
+                    conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
+                    conn.commit()
+                    print("Successfully added missing column 'msg_type' to 'message' table.")
+                except Exception as e:
+                    print(f"Migration error (msg_type): {e}")
+
+            # 2. Add 'file_path' if missing
+            if 'file_path' not in columns:
+                try:
+                    conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
+                    conn.commit()
+                    print("Successfully added missing column 'file_path' to 'message' table.")
+                except Exception as e:
+                    print(f"Migration error (file_path): {e}")
+
+# INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
     db.create_all()
+    auto_migrate_db()  # Automatically patch schema on startup
 
     # 1. ADMIN ACCOUNT
     admin = User.query.filter_by(role='admin').first()
@@ -599,7 +628,6 @@ def end_lecture(lecturer_id):
 @login_required
 def chat():
     users = User.query.filter(User.id != current_user.id).all()
-    # Fetch global campus community messages (receiver_id is None)
     global_messages = Message.query.filter_by(receiver_id=None).order_by(Message.timestamp.asc()).all()
     return render_template('chat.html', users=users, active_receiver=None, conversation=global_messages)
 
@@ -640,7 +668,6 @@ def send_chat_message():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         file_filename = filename
         
-        # Categorize media files
         ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
         if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
             msg_type = 'image'
