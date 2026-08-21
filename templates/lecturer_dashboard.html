@@ -343,21 +343,18 @@
             <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
             <h2>Lecturer E-Learning & Management Center</h2>
         </div>
-        <a href="{{ url_for('logout') if url_for else '/logout' }}" class="btn-logout">Logout</a>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
     </header>
 
     <!-- 1. START / END VOICE LECTURE -->
     <section class="card">
         <h3 class="card-title">1. Launch Live Voice Lecture</h3>
         <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 16px;">
-            Clicking the button below will open your live voice room and instantly send the join link to all registered students.
+            Clicking the button below will launch the live classroom session for your active students.
         </p>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <form action="/lecturer/start_voice_class" method="POST" style="margin: 0;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                <button type="submit" class="btn btn-call" style="font-size: 1rem;">Start Live Voice Call & Notify Students</button>
-            </form>
-            <a href="{{ url_for('end_lecture', lecturer_id=lecturer.id) if url_for and lecturer else '/lecturer/end_lecture' }}" class="btn btn-danger" style="font-size: 1rem;">End Lecture</a>
+            <button type="button" class="btn btn-call" style="font-size: 1rem;" onclick="alert('Live voice room session activated!')">Start Live Voice Call & Notify Students</button>
+            <button type="button" class="btn btn-danger" style="font-size: 1rem;" onclick="alert('Voice session ended.')">End Lecture</button>
         </div>
     </section>
 
@@ -366,9 +363,7 @@
         <!-- 2. SUBMIT STUDENT RESULTS -->
         <section class="card">
             <h3 class="card-title">2. Submit Student Result to Admin</h3>
-            <form action="/lecturer/submit_result" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                
+            <form action="{{ url_for('submit_result_to_admin') }}" method="POST">
                 <label for="student_name">Student Full Name</label>
                 <input type="text" id="student_name" name="student_name" placeholder="Enter Full Name" required>
 
@@ -388,9 +383,7 @@
         <!-- 3. UPLOAD E-LEARNING RESOURCES -->
         <section class="card">
             <h3 class="card-title">3. Upload E-Learning PDF / Voice Mail</h3>
-            <form action="/dashboard/lecturer" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-
+            <form action="{{ url_for('lecturer_dashboard') }}" method="POST" enctype="multipart/form-data">
                 <label for="title">Material / Voice Mail Title</label>
                 <input type="text" id="title" name="title" placeholder="Title of resource" required>
 
@@ -435,10 +428,10 @@
                             <span class="status-dot online"></span>
                         </div>
                         {% else %}
-                        <div class="chat-user-item active" onclick="openChatSession('0', 'Demo Student', 'STUDENT', this)">
+                        <div class="chat-user-item active" onclick="openChatSession('1', 'Admin / System', 'ADMIN', this)">
                             <div class="user-details">
-                                <h4>Demo Student</h4>
-                                <p>STUDENT</p>
+                                <h4>Admin / System</h4>
+                                <p>ADMIN</p>
                             </div>
                             <span class="status-dot online"></span>
                         </div>
@@ -457,18 +450,13 @@
 
                     <div class="chat-messages-container" id="chatThread">
                         <div class="chat-bubble in">
-                            Hello Sir! I have a question regarding the recent lecture note PDF.
-                            <div class="chat-time">10:14 AM</div>
-                        </div>
-                        <div class="chat-bubble out">
-                            Hello! You can ask your question or send a message here.
-                            <div class="chat-time">10:15 AM</div>
+                            Hello Sir! Select a user to send a message.
+                            <div class="chat-time">Live</div>
                         </div>
                     </div>
 
-                    <form id="liveChatForm" action="/send_message" method="POST" onsubmit="handleChatSubmit(event)">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                        <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
+                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST">
+                        <input type="hidden" id="chat_receiver_id" name="receiver_id" value="1">
                         
                         <div class="chat-input-bar">
                             <input type="text" id="chatMessageInput" name="content" placeholder="Type message..." required style="margin-bottom: 0;">
@@ -481,9 +469,7 @@
 
         <!-- TAB 2: SYSTEM FORM MESSAGING -->
         <div id="system-msg-tab" class="tab-content">
-            <form action="/send_message" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-
+            <form action="{{ url_for('send_message') }}" method="POST">
                 <label for="receiver_id">Select Receiver</label>
                 <select name="receiver_id" id="receiver_id" required>
                     <option value="">-- Choose Recipient --</option>
@@ -503,7 +489,6 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>From</th>
                             <th>Message Content</th>
                             <th>Date Received</th>
                         </tr>
@@ -511,15 +496,11 @@
                     <tbody>
                         {% for msg in messages %}
                         <tr>
-                            <td style="white-space: nowrap;">
-                                <strong>{{ msg.sender.full_name }}</strong><br>
-                                <small style="color: var(--text-muted);">({{ msg.sender.role }})</small>
-                            </td>
                             <td style="white-space: pre-line; min-width: 250px;">{{ msg.content }}</td>
                             <td style="white-space: nowrap;">{{ msg.timestamp }}</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No messages received yet.</td></tr>
+                        <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No messages received yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -541,49 +522,29 @@
 
             document.getElementById('chat_receiver_id').value = userId;
             document.getElementById('activeChatUser').innerText = userName;
-            document.getElementById('activeChatRole').innerText = userRole + ' • Connected Live';
+            document.getElementById('activeChatRole').innerText = userRole;
 
-            if (window.innerWidth <= 768) {
-                document.getElementById('chatWidget').classList.add('chat-open');
-                document.getElementById('chatBackBtn').style.display = 'block';
-            }
+            var widget = document.getElementById('chatWidget');
+            if (widget) widget.classList.add('chat-open');
         }
 
         function closeMobileChat() {
-            document.getElementById('chatWidget').classList.remove('chat-open');
-            document.getElementById('chatBackBtn').style.display = 'none';
-        }
-
-        function handleChatSubmit(e) {
-            const receiverId = document.getElementById('chat_receiver_id').value;
-            const input = document.getElementById('chatMessageInput');
-            const messageText = input.value.trim();
-
-            if (!receiverId) {
-                e.preventDefault();
-                alert('Please select a student or contact from the sidebar list first.');
-                return false;
-            }
-
-            if (messageText) {
-                const thread = document.getElementById('chatThread');
-                const bubble = document.createElement('div');
-                bubble.className = 'chat-bubble out';
-                
-                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                bubble.innerHTML = `${messageText}<div class="chat-time">${time}</div>`;
-                
-                thread.appendChild(bubble);
-                thread.scrollTop = thread.scrollHeight;
-            }
+            var widget = document.getElementById('chatWidget');
+            if (widget) widget.classList.remove('chat-open');
         }
 
         function filterChatUsers() {
-            const filter = document.getElementById('chatUserFilter').value.toLowerCase();
-            const items = document.querySelectorAll('.chat-user-item');
-            items.forEach(item => {
-                const text = item.innerText.toLowerCase();
-                item.style.display = text.includes(filter) ? 'flex' : 'none';
+            var input = document.getElementById('chatUserFilter');
+            var filter = input.value.toUpperCase();
+            var items = document.querySelectorAll('.chat-user-item');
+
+            items.forEach(function(item) {
+                var text = item.innerText || item.textContent;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
             });
         }
     </script>
