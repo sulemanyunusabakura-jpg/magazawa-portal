@@ -335,19 +335,33 @@ def lecturer_dashboard():
 @login_required
 def student_dashboard():
     if current_user.role != 'student':
+        flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
 
     try:
+        # Fetch enrolled courses and published results safely
         courses = Course.query.filter_by(student_id=current_user.id).all()
         results = Result.query.filter_by(student_id=current_user.id).all()
-        has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
+        
+        # Safe payment check with fallback to 'Unpaid'
+        payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
+        has_paid = payment_status.strip().lower() == 'paid'
+        
+        # Only load learning materials if student has paid fees
         materials = Material.query.all() if has_paid else []
-    except Exception:
+        
+    except Exception as e:
         db.session.rollback()
         courses, results, materials = [], [], []
+        flash("Dashboard data warning: Database synchronization required.", "warning")
 
-    return render_template('student_dashboard.html', student=current_user, courses=courses, results=results, materials=materials)
-
+    return render_template(
+        'student_dashboard.html',
+        student=current_user,
+        courses=courses,
+        results=results,
+        materials=materials
+    )
 # --- ADMIN ACTIONS ---
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
