@@ -2,221 +2,897 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - MST Portal</title>
     <style>
-        body { background-color: #0b1329; color: #ffffff; font-family: Arial, sans-serif; margin: 20px; }
-        .card { background: #131d38; padding: 20px; margin-bottom: 25px; border-radius: 8px; border: 1px solid #23345c; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #0c152b; }
-        th, td { border: 1px solid #23345c; padding: 10px; text-align: left; font-size: 14px; }
-        th { background: #060a17; }
-        .btn { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; color: white; display: inline-block; font-size: 13px; }
-        .btn-success { background: #28a745; }
-        .btn-danger { background: #dc3545; }
-        .btn-primary { background: #0d6efd; }
-        .badge { padding: 3px 7px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .bg-warning { background: #ffc107; color: #000; }
-        .bg-success { background: #198754; color: #fff; }
-        select, input, textarea { background: #070d1c; color: #fff; border: 1px solid #23345c; padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 8px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        :root {
+            --bg-base: #0b1329;
+            --bg-card: #131d38;
+            --bg-table: #0c152b;
+            --bg-input: #070d1c;
+            --border-color: #23345c;
+            --text-main: #ffffff;
+            --text-muted: #8a99ad;
+            --primary: #0d6efd;
+            --primary-hover: #0b5ed7;
+            --success: #198754;
+            --success-hover: #157347;
+            --danger: #dc3545;
+            --danger-hover: #bb2d3b;
+            --warning: #ffc107;
+            --warning-text: #000000;
+            --whatsapp-green: #25d366;
+            --whatsapp-hover: #1da851;
+            --whatsapp-bg: #0b141a;
+            --whatsapp-bubble-in: #202c33;
+            --whatsapp-bubble-out: #005c4b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+        }
+
+        .header-title h2 {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .btn-logout {
+            color: #ff6b6b;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: #ff6b6b;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .search-box {
+            max-width: 280px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-table);
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            background: #060a17;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            gap: 6px;
+        }
+
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: var(--success-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-whatsapp { background: var(--whatsapp-green); color: #000; font-weight: 700; }
+        .btn-whatsapp:hover { background: var(--whatsapp-hover); color: #fff; }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+
+        .bg-warning { background: var(--warning); color: var(--warning-text); }
+        .bg-success { background: var(--success); color: #fff; }
+
+        select, input, textarea {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .action-card {
+            border-left: 4px solid var(--success);
+        }
+
+        /* Tabs Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* WhatsApp UI Dashboard Section */
+        .whatsapp-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 520px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--whatsapp-bg);
+        }
+
+        @media (max-width: 768px) {
+            .whatsapp-container {
+                grid-template-columns: 1fr;
+                height: 600px;
+            }
+            .whatsapp-chat-panel {
+                display: none;
+            }
+            .whatsapp-container.chat-active .whatsapp-contacts-panel {
+                display: none;
+            }
+            .whatsapp-container.chat-active .whatsapp-chat-panel {
+                display: flex;
+            }
+        }
+
+        .whatsapp-contacts-panel {
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: #111b21;
+        }
+
+        .whatsapp-search {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .whatsapp-contact-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .whatsapp-contact-item {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+
+        .whatsapp-contact-item:hover, .whatsapp-contact-item.active {
+            background: #202c33;
+        }
+
+        .contact-info h4 {
+            font-size: 0.875rem;
+            color: var(--text-main);
+        }
+
+        .contact-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .whatsapp-chat-panel {
+            display: flex;
+            flex-direction: column;
+            background: #0b141a;
+        }
+
+        .whatsapp-chat-header {
+            padding: 12px 16px;
+            background: #202c33;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .whatsapp-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .message-in {
+            background: var(--whatsapp-bubble-in);
+            align-self: flex-start;
+            color: #e9edef;
+        }
+
+        .message-out {
+            background: var(--whatsapp-bubble-out);
+            align-self: flex-end;
+            color: #e9edef;
+        }
+
+        .message-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .whatsapp-input-area {
+            padding: 10px;
+            background: #202c33;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .quick-template-bar {
+            padding: 6px 12px;
+            background: #111b21;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .template-chip {
+            background: #202c33;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .template-chip:hover {
+            color: var(--text-main);
+            background: #2a3942;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            max-width: 450px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title { font-size: 1.25rem; margin-bottom: 12px; }
+        .modal-body { font-size: 0.9375rem; color: var(--text-muted); margin-bottom: 24px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
     </style>
 </head>
 <body>
 
-    <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
-    <h3>System Administrator Control Panel</h3>
-    <a href="/logout" style="color: #ff6b6b;">Logout</a>
-    <hr style="border-color: #23345c; margin-bottom: 20px;">
+    <header class="header">
+        <div class="header-title">
+            <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
+            <h2>System Administrator Control Panel</h2>
+        </div>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+    </header>
 
     <!-- 1. LECTURER APPLICATIONS -->
-    <div class="card">
-        <h3>1. Lecturer Applications</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Full Name</th>
-                    <th>Email / Phone</th>
-                    <th>Desired Courses</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for lec in lecturers %}
-                <tr>
-                    <td>{{ lec.full_name }}</td>
-                    <td>{{ lec.email }}<br><small>{{ lec.phone }}</small></td>
-                    <td>{{ lec.desired_courses or 'Not specified' }}</td>
-                    <td>
-                        {% if lec.is_approved %}
-                            <span class="badge bg-success">Approved</span>
-                        {% else %}
-                            <span class="badge bg-warning">Pending</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not lec.is_approved %}
-                            <a href="{{ url_for('approve_lecturer', id=lec.id) }}" class="btn btn-success">Approve</a>
-                            <a href="{{ url_for('reject_lecturer', id=lec.id) }}" class="btn btn-danger">Reject</a>
-                        {% else %}
-                            <span style="color: #888;">Active</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5">No lecturer applications found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <section class="card">
+        <div class="card-header">
+            <h3 class="card-title">1. Lecturer Applications</h3>
+            <input type="text" id="lecturerSearch" class="search-box" placeholder="Filter lecturers..." onkeyup="filterTable('lecturerSearch', 'lecturerTable')">
+        </div>
+        <div class="table-responsive">
+            <table id="lecturerTable">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email / Phone</th>
+                        <th>Desired Courses</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lec in lecturers %}
+                    <tr>
+                        <td>{{ lec.full_name }}</td>
+                        <td>
+                            {{ lec.email }}<br>
+                            <small style="color: var(--text-muted);">{{ lec.phone }}</small>
+                        </td>
+                        <td>{{ lec.desired_courses or 'Not specified' }}</td>
+                        <td>
+                            {% if lec.is_approved %}
+                                <span class="badge bg-success">Approved</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                {% if not lec.is_approved %}
+                                    <button onclick="confirmAction('{{ url_for('approve_lecturer', id=lec.id) }}', 'Approve Lecturer', 'Are you sure you want to approve this lecturer application?')" class="btn btn-success">Approve</button>
+                                    <button onclick="confirmAction('{{ url_for('reject_lecturer', id=lec.id) }}', 'Reject Lecturer', 'Are you sure you want to reject this lecturer application?')" class="btn btn-danger">Reject</button>
+                                {% else %}
+                                    <span style="color: var(--text-muted); padding-top: 4px;">Active</span>
+                                {% endif %}
+                                <a href="https://wa.me/{{ lec.phone | replace('+', '') | replace(' ', '') }}?text=Hello%20{{ lec.full_name | urlencode }},%20regarding%20your%20Lecturer%20application%20at%20MST%20Portal..." target="_blank" class="btn btn-whatsapp">
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No lecturer applications found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 
     <!-- 2 & 3. STUDENT ADMISSIONS & PAYMENT APPROVAL -->
-    <div class="card">
-        <h3>2 & 3. Student Admissions & Payment Approvals</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Admission Status</th>
-                    <th>Payment Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for std in students %}
-                <tr>
-                    <td>{{ std.full_name }}</td>
-                    <td>{{ std.email }}</td>
-                    <td>
-                        {% if std.is_approved %}
-                            <span class="badge bg-success">Admitted</span>
-                        {% else %}
-                            <span class="badge bg-warning">Pending</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if std.payment_status == 'Paid' %}
-                            <span class="badge bg-success">Paid</span>
-                        {% else %}
-                            <span class="badge bg-warning">Pending Payment</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not std.is_approved %}
-                            <a href="{{ url_for('approve_student', id=std.id) }}" class="btn btn-success">Approve Admission</a>
-                            <a href="{{ url_for('reject_student', id=std.id) }}" class="btn btn-danger">Reject</a>
-                        {% endif %}
+    <section class="card">
+        <div class="card-header">
+            <h3 class="card-title">2 & 3. Student Admissions & Payment Approvals</h3>
+            <input type="text" id="studentSearch" class="search-box" placeholder="Filter students..." onkeyup="filterTable('studentSearch', 'studentTable')">
+        </div>
+        <div class="table-responsive">
+            <table id="studentTable">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Admission Status</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for std in students %}
+                    <tr>
+                        <td>{{ std.full_name }}</td>
+                        <td>{{ std.email }}</td>
+                        <td>
+                            {% if std.is_approved %}
+                                <span class="badge bg-success">Admitted</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if std.payment_status == 'Paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending Payment</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                {% if not std.is_approved %}
+                                    <button onclick="confirmAction('{{ url_for('approve_student', id=std.id) }}', 'Approve Admission', 'Approve admission for {{ std.full_name }}?')" class="btn btn-success">Approve</button>
+                                    <button onclick="confirmAction('{{ url_for('reject_student', id=std.id) }}', 'Reject Student', 'Reject application for {{ std.full_name }}?')" class="btn btn-danger">Reject</button>
+                                {% endif %}
 
-                        {% if std.payment_status != 'Paid' %}
-                            <a href="{{ url_for('approve_payment', id=std.id) }}" class="btn btn-primary">Confirm Payment</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5">No student registrations found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                                {% if std.payment_status != 'Paid' %}
+                                    <button onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment receipt for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
+                                {% endif %}
+
+                                <a href="https://wa.me/{{ std.phone | replace('+', '') | replace(' ', '') if std.phone else '' }}?text=Hello%20{{ std.full_name | urlencode }},%20regarding%20your%20student%20status%20at%20MST%20Portal..." target="_blank" class="btn btn-whatsapp">
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No student registrations found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 
     <!-- 4 & 5. MANAGING COURSES & RESULTS -->
     <div class="grid-2">
-        <!-- Add / Remove Course -->
-        <div class="card">
-            <h3>4. Student Course Management</h3>
+        <section class="card">
+            <h3 class="card-title" style="margin-bottom: 16px;">4. Student Course Management</h3>
             <form action="{{ url_for('manage_course') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
-                <select name="student_id" required>
-                    <option value="">Select Student</option>
+                
+                <label for="course_student_id">Select Student</label>
+                <select name="student_id" id="course_student_id" required>
+                    <option value="">-- Choose Student --</option>
                     {% for std in students %}
                         <option value="{{ std.id }}">{{ std.full_name }} ({{ std.email }})</option>
                     {% endfor %}
                 </select>
-                <input type="text" name="course_name" placeholder="Course Name (e.g. Python Programming)" required>
-                <input type="text" name="course_code" placeholder="Course Code (e.g. COM111)" required>
-                <button type="submit" class="btn btn-success">Assign Course</button>
+
+                <label for="course_name">Course Title</label>
+                <input type="text" id="course_name" name="course_name" placeholder="e.g. Python Programming" required>
+
+                <label for="course_code">Course Code</label>
+                <input type="text" id="course_code" name="course_code" placeholder="e.g. COM111" required>
+
+                <button type="submit" class="btn btn-success" style="width: 100%;">Assign Course</button>
             </form>
 
-            <h4 style="margin-top: 15px;">Remove Assigned Course</h4>
+            <hr style="border-color: var(--border-color); margin: 20px 0;">
+
+            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Remove Assigned Course</h4>
             <form action="{{ url_for('manage_course') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
-                <input type="number" name="course_id" placeholder="Course Record ID" required>
-                <button type="submit" class="btn btn-danger">Delete Course</button>
-            </form>
-        </div>
+                
+                <label for="course_id">Course Record ID</label>
+                <input type="number" id="course_id" name="course_id" placeholder="Enter Record ID" required>
 
-        <!-- Add / Remove Result -->
-        <div class="card">
-            <h3>5. Student Result Management</h3>
+                <button type="submit" class="btn btn-danger" style="width: 100%;">Delete Course</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h3 class="card-title" style="margin-bottom: 16px;">5. Student Result Management</h3>
             <form action="{{ url_for('manage_result') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
-                <select name="student_id" required>
-                    <option value="">Select Student</option>
+
+                <label for="result_student_id">Select Student</label>
+                <select name="student_id" id="result_student_id" required>
+                    <option value="">-- Choose Student --</option>
                     {% for std in students %}
                         <option value="{{ std.id }}">{{ std.full_name }} ({{ std.email }})</option>
                     {% endfor %}
                 </select>
-                <input type="text" name="course_name" placeholder="Course Name & Code" required>
-                <input type="number" step="0.1" name="score" placeholder="Score (e.g. 85.0)" required>
-                <input type="text" name="grade" placeholder="Grade (e.g. A, B, C)" required>
-                <button type="submit" class="btn btn-success">Post Grade</button>
+
+                <label for="res_course_name">Course & Code</label>
+                <input type="text" id="res_course_name" name="course_name" placeholder="e.g. COM111 - Python Programming" required>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label for="score">Score</label>
+                        <input type="number" step="0.1" min="0" max="100" id="score" name="score" placeholder="85.0" required>
+                    </div>
+                    <div>
+                        <label for="grade">Grade</label>
+                        <input type="text" id="grade" name="grade" placeholder="A" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success" style="width: 100%;">Post Grade</button>
             </form>
 
-            <h4 style="margin-top: 15px;">Delete Grade Record</h4>
+            <hr style="border-color: var(--border-color); margin: 20px 0;">
+
+            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Delete Grade Record</h4>
             <form action="{{ url_for('manage_result') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
-                <input type="number" name="result_id" placeholder="Result Record ID" required>
-                <button type="submit" class="btn btn-danger">Delete Grade</button>
+
+                <label for="result_id">Result Record ID</label>
+                <input type="number" id="result_id" name="result_id" placeholder="Enter Result ID" required>
+
+                <button type="submit" class="btn btn-danger" style="width: 100%;">Delete Grade</button>
             </form>
-        </div>
+        </section>
     </div>
 
-    <div class="card" style="border: 1px solid #28a745;">
-    <h3>Transmit School Data to Registrar</h3>
-    <p>Click below once all admin setup (admissions, courses, results) is complete.</p>
-    <form action="{{ url_for('send_to_registrar') }}" method="POST">
-        <button type="submit" class="btn btn-success" style="font-size: 15px;">
-            Send All School Data to Registrar
-        </button>
-    </form>
-</div>
-
-    <!-- 6. MESSAGING SYSTEM (Lecturers & Students) -->
-    <div class="card">
-        <h3>6. Internal Messaging (Lecturers & Students)</h3>
-        <form action="{{ url_for('send_message') }}" method="POST">
-            <select name="receiver_id" required>
-                <option value="">Select Receiver (Lecturer or Student)</option>
-                {% for u in all_users %}
-                    <option value="{{ u.id }}">{{ u.full_name }} — {{ u.role | upper }}</option>
-                {% endfor %}
-            </select>
-            <textarea name="content" rows="3" placeholder="Type your message or result inquiry..." required></textarea>
-            <button type="submit" class="btn btn-primary">Send Message</button>
+    <!-- DATA TRANSMISSION -->
+    <section class="card action-card">
+        <h3 class="card-title">Transmit School Data to Registrar</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin: 8px 0 16px 0;">
+            Execute this synchronization once admissions, assigned courses, and grade updates are complete.
+        </p>
+        <form action="{{ url_for('send_to_registrar') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+            <button type="submit" class="btn btn-success">
+                Send All School Data to Registrar
+            </button>
         </form>
+    </section>
 
-        <h4 style="margin-top:20px;">Inbox</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th>From</th>
-                    <th>Message Content</th>
-                    <th>Date Received</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for msg in messages %}
-                <tr>
-                    <td><strong>{{ msg.sender.full_name }}</strong> <br><small>({{ msg.sender.role }})</small></td>
-                    <td style="white-space: pre-line;">{{ msg.content }}</td>
-                    <td>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else 'N/A' }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="3">No messages received yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- 6. MESSAGING & WHATSAPP CENTER -->
+    <section class="card">
+        <h3 class="card-title" style="margin-bottom: 16px;">6. Communication Hub</h3>
+        
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('whatsapp-tab', this)">WhatsApp Chat Center</button>
+            <button class="tab-btn" onclick="switchTab('internal-msg-tab', this)">Internal System Messages</button>
+        </div>
+
+        <!-- TAB 1: WHATSAPP CHAT CENTER -->
+        <div id="whatsapp-tab" class="tab-content active">
+            <div class="whatsapp-container" id="waContainer">
+                <div class="whatsapp-contacts-panel">
+                    <div class="whatsapp-search">
+                        <input type="text" id="waContactSearch" placeholder="Search contacts..." onkeyup="filterContacts()" style="margin-bottom: 0;">
+                    </div>
+                    <div class="whatsapp-contact-list" id="contactList">
+                        {% for u in all_users %}
+                        <div class="whatsapp-contact-item" onclick="selectContact('{{ u.full_name }}', '{{ u.phone if u.phone else '' }}', '{{ u.role | upper }}', this)">
+                            <div class="contact-info">
+                                <h4>{{ u.full_name }}</h4>
+                                <p>{{ u.role | upper }} • {{ u.phone or 'No Phone' }}</p>
+                            </div>
+                            <span class="badge bg-success" style="font-size:0.65rem;">WA</span>
+                        </div>
+                        {% else %}
+                        <div class="whatsapp-contact-item">
+                            <div class="contact-info">
+                                <h4>Demo Student</h4>
+                                <p>STUDENT • +2348000000000</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="whatsapp-chat-panel">
+                    <div class="whatsapp-chat-header">
+                        <div>
+                            <h4 id="activeContactName" style="font-size: 0.9375rem;">Select a contact</h4>
+                            <p id="activeContactRole" style="font-size: 0.75rem; color: var(--text-muted);">WhatsApp Direct Communication</p>
+                        </div>
+                        <button onclick="backToContacts()" class="btn btn-primary" style="display: none;" id="waBackBtn">Back</button>
+                    </div>
+
+                    <div class="quick-template-bar">
+                        <span class="template-chip" onclick="useTemplate('Your admission at MST Portal has been approved! Check your student portal.')">Admission Approved</span>
+                        <span class="template-chip" onclick="useTemplate('Your fee payment receipt has been confirmed. Thank you!')">Payment Confirmed</span>
+                        <span class="template-chip" onclick="useTemplate('Please submit your outstanding course registration documents.')">Document Request</span>
+                    </div>
+
+                    <div class="whatsapp-messages" id="chatMessages">
+                        <div class="message-bubble message-in">
+                            Hello Admin, I submitted my admission payment receipt.
+                            <div class="message-time">10:42 AM</div>
+                        </div>
+                        <div class="message-bubble message-out">
+                            Thanks for reaching out! We are processing your verification now.
+                            <div class="message-time">10:45 AM</div>
+                        </div>
+                    </div>
+
+                    <div class="whatsapp-input-area">
+                        <input type="text" id="waMessageInput" placeholder="Type WhatsApp message..." style="margin-bottom: 0;">
+                        <button onclick="sendWhatsAppMessage()" class="btn btn-whatsapp" style="white-space: nowrap;">Send via WA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: INTERNAL MESSAGING SYSTEM -->
+        <div id="internal-msg-tab" class="tab-content">
+            <form action="{{ url_for('send_message') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+                <label for="receiver_id">Recipient</label>
+                <select name="receiver_id" id="receiver_id" required>
+                    <option value="">-- Select Lecturer or Student --</option>
+                    {% for u in all_users %}
+                        <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role | upper }})</option>
+                    {% endfor %}
+                </select>
+
+                <label for="content">Message Content</label>
+                <textarea id="content" name="content" rows="3" placeholder="Type internal message..." required></textarea>
+
+                <button type="submit" class="btn btn-primary">Send Internal Message</button>
+            </form>
+
+            <h4 style="margin: 24px 0 12px 0; font-size: 1rem;">Inbox</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>Message Content</th>
+                            <th>Date Received</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for msg in messages %}
+                        <tr>
+                            <td style="white-space: nowrap;">
+                                <strong>{{ msg.sender.full_name }}</strong><br>
+                                <small style="color: var(--text-muted);">({{ msg.sender.role }})</small>
+                            </td>
+                            <td style="white-space: pre-line; min-width: 250px;">{{ msg.content }}</td>
+                            <td style="white-space: nowrap;">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No messages received yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Confirmation Modal Dialogue -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modalTitle" class="modal-title">Confirm Action</h3>
+            <p id="modalBody" class="modal-body">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button onclick="closeModal()" class="btn" style="background: transparent; border: 1px solid var(--border-color);">Cancel</button>
+                <a id="modalConfirmBtn" href="#" class="btn btn-primary">Confirm</a>
+            </div>
+        </div>
     </div>
 
+    <script>
+        let currentSelectedPhone = "";
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function selectContact(name, phone, role, el) {
+            document.querySelectorAll('.whatsapp-contact-item').forEach(item => item.classList.remove('active'));
+            if(el) el.classList.add('active');
+
+            currentSelectedPhone = phone;
+            document.getElementById('activeContactName').innerText = name;
+            document.getElementById('activeContactRole').innerText = role + (phone ? ' • ' + phone : ' • No Phone Number');
+
+            if (window.innerWidth <= 768) {
+                document.getElementById('waContainer').classList.add('chat-active');
+                document.getElementById('waBackBtn').style.display = 'block';
+            }
+        }
+
+        function backToContacts() {
+            document.getElementById('waContainer').classList.remove('chat-active');
+            document.getElementById('waBackBtn').style.display = 'none';
+        }
+
+        function useTemplate(text) {
+            document.getElementById('waMessageInput').value = text;
+        }
+
+        function sendWhatsAppMessage() {
+            const input = document.getElementById('waMessageInput');
+            const message = input.value.trim();
+
+            if (!message) {
+                alert('Please enter a message.');
+                return;
+            }
+
+            if (!currentSelectedPhone) {
+                alert('Please select a contact with a valid phone number or enter one.');
+                return;
+            }
+
+            // Append outgoing message visual bubble inside dashboard
+            const chatBox = document.getElementById('chatMessages');
+            const newBubble = document.createElement('div');
+            newBubble.className = 'message-bubble message-out';
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            newBubble.innerHTML = `${message}<div class="message-time">${timeStr}</div>`;
+            chatBox.appendChild(newBubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Trigger WhatsApp web API link directly
+            const cleanPhone = currentSelectedPhone.replace(/[^0-9]/g, '');
+            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank');
+
+            input.value = '';
+        }
+
+        function filterContacts() {
+            const filter = document.getElementById('waContactSearch').value.toLowerCase();
+            const items = document.querySelectorAll('.whatsapp-contact-item');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(filter) ? 'flex' : 'none';
+            });
+        }
+
+        function filterTable(inputId, tableId) {
+            const input = document.getElementById(inputId);
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < trs.length; i++) {
+                const tr = trs[i];
+                const text = tr.textContent || tr.innerText;
+                tr.style.display = text.toLowerCase().includes(filter) ? "" : "none";
+            }
+        }
+
+        function confirmAction(url, title, message) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = message;
+            document.getElementById('modalConfirmBtn').setAttribute('href', url);
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('confirmModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
 </body>
 </html>
