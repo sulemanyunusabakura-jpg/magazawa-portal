@@ -80,6 +80,20 @@ def auto_migrate_db():
                         except Exception:
                             conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
                             conn.commit()
+                    if 'remita_invoice' not in user_columns:
+                        try:
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN remita_invoice VARCHAR(100);"))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text("ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);"))
+                            conn.commit()
+                    if 'admission_status' not in user_columns:
+                        try:
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text("ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
+                            conn.commit()
         except Exception as e:
             print(f"Schema auto-migration notice: {e}")
 
@@ -88,51 +102,51 @@ with app.app_context():
     db.create_all()
     auto_migrate_db()
 
-    # 1. ADMIN ACCOUNT
-    admin = User.query.filter_by(role='admin').first()
-    if not admin:
-        admin = User(
-            username='admin',
-            password=generate_password_hash('admin123'),
-            role='admin',
-            full_name='MST System Administrator',
-            email='admin@magazawa.edu.ng',
-            phone='08000000000',
-            is_approved=True
-        )
-        db.session.add(admin)
-    else:
-        admin.is_approved = True
-
-    # 2. CREATOR ACCOUNT
-    creator = User.query.filter_by(role='creator').first()
-    if not creator:
-        creator = User(
-            username='creator',
-            password=generate_password_hash('creator123'),
-            role='creator',
-            full_name='System Creator',
-            email='creator@magazawa.edu.ng',
-            phone='08000000001',
-            is_approved=True
-        )
-        db.session.add(creator)
-
-    # 3. REGISTRAR ACCOUNT
-    registrar = User.query.filter_by(role='registrar').first()
-    if not registrar:
-        registrar = User(
-            username='registrar',
-            password=generate_password_hash('registrar123'),
-            role='registrar',
-            full_name='MST Registrar Office',
-            email='registrar@magazawa.edu.ng',
-            phone='08000000002',
-            is_approved=True
-        )
-        db.session.add(registrar)
-
     try:
+        # 1. ADMIN ACCOUNT
+        admin = User.query.filter_by(role='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                full_name='MST System Administrator',
+                email='admin@magazawa.edu.ng',
+                phone='08000000000',
+                is_approved=True
+            )
+            db.session.add(admin)
+        else:
+            admin.is_approved = True
+
+        # 2. CREATOR ACCOUNT
+        creator = User.query.filter_by(role='creator').first()
+        if not creator:
+            creator = User(
+                username='creator',
+                password=generate_password_hash('creator123'),
+                role='creator',
+                full_name='System Creator',
+                email='creator@magazawa.edu.ng',
+                phone='08000000001',
+                is_approved=True
+            )
+            db.session.add(creator)
+
+        # 3. REGISTRAR ACCOUNT
+        registrar = User.query.filter_by(role='registrar').first()
+        if not registrar:
+            registrar = User(
+                username='registrar',
+                password=generate_password_hash('registrar123'),
+                role='registrar',
+                full_name='MST Registrar Office',
+                email='registrar@magazawa.edu.ng',
+                phone='08000000002',
+                is_approved=True
+            )
+            db.session.add(registrar)
+
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -339,15 +353,12 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # Fetch enrolled courses and published results safely
         courses = Course.query.filter_by(student_id=current_user.id).all()
         results = Result.query.filter_by(student_id=current_user.id).all()
         
-        # Safe payment check with fallback to 'Unpaid'
         payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
         has_paid = payment_status.strip().lower() == 'paid'
         
-        # Only load learning materials if student has paid fees
         materials = Material.query.all() if has_paid else []
         
     except Exception as e:
@@ -362,6 +373,7 @@ def student_dashboard():
         results=results,
         materials=materials
     )
+
 # --- ADMIN ACTIONS ---
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
@@ -489,145 +501,4 @@ def manage_course():
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    action = request.form.get('action')
-    student_id = request.form.get('student_id')
-
-    if action == 'add':
-        res = Result(
-            student_id=student_id, 
-            course_name=request.form.get('course_name'), 
-            score=request.form.get('score'), 
-            grade=request.form.get('grade')
-        )
-        db.session.add(res)
-    elif action == 'remove':
-        result_id = request.form.get('result_id')
-        Result.query.filter_by(id=result_id).delete()
-
-    db.session.commit()
-    flash('Result record updated successfully.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/send_to_registrar', methods=['POST'])
-@login_required
-def send_to_registrar():
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-
-    registrar = User.query.filter_by(role='registrar').first()
-    if not registrar:
-        flash('No Registrar account found in database.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    total_students = User.query.filter_by(role='student', is_approved=True).count()
-    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
-    total_courses = Course.query.count()
-    total_results = Result.query.count()
-
-    summary_report = (
-        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
-        f"----------------------------------------\n"
-        f"• Total Approved Lecturers: {total_lecturers}\n"
-        f"• Total Approved Students: {total_students}\n"
-        f"• Total Active Courses: {total_courses}\n"
-        f"• Total Results Logged: {total_results}\n"
-        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
-    )
-
-    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
-    db.session.add(msg)
-    db.session.commit()
-
-    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-# --- MASTER PASS ACCESS OVERRIDE ---
-@app.route('/master_access', methods=['GET', 'POST'])
-def master_access():
-    if request.method == 'POST':
-        master_pwd = request.form.get('master_password')
-        target_role = request.form.get('target_role')
-
-        if master_pwd == 'suleexpert':
-            user = User.query.filter_by(role=target_role).first()
-            if user:
-                login_user(user)
-                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
-                if target_role == 'admin':
-                    return redirect(url_for('admin_dashboard'))
-                elif target_role == 'creator':
-                    return redirect(url_for('creator_dashboard'))
-                elif target_role == 'registrar':
-                    return redirect(url_for('registrar_dashboard'))
-                elif target_role == 'lecturer':
-                    return redirect(url_for('lecturer_dashboard'))
-                elif target_role == 'student':
-                    return redirect(url_for('student_dashboard'))
-            else:
-                flash(f'No user account exists yet for role: {target_role}', 'warning')
-        else:
-            flash('Invalid Master Password!', 'danger')
-
-    return render_template('master_access.html')
-
-# --- LECTURER ACTIONS & MESSAGING ---
-@app.route('/lecturer/submit_result', methods=['POST'])
-@login_required
-def submit_result_to_admin():
-    if current_user.role != 'lecturer':
-        return redirect(url_for('login'))
-
-    student_name = request.form.get('student_name')
-    reg_number = request.form.get('reg_number')
-    course_name = request.form.get('course_name')
-    score = request.form.get('score')
-
-    admin = User.query.filter_by(role='admin').first()
-    if admin:
-        result_payload = (
-            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
-            f"- Student Name: {student_name}\n"
-            f"- Reg Number/Email: {reg_number}\n"
-            f"- Course: {course_name}\n"
-            f"- Score: {score}"
-        )
-        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
-        db.session.add(msg)
-        db.session.commit()
-        flash('Student result submitted directly to Admin inbox.', 'success')
-    else:
-        flash('Unable to forward result. Admin account not found.', 'danger')
-
-    return redirect(url_for('lecturer_dashboard'))
-
-@app.route('/send_message', methods=['POST'])
-@login_required
-def send_message():
-    receiver_id = request.form.get('receiver_id')
-    content = request.form.get('content', '').strip()
-    
-    if content and receiver_id:
-        msg = Message(
-            sender_id=current_user.id,
-            receiver_id=int(receiver_id),
-            content=content
-        )
-        db.session.add(msg)
-        db.session.commit()
-        flash('Message sent successfully!', 'success')
-    else:
-        flash('Message content cannot be empty.', 'warning')
-        
-    return redirect(request.referrer or url_for('admin_dashboard'))
-
-@app.route('/student/download/<filename>')
-@login_required
-@payment_required
-def download_material(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    if current_user.ro
