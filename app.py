@@ -79,9 +79,7 @@ def auto_migrate_db():
                 try:
                     with conn.begin():
                         conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                    print("Successfully added missing column 'payment_status' to 'user' table.")
                 except Exception as e:
-                    # Fallback syntax for standard SQL/SQLite
                     try:
                         with conn.begin():
                             conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
@@ -246,10 +244,15 @@ def admin_dashboard():
     if current_user.role != 'admin': 
         return redirect(url_for('login'))
 
-    students = User.query.filter_by(role='student').all()
-    lecturers = User.query.filter_by(role='lecturer').all()
-    all_users = User.query.filter(User.id != current_user.id).all()
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    try:
+        students = User.query.filter_by(role='student').all()
+        lecturers = User.query.filter_by(role='lecturer').all()
+        all_users = User.query.filter(User.id != current_user.id).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    except Exception as e:
+        db.session.rollback()
+        flash("Database sync error occurred. Please refresh the page.", "danger")
+        students, lecturers, all_users, messages = [], [], [], []
 
     return render_template('admin_dashboard.html', 
                            students=students, 
@@ -568,7 +571,6 @@ def student_dashboard():
     courses = Course.query.filter_by(student_id=current_user.id).all()
     results = Result.query.filter_by(student_id=current_user.id).all()
     
-    # Safe payment status check
     has_paid = getattr(current_user, 'payment_status', 'Unpaid') == 'Paid'
     materials = Material.query.all() if has_paid else []
 
