@@ -17,6 +17,9 @@ class User(db.Model, UserMixin):
     is_approved = db.Column(db.Boolean, default=False)
     
     # Student specific
+    program = db.Column(db.String(100), default="HND CME")
+    level = db.Column(db.String(20), default="HND2")
+    profile_picture = db.Column(db.String(255), default="default.png")
     dob = db.Column(db.String(50))
     primary_school = db.Column(db.String(200))
     primary_cert = db.Column(db.String(255))
@@ -29,9 +32,9 @@ class User(db.Model, UserMixin):
     # Lecturer specific
     desired_courses = db.Column(db.String(255))
 
-    # Relationships
-    courses = db.relationship('Course', backref='student', lazy=True)
-    results = db.relationship('Result', backref='student', lazy=True)
+    # Relationships (with cascade delete for data integrity)
+    courses = db.relationship('Course', backref='student', lazy=True, cascade="all, delete-orphan")
+    results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
     materials = db.relationship('Material', backref='lecturer', lazy=True)
 
 class Course(db.Model):
@@ -39,9 +42,12 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_name = db.Column(db.String(100), nullable=False)
     course_code = db.Column(db.String(20))
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(10), default="1")
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class Result(db.Model):
+    __tablename__ = 'result'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     course_code = db.Column(db.String(20), nullable=False)
@@ -54,7 +60,16 @@ class Result(db.Model):
 
     @property
     def grade_point(self):
-        points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+        points = {
+            'A': 4.0, 
+            'AB': 3.5, 
+            'B': 3.0, 
+            'BC': 2.5, 
+            'C': 2.0, 
+            'CD': 1.5, 
+            'D': 1.0, 
+            'F': 0.0
+        }
         return points.get(self.grade.upper(), 0.0)
 
 class Material(db.Model):
