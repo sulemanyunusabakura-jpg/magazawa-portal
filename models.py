@@ -1,94 +1,102 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
 from datetime import datetime
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
-class User(db.Model, UserMixin):
+class User(UserMixin, db.Model):
     __tablename__ = 'user'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # admin, creator, registrar, lecturer, student
-    full_name = db.Column(db.String(150))
-    email = db.Column(db.String(150))
+    role = db.Column(db.String(50), nullable=False)  # admin, creator, registrar, lecturer, student
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
     phone = db.Column(db.String(20))
     is_approved = db.Column(db.Boolean, default=False)
-    
-    # Student specific
-    program = db.Column(db.String(100), default="HND CME")
-    level = db.Column(db.String(20), default="HND2")
-    profile_picture = db.Column(db.String(255), default="default.png")
-    dob = db.Column(db.String(50))
-    primary_school = db.Column(db.String(200))
+
+    # Student fields managed by auto_migrate_db()
+    dob = db.Column(db.String(20))
+    primary_school = db.Column(db.String(255))
     primary_cert = db.Column(db.String(255))
-    sec_school = db.Column(db.String(200))
+    sec_school = db.Column(db.String(255))
     sec_cert = db.Column(db.String(255))
-    admission_status = db.Column(db.String(50), default="Pending")
+    program = db.Column(db.String(255))
+    payment_status = db.Column(db.String(20), default='Unpaid')
     remita_invoice = db.Column(db.String(100))
-    payment_status = db.Column(db.String(20), default="Unpaid")
-    
-    # Lecturer specific
-    desired_courses = db.Column(db.String(255))
+    admission_status = db.Column(db.String(50), default='Admitted')
 
-    # Relationships (with cascade delete for data integrity)
-    courses = db.relationship('Course', backref='student', lazy=True, cascade="all, delete-orphan")
-    results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
+    # Lecturer specific fields
+    desired_courses = db.Column(db.Text)
+
+    # Relationships
     materials = db.relationship('Material', backref='lecturer', lazy=True)
+    courses = db.relationship('Course', backref='student', lazy=True)
+    results = db.relationship('Result', backref='student', lazy=True)
 
-class Course(db.Model):
-    __tablename__ = 'course'
-    id = db.Column(db.Integer, primary_key=True)
-    course_name = db.Column(db.String(100), nullable=False)
-    course_code = db.Column(db.String(20))
-    unit = db.Column(db.Integer, default=1)
-    semester = db.Column(db.String(10), default="1")
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable allows general/unassigned courses
-
-class Result(db.Model):
-    __tablename__ = 'result'
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    course_code = db.Column(db.String(20), nullable=False)
-    title = db.Column(db.String(150), nullable=False)
-    unit = db.Column(db.Integer, nullable=False, default=1)
-    semester = db.Column(db.String(10), nullable=False, default="1")
-    grade = db.Column(db.String(5), nullable=False)  # A, AB, B, BC, C, CD, D, F
-    level = db.Column(db.String(20), nullable=False, default="HND1")
-    session = db.Column(db.String(20), nullable=False, default="2023/2024")
-
-    @property
-    def grade_point(self):
-        points = {
-            'A': 4.0, 
-            'AB': 3.5, 
-            'B': 3.0, 
-            'BC': 2.5, 
-            'C': 2.0, 
-            'CD': 1.5, 
-            'D': 1.0, 
-            'F': 0.0
-        }
-        return points.get(self.grade.upper() if self.grade else 'F', 0.0)
 
 class Material(db.Model):
     __tablename__ = 'material'
+
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    material_type = db.Column(db.String(50))
-    file_path = db.Column(db.String(255))
+    title = db.Column(db.String(255), nullable=False)
+    material_type = db.Column(db.String(50), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     lecturer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
 
 class Message(db.Model):
     __tablename__ = 'message'
+
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     msg_type = db.Column(db.String(20), default='text')
     file_path = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+
+
+class Course(db.Model):
+    __tablename__ = 'course'
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_code = db.Column(db.String(20), nullable=False)
+    course_name = db.Column(db.String(150), nullable=False)
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(20))
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+
+class Result(db.Model):
+    __tablename__ = 'result'
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_code = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(20), default='1')
+    grade = db.Column(db.String(5), nullable=False)
+    level = db.Column(db.String(20), default='HND1')
+    session = db.Column(db.String(20), default='2023/2024')
+
+    @property
+    def grade_point(self):
+        grade_map = {
+            'A': 4.0, 
+            'AB': 3.5, 
+            'B': 3.25, 
+            'BC': 3.0, 
+            'C': 2.75, 
+            'CD': 2.5, 
+            'D': 2.25, 
+            'E': 2.0, 
+            'F': 0.0
+        }
+        return grade_map.get(str(self.grade).upper(), 0.0)
