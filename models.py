@@ -39,8 +39,10 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_name = db.Column(db.String(100), nullable=False)
     course_code = db.Column(db.String(20))
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(10), default="1")
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Changed nullable=False to nullable=True
+    
 class Result(db.Model):
     __tablename__ = 'result'
     id = db.Column(db.Integer, primary_key=True)
