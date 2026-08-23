@@ -517,6 +517,79 @@
         </div>
     </section>
 
+        <!-- ADMIN COURSE MANAGEMENT CARD -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="fas fa-book-medical me-2"></i>Manage Curriculum & Student Courses
+    </div>
+    <div class="card-body">
+        
+        <!-- Form to Add Course -->
+        <form action="{{ url_for('add_course') }}" method="POST" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">Course Code</label>
+                <input type="text" name="course_code" class="form-control" placeholder="e.g. CTE 311" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small">Course Title</label>
+                <input type="text" name="course_name" class="form-control" placeholder="e.g. Engineers in Society" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Credit Unit</label>
+                <input type="number" name="unit" class="form-control" min="1" max="6" placeholder="2" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Semester</label>
+                <select name="semester" class="form-select" required>
+                    <option value="1">1st Semester</option>
+                    <option value="2">2nd Semester</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100"><i class="fas fa-plus"></i> Add</button>
+            </div>
+        </form>
+
+        <hr>
+
+        <!-- Course List Table with Remove Action -->
+        <h6 class="fw-bold mb-3 text-secondary">Active Course List</h6>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr style="border-bottom: 2px solid #dee2e6;">
+                        <th style="width: 20%;">Course code</th>
+                        <th style="width: 50%;">Title</th>
+                        <th style="width: 10%;">UNIT</th>
+                        <th style="width: 10%;">Semester</th>
+                        <th style="width: 10%; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td class="fw-bold">{{ course.course_code }}</td>
+                        <td>{{ course.course_name }}</td>
+                        <td>{{ course.unit or 3 }}</td>
+                        <td>{{ course.semester or 1 }}</td>
+                        <td class="text-center">
+                            <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this course?');">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No courses added yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
     <!-- 4 & 5. MANAGING COURSES & RESULTS -->
     <div class="grid-2">
         <section class="card">
