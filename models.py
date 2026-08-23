@@ -70,7 +70,7 @@ class Result(db.Model):
             'D': 1.0, 
             'F': 0.0
         }
-        return points.get(self.grade.upper(), 0.0)
+        return points.get(self.grade.upper() if self.grade else 'F', 0.0)
 
 class Material(db.Model):
     __tablename__ = 'material'
