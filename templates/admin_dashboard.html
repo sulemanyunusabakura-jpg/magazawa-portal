@@ -590,6 +590,117 @@
     </div>
 </div>
 
+        <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white font-weight-bold">
+        Add Student Result Record
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('manage_result') }}" method="POST" class="form-row">
+            <input type="hidden" name="action" value="add">
+            
+            <div class="form-group col-md-3">
+                <label>Select Student</label>
+                <select name="student_id" class="form-control" required>
+                    {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Course Code</label>
+                <input type="text" name="course_code" placeholder="e.g. CTE 311" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-3">
+                <label>Title</label>
+                <input type="text" name="title" placeholder="e.g. Engineers in Society" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-1">
+                <label>Unit</label>
+                <input type="number" name="unit" class="form-control" min="1" max="6" value="2" required>
+            </div>
+
+            <div class="form-group col-md-1">
+                <label>Semester</label>
+                <select name="semester" class="form-control">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Grade</label>
+                <select name="grade" class="form-control" required>
+                    <option value="A">A</option>
+                    <option value="AB">AB</option>
+                    <option value="B">B</option>
+                    <option value="BC">BC</option>
+                    <option value="C">C</option>
+                    <option value="CD">CD</option>
+                    <option value="D">D</option>
+                    <option value="F">F</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Level</label>
+                <input type="text" name="level" value="HND1" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Session</label>
+                <input type="text" name="session" value="2023/2024" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-2 align-self-end">
+                <button type="submit" class="btn btn-success btn-block">+ Add Result</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Admin Existing Results Table with Delete Buttons -->
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="thead-light">
+            <tr>
+                <th>Student</th>
+                <th>Course code</th>
+                <th>Title</th>
+                <th>Unit</th>
+                <th>Semester</th>
+                <th>Grades</th>
+                <th>Level</th>
+                <th>SESSION</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in all_results %}
+            <tr>
+                <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
+                <td>{{ result.course_code }}</td>
+                <td>{{ result.title }}</td>
+                <td>{{ result.unit }}</td>
+                <td>{{ result.semester }}</td>
+                <td><strong>{{ result.grade }}</strong></td>
+                <td>{{ result.level }}</td>
+                <td>{{ result.session }}</td>
+                <td>
+                    <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="result_id" value="{{ result.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+        
     <!-- 4 & 5. MANAGING COURSES & RESULTS -->
     <div class="grid-2">
         <section class="card">
