@@ -198,39 +198,39 @@
 
             <div class="card-body tab-content">
                 
-              <!-- STUDENT DASHBOARD: REGISTERED COURSES TAB -->
-<div class="tab-pane fade show active" id="courses" role="tabpanel">
-    
-    <!-- Clean Polytechnic Header Layout -->
-    <div class="p-3 bg-white rounded border mb-3">
-        <table class="table mb-0" style="font-family: Arial, sans-serif; color: #212529;">
-            <thead>
-                <tr style="border-bottom: 2px solid #333;">
-                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 20%;">Course code</th>
-                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 55%;">Title</th>
-                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 12.5%;">UNIT</th>
-                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 12.5%;">Semester</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for course in courses %}
-                <tr style="border-bottom: 1px solid #e0e0e0; font-size: 0.95rem;">
-                    <td style="padding: 12px 8px; font-weight: 500; color: #111;">{{ course.course_code }}</td>
-                    <td style="padding: 12px 8px; color: #333;">{{ course.course_name }}</td>
-                    <td style="padding: 12px 8px; color: #333;">{{ course.unit or 3 }}</td>
-                    <td style="padding: 12px 8px; color: #333;">{{ course.semester or 1 }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">No registered courses found for this semester.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                <!-- 1. Registered Courses Tab -->
+                <div class="tab-pane fade show active" id="courses" role="tabpanel">
+                    <div class="p-3 bg-white rounded border">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light border-bottom border-dark">
+                                    <tr>
+                                        <th style="width: 20%;">Course Code</th>
+                                        <th style="width: 55%;">Title</th>
+                                        <th style="width: 12.5%;">Unit</th>
+                                        <th style="width: 12.5%;">Semester</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                    <tr>
+                                        <td class="fw-bold">{{ course.course_code }}</td>
+                                        <td>{{ course.course_name }}</td>
+                                        <td>{{ course.unit or 3 }}</td>
+                                        <td>{{ course.semester or 1 }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">No registered courses found for this semester.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-</div>
-                <!-- 2. Lecture Materials -->
+                <!-- 2. Lecture Materials Tab -->
                 <div class="tab-pane fade" id="materials" role="tabpanel">
                     <h5 class="card-title mb-3">Course Lecture Materials</h5>
                     {% if is_paid %}
@@ -269,67 +269,69 @@
                     {% endif %}
                 </div>
 
-               <div class="container my-4 bg-white p-4 shadow-sm border rounded">
-    <!-- Student Information Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-9">
-            <div class="row">
-                <div class="col-sm-6 mb-2">
-                    <strong>Admission No:</strong> {{ student.username }}<br>
-                    <strong>Program:</strong> {{ student.program or 'HND CME' }}<br>
-                    <strong>Phone Number:</strong> {{ student.phone }}
-                </div>
-                <div class="col-sm-6 mb-2">
-                    <strong>Level:</strong> {{ student.level or 'HND2' }}<br>
-                    <strong>Full Name:</strong> {{ student.full_name }}<br>
-                    <strong>My CGPA:</strong> <span class="badge badge-primary style-cgpa">{{ "%.2f"|format(cgpa) }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 text-right">
-            {% if student.profile_picture %}
-                <img src="{{ url_for('static', filename='uploads/' + student.profile_picture) }}" class="img-thumbnail" style="max-height: 120px;" alt="Profile Picture">
-            {% else %}
-                <img src="https://via.placeholder.com/120" class="img-thumbnail" alt="Default Profile">
-            {% endif %}
-        </div>
-    </div>
+                <!-- 3. Results Tab -->
+                <div class="tab-pane fade" id="results" role="tabpanel">
+                    <div class="p-3 bg-white border rounded">
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-md-9">
+                                <div class="row">
+                                    <div class="col-sm-6 mb-2">
+                                        <strong>Admission No:</strong> {{ student.username }}<br>
+                                        <strong>Program:</strong> {{ student.program or 'HND CME' }}<br>
+                                        <strong>Phone Number:</strong> {{ student.phone }}
+                                    </div>
+                                    <div class="col-sm-6 mb-2">
+                                        <strong>Level:</strong> {{ student.level or 'HND2' }}<br>
+                                        <strong>Full Name:</strong> {{ student.full_name }}<br>
+                                        <strong>My CGPA:</strong> <span class="badge bg-primary fs-6">{{ "%.2f"|format(cgpa) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                {% if student.profile_picture %}
+                                    <img src="{{ url_for('static', filename='uploads/' + student.profile_picture) }}" class="img-thumbnail" style="max-height: 120px;" alt="Profile Picture">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/120" class="img-thumbnail" alt="Default Profile">
+                                {% endif %}
+                            </div>
+                        </div>
 
-    <!-- Results Table -->
-    <div class="table-responsive">
-        <table class="table table-hover border">
-            <thead class="bg-light">
-                <tr>
-                    <th>Course code</th>
-                    <th>Title</th>
-                    <th>Unit</th>
-                    <th>Semester</th>
-                    <th>Grades</th>
-                    <th>Level</th>
-                    <th>SESSION</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for res in results %}
-                <tr>
-                    <td><strong>{{ res.course_code }}</strong></td>
-                    <td>{{ res.title }}</td>
-                    <td>{{ res.unit }}</td>
-                    <td>{{ res.semester }}</td>
-                    <td><strong>{{ res.grade }}</strong></td>
-                    <td>{{ res.level }}</td>
-                    <td>{{ res.session }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted">No results recorded yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-                <!-- 4. Messages Center -->
+                        <div class="table-responsive">
+                            <table class="table table-hover border align-middle">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Course code</th>
+                                        <th>Title</th>
+                                        <th>Unit</th>
+                                        <th>Semester</th>
+                                        <th>Grades</th>
+                                        <th>Level</th>
+                                        <th>SESSION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for res in results %}
+                                    <tr>
+                                        <td><strong>{{ res.course_code }}</strong></td>
+                                        <td>{{ res.title }}</td>
+                                        <td>{{ res.unit }}</td>
+                                        <td>{{ res.semester }}</td>
+                                        <td><strong>{{ res.grade }}</strong></td>
+                                        <td>{{ res.level }}</td>
+                                        <td>{{ res.session }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">No results recorded yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Messages Center Tab -->
                 <div class="tab-pane fade" id="messages" role="tabpanel">
                     <div class="row">
                         <div class="col-md-5 mb-4 mb-md-0">
@@ -405,7 +407,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: Printable Payment Receipt (Enabled when status is Paid) -->
+    <!-- MODAL 2: Printable Payment Receipt -->
     <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
