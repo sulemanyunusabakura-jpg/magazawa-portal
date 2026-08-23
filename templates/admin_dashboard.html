@@ -1,3 +1,3111 @@
+
+Conversation with Gemini
+explian option 2
+
+Option 2 fixes the issue by directly modifying your live PostgreSQL database to add the missing program column so it matches your SQLAlchemy model code.
+
+Why This Happens
+SQLAlchemy looks at your Python code and expects a column named program in the "user" table. However, PostgreSQL checks its actual storage schema, notices program is missing, and throws an UndefinedColumn error when running SQL queries like SELECT ... "user".program.
+
+Step-by-Step Guide
+1. Connect to Your Database
+Open your terminal or database tool and log into your PostgreSQL database.
+
+Via Terminal (psql):
+
+Bash
+psql -U your_db_user -d your_db_name
+Via Graphical Tools (pgAdmin, DBeaver, VS Code extensions):
+Open an SQL Query window connected to your project database.
+
+2. Run the SQL Command
+Execute the following SQL query:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+ALTER TABLE "user": Tells PostgreSQL to modify the existing "user" table (double quotes are required because user is a reserved keyword in PostgreSQL).
+
+ADD COLUMN program: Tells it to create a new column named program.
+
+VARCHAR(255): Sets the column data type to a string up to 255 characters.
+
+(Note: If your column in Python is an Integer, use INTEGER instead of VARCHAR(255)).
+
+3. Restart Your Application
+Once the query runs successfully, restart your Flask/Python application server and reload the page (/login). The error will disappear.
+
+iam using render
+
+Since your database is hosted on Render, you can run the SQL command using either Render's built-in Web Shell or by connecting to the database remotely using an external SQL tool.
+
+Method 1: Using Render's Web Shell (Fastest & Easiest)
+Render provides an interactive PostgreSQL shell directly inside your web browser.
+
+Log into your Render Dashboard.
+
+Click on your PostgreSQL Database instance (not your Web Service).
+
+In the left menu, click on the Connect tab (or look for the Web Shell button near the top right).
+
+Click Connect with psql (or open the interactive browser shell).
+
+Once the terminal opens and shows your_db_name=>, paste this command and press Enter:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+You should see a response saying ALTER TABLE.
+
+Refresh your web app; the 500 error will be gone.
+
+Method 2: Connecting via an External Database Tool (DBeaver, TablePlus, or pgAdmin)
+If you prefer using a desktop app to manage your Render database:
+
+Go to your PostgreSQL database page in the Render Dashboard.
+
+Scroll to Info and copy the External Database URL (e.g., postgresql://user:password@dpg-xxx.render.com/dbname).
+
+Open your preferred database management tool (e.g., DBeaver or TablePlus) and create a new PostgreSQL connection using that External URL.
+
+Open an SQL Editor window in your tool and run:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+Important Notes
+Double Quotes ("user"): Keep the double quotes around "user". In PostgreSQL, user is a reserved system keyword, so the quotes tell PostgreSQL you are referencing your specific table name.
+
+Data Type Matching: If program in your Python model is defined as an integer or text instead of a string, replace VARCHAR(255) with INTEGER or TEXT.
+
+where can i go from here method 2
+
+Click the Connect button in the top-right corner of your screen (next to "View docs").
+
+Steps to Get the URL:
+Click Connect (top right of your Render dashboard).
+
+Go to the External Connection section in the pop-up modal.
+
+Click the copy icon next to External Database URL. It will look something like this:
+postgresql://magazawa_user:password@dpg-d9prg0e417fc73c6rl8g-a.oregon-postgres.render.com/magazawa_db
+
+How to Use It:
+In DBeaver / TablePlus / pgAdmin: Create a new PostgreSQL connection and select "Connect via URI / Connection String", then paste that copied URL.
+
+Via Terminal (if installed on your PC): Run psql <PASTE_YOUR_EXTERNAL_URL> directly in your command prompt.
+
+Once connected, open an SQL query tab and execute:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+sorry method 1
+
+Click the Connect button in the top-right corner of your screen (next to "View docs").
+
+Steps for Method 1:
+Click Connect (top right of your screen).
+
+In the dropdown or modal that opens, look for PSQL Command or Web Shell.
+
+Copy the PSQL Command string (it starts with psql ...).
+
+If you have PostgreSQL tools installed on your computer, paste that command directly into your terminal/command prompt and press Enter.
+
+Once connected, paste this SQL query and press Enter:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+(Note: Render free PostgreSQL databases do not offer an in-browser web shell for database instances, so copying the psql command from the Connect button and running it in your local terminal is the direct path).
+
+just do it with using all of it
+
+Since Render’s free-tier PostgreSQL instances do not have a web-based SQL console, here is how you can perform the fix directly using all available tools—from your local terminal, your web application's shell on Render, or python code.
+
+Option 1: Execute via Local Terminal (Most Direct)
+In your Render Database page, click the Connect button (top right).
+
+Click Connect externally and copy the PSQL Command (it starts with psql postgres://...).
+
+Open Terminal (Mac/Linux) or Command Prompt/PowerShell (Windows) on your computer.
+
+Paste the copied string and press Enter.
+
+Once connected to PostgreSQL, run:
+
+SQL
+ALTER TABLE "user" ADD COLUMN program VARCHAR(255);
+Option 2: Execute via Render Web Service Shell
+If you don't have psql installed on your local computer, use your Render Web Service Shell:
+
+In your Render Dashboard, click on your Flask Web Service (the app running your site, e.g., magazawa).
+
+Click the Shell tab in the left menu to open the live terminal.
+
+Type python and press Enter to open the interactive Python shell.
+
+Paste the following script to execute the SQL command through your app's SQLAlchemy connection:
+
+Python
+from app import db, app
+
+with app.app_context():
+    db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+    db.session.commit()
+    print("Column added successfully!")
+Option 3: Temporary Python Route (Zero Terminal Required)
+If you prefer using your browser, add a temporary migration endpoint in your Flask app code (app.py):
+
+Python
+@app.route('/fix-db')
+def fix_db():
+    try:
+        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+        db.session.commit()
+        return "Database updated successfully!"
+    except Exception as e:
+        return f"Error: {e}"
+Commit and push this change to GitHub.
+
+Wait for Render to auto-deploy.
+
+Visit [https://your-app-name.onrender.com/fix-db](https://your-app-name.onrender.com/fix-db) in your browser.
+
+Remove or comment out this route afterward for security.
+
+when i login its not open
+
+The message "Database error encountered. Please try logging in again." indicates that the missing database column has not been added yet, causing the query to fail when attempting to authenticate the user.
+
+Since you are using Render, follow these steps to add the missing column using Render's Web Service Shell.
+
+Step-by-step Solution via Render Shell
+Go to your Render Dashboard.
+
+Click on your Web Service (the Flask application host, not the database instance).
+
+Click on Shell in the left sidebar menu.
+
+Once the terminal opens, type python and press Enter.
+
+Paste the following script into the Python prompt and press Enter:
+
+Python
+from app import db, app
+
+with app.app_context():
+    db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+    db.session.commit()
+    print("SUCCESS: Column added!")
+Type exit() to leave the Python prompt.
+
+Alternative: Temporary Migration Route
+If you do not have access to the Shell tab, add this route to your app.py file, push it to GitHub, and visit the link in your browser:
+
+Python
+@app.route('/fix-db')
+def fix_db():
+    try:
+        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+        db.session.commit()
+        return "Database updated successfully! You can now log in."
+    except Exception as e:
+        return f"Error: {e}"
+After deploying, visit [https://your-app-name.onrender.com/fix-db](https://your-app-name.onrender.com/fix-db) once, then return to /login to log in successfully.
+
+this is complete code for app.py correct it :import os
+
+import uuid
+
+from functools import wraps
+
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, jsonify
+
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from werkzeug.utils import secure_filename
+
+from sqlalchemy import or_, and_, inspect, text
+
+from models import db, User, Material, Message, Course, Result
+
+from google import genai
+
+from google.genai import types
+
+
+
+app = Flask(__name__)
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
+
+
+
+# DATABASE URI CONFIGURATION FOR RENDER & LOCAL DEVS
+
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
+
+if db_url.startswith("postgres://"):
+
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+
+# ABSOLUTE PATH FOR UPLOAD DIRECTORY
+
+app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
+
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp3', 'wav', 'mp4', 'webm'}
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+
+def allowed_file(filename):
+
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+# SAFE GEMINI CLIENT INITIALIZATION
+
+gemini_api_key = os.environ.get('GEMINI_API_KEY')
+
+gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
+
+
+
+db.init_app(app)
+
+login_manager = LoginManager(app)
+
+login_manager.login_view = 'login'
+
+
+
+@login_manager.user_loader
+
+def load_user(user_id):
+
+    return db.session.get(User, int(user_id))
+
+
+
+# --- CUSTOM DECORATOR: FEES PAYMENT CHECK ---
+
+def payment_required(f):
+
+    @wraps(f)
+
+    def decorated_function(*args, **kwargs):
+
+        if current_user.role == 'student' and getattr(current_user, 'payment_status', '') != 'Paid':
+
+            flash("Access Restricted: Please complete your school fees payment to unlock this section.", "warning")
+
+            return redirect(url_for('student_dashboard'))
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+
+# --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
+
+def auto_migrate_db():
+
+    """Inspects existing tables and automatically adds missing columns without dropping data."""
+
+    with app.app_context():
+
+        try:
+
+            inspector = inspect(db.engine)
+
+            tables = inspector.get_table_names()
+
+
+
+            # 1. MIGRATE MESSAGE TABLE
+
+            if 'message' in tables:
+
+                columns = [col['name'] for col in inspector.get_columns('message')]
+
+                with db.engine.connect() as conn:
+
+                    if 'msg_type' not in columns:
+
+                        conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
+
+                        conn.commit()
+
+                    if 'file_path' not in columns:
+
+                        conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
+
+                        conn.commit()
+
+
+
+            # 2. MIGRATE USER TABLE
+
+            if 'user' in tables:
+
+                user_columns = [col['name'] for col in inspector.get_columns('user')]
+
+                with db.engine.connect() as conn:
+
+                    if 'payment_status' not in user_columns:
+
+                        try:
+
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
+
+                            conn.commit()
+
+                        except Exception:
+
+                            conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
+
+                            conn.commit()
+
+                    if 'remita_invoice' not in user_columns:
+
+                        try:
+
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN remita_invoice VARCHAR(100);"))
+
+                            conn.commit()
+
+                        except Exception:
+
+                            conn.execute(text("ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);"))
+
+                            conn.commit()
+
+                    if 'admission_status' not in user_columns:
+
+                        try:
+
+                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
+
+                            conn.commit()
+
+                        except Exception:
+
+                            conn.execute(text("ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
+
+                            conn.commit()
+
+
+
+            # 3. MIGRATE COURSE TABLE (Ensure unit & semester columns exist)
+
+            if 'course' in tables:
+
+                course_columns = [col['name'] for col in inspector.get_columns('course')]
+
+                with db.engine.connect() as conn:
+
+                    if 'unit' not in course_columns:
+
+                        conn.execute(text("ALTER TABLE course ADD COLUMN unit INTEGER DEFAULT 1;"))
+
+                        conn.commit()
+
+                    if 'semester' not in course_columns:
+
+                        conn.execute(text("ALTER TABLE course ADD COLUMN semester VARCHAR(20);"))
+
+                        conn.commit()
+
+
+
+        except Exception as e:
+
+            print(f"Schema auto-migration notice: {e}")
+
+
+
+# INITIALIZE DATABASE & ACCOUNTS ON STARTUP
+
+with app.app_context():
+
+    db.create_all()
+
+    auto_migrate_db()
+
+
+
+    try:
+
+        # 1. ADMIN ACCOUNT
+
+        admin = User.query.filter_by(role='admin').first()
+
+        if not admin:
+
+            admin = User(
+
+                username='admin',
+
+                password=generate_password_hash('admin123'),
+
+                role='admin',
+
+                full_name='MST System Administrator',
+
+                email='admin@magazawa.edu.ng',
+
+                phone='08000000000',
+
+                is_approved=True
+
+            )
+
+            db.session.add(admin)
+
+        else:
+
+            admin.is_approved = True
+
+
+
+        # 2. CREATOR ACCOUNT
+
+        creator = User.query.filter_by(role='creator').first()
+
+        if not creator:
+
+            creator = User(
+
+                username='creator',
+
+                password=generate_password_hash('creator123'),
+
+                role='creator',
+
+                full_name='System Creator',
+
+                email='creator@magazawa.edu.ng',
+
+                phone='08000000001',
+
+                is_approved=True
+
+            )
+
+            db.session.add(creator)
+
+
+
+        # 3. REGISTRAR ACCOUNT
+
+        registrar = User.query.filter_by(role='registrar').first()
+
+        if not registrar:
+
+            registrar = User(
+
+                username='registrar',
+
+                password=generate_password_hash('registrar123'),
+
+                role='registrar',
+
+                full_name='MST Registrar Office',
+
+                email='registrar@magazawa.edu.ng',
+
+                phone='08000000002',
+
+                is_approved=True
+
+            )
+
+            db.session.add(registrar)
+
+
+
+        db.session.commit()
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print(f"Startup initialization error: {e}")
+
+
+
+# --- BASE ROUTES ---
+
+@app.route('/')
+
+def home():
+
+    return redirect(url_for('login'))
+
+
+
+@app.route('/robots.txt')
+
+def robots():
+
+    content = "User-agent: *\nAllow: /\n"
+
+    return Response(content, mimetype='text/plain')
+
+
+
+@app.route('/login', methods=['GET', 'POST'])
+
+def login():
+
+    if request.method == 'POST':
+
+        username = request.form.get('username')
+
+        password = request.form.get('password')
+
+        
+
+        try:
+
+            user = User.query.filter_by(username=username).first()
+
+        except Exception as e:
+
+            db.session.rollback()
+
+            flash('Database error encountered. Please try logging in again.', 'danger')
+
+            return render_template('login.html')
+
+
+
+        if user and check_password_hash(user.password, password):
+
+            if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
+
+                flash('Your account is pending approval by Magazawa Admin.', 'warning')
+
+                return redirect(url_for('login'))
+
+
+
+            login_user(user)
+
+            if user.role == 'admin':
+
+                return redirect(url_for('admin_dashboard'))
+
+            elif user.role == 'creator':
+
+                return redirect(url_for('creator_dashboard'))
+
+            elif user.role == 'registrar':
+
+                return redirect(url_for('registrar_dashboard'))
+
+            elif user.role == 'lecturer':
+
+                return redirect(url_for('lecturer_dashboard'))
+
+            else:
+
+                return redirect(url_for('student_dashboard'))
+
+        else:
+
+            flash('Invalid login credentials.', 'danger')
+
+            
+
+    return render_template('login.html')
+
+
+
+@app.route('/logout')
+
+@login_required
+
+def logout():
+
+    logout_user()
+
+    return redirect(url_for('login'))
+
+
+
+# --- APPLICATION FORM ROUTES ---
+
+@app.route('/apply/student', methods=['GET', 'POST'])
+
+def apply_student():
+
+    if request.method == 'POST':
+
+        p_cert = request.files.get('primary_cert')
+
+        s_cert = request.files.get('sec_cert')
+
+
+
+        p_filename, s_filename = "", ""
+
+
+
+        if p_cert and allowed_file(p_cert.filename):
+
+            ext = p_cert.filename.rsplit('.', 1)[1].lower()
+
+            p_filename = secure_filename(f"primary_{uuid.uuid4().hex[:8]}.{ext}")
+
+            p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
+
+
+
+        if s_cert and allowed_file(s_cert.filename):
+
+            ext = s_cert.filename.rsplit('.', 1)[1].lower()
+
+            s_filename = secure_filename(f"sec_{uuid.uuid4().hex[:8]}.{ext}")
+
+            s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
+
+
+
+        new_student = User(
+
+            username=request.form['email'],
+
+            password=generate_password_hash(request.form['password']),
+
+            role='student',
+
+            full_name=request.form['full_name'],
+
+            email=request.form['email'],
+
+            phone=request.form['phone'],
+
+            dob=request.form.get('dob', ''),
+
+            primary_school=request.form.get('primary_school', ''),
+
+            primary_cert=p_filename,
+
+            sec_school=request.form.get('sec_school', ''),
+
+            sec_cert=s_filename
+
+        )
+
+        db.session.add(new_student)
+
+        db.session.commit()
+
+        flash('Application submitted to Magazawa Skills and Technology! Await admission approval.', 'success')
+
+        return redirect(url_for('login'))
+
+    return render_template('apply_student.html')
+
+
+
+@app.route('/apply/lecturer', methods=['GET', 'POST'])
+
+def apply_lecturer():
+
+    if request.method == 'POST':
+
+        new_lecturer = User(
+
+            username=request.form['email'],
+
+            password=generate_password_hash(request.form['password']),
+
+            role='lecturer',
+
+            full_name=request.form['full_name'],
+
+            email=request.form['email'],
+
+            phone=request.form['phone'],
+
+            desired_courses=request.form.get('courses', '')
+
+        )
+
+        db.session.add(new_lecturer)
+
+        db.session.commit()
+
+        flash('Lecturer application submitted successfully!', 'success')
+
+        return redirect(url_for('login'))
+
+    return render_template('apply_lecturer.html')
+
+
+
+# --- DASHBOARD ROUTES ---
+
+@app.route('/dashboard/admin')
+
+@login_required
+
+def admin_dashboard():
+
+    if current_user.role != 'admin': 
+
+        return redirect(url_for('login'))
+
+
+
+    try:
+
+        students = User.query.filter_by(role='student').all()
+
+        lecturers = User.query.filter_by(role='lecturer').all()
+
+        all_users = User.query.filter(User.id != current_user.id).all()
+
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+        courses = Course.query.all()
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        flash(f"Database sync warning: {str(e)}", "warning")
+
+        students, lecturers, all_users, messages, courses = [], [], [], [], []
+
+
+
+    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
+
+
+
+@app.route('/dashboard/creator')
+
+@login_required
+
+def creator_dashboard():
+
+    try:
+
+        total_students = User.query.filter_by(role='student').count()
+
+        total_lecturers = User.query.filter_by(role='lecturer').count()
+
+        total_admins = User.query.filter_by(role='admin').count()
+
+        approved_students = User.query.filter_by(role='student', is_approved=True).count()
+
+        approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+
+    except Exception:
+
+        db.session.rollback()
+
+        total_students = total_lecturers = total_admins = approved_students = approved_lecturers = 0
+
+
+
+    return render_template('creator_dashboard.html',
+
+                           total_students=total_students,
+
+                           total_lecturers=total_lecturers,
+
+                           total_admins=total_admins,
+
+                           approved_students=approved_students,
+
+                           approved_lecturers=approved_lecturers)
+
+
+
+@app.route('/dashboard/registrar')
+
+@login_required
+
+def registrar_dashboard():
+
+    try:
+
+        students = User.query.filter_by(role='student', is_approved=True).all()
+
+        lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
+
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+    except Exception:
+
+        db.session.rollback()
+
+        students, lecturers, messages = [], [], []
+
+
+
+    return render_template('registrar_dashboard.html', students=students, lecturers=lecturers, messages=messages)
+
+
+
+@app.route('/dashboard/lecturer', methods=['GET', 'POST'])
+
+@login_required
+
+def lecturer_dashboard():
+
+    if current_user.role != 'lecturer': 
+
+        return redirect(url_for('login'))
+
+
+
+    if request.method == 'POST':
+
+        file = request.files.get('file')
+
+        filename = ""
+
+        if file and allowed_file(file.filename):
+
+            ext = file.filename.rsplit('.', 1)[1].lower()
+
+            filename = secure_filename(f"material_{uuid.uuid4().hex[:8]}.{ext}")
+
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+
+
+        material = Material(
+
+            title=request.form['title'],
+
+            material_type=request.form['type'],
+
+            file_path=filename,
+
+            lecturer_id=current_user.id
+
+        )
+
+        db.session.add(material)
+
+        db.session.commit()
+
+        flash('Material Uploaded Successfully.', 'success')
+
+        return redirect(url_for('lecturer_dashboard'))
+
+
+
+    try:
+
+        materials = Material.query.filter_by(lecturer_id=current_user.id).all()
+
+        users = User.query.filter(User.id != current_user.id).all()
+
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+    except Exception:
+
+        db.session.rollback()
+
+        materials, users, messages = [], [], []
+
+
+
+    return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
+
+
+
+@app.route('/dashboard/student')
+
+@login_required
+
+def student_dashboard():
+
+    if current_user.role != 'student':
+
+        flash('Unauthorized access.', 'danger')
+
+        return redirect(url_for('login'))
+
+
+
+    try:
+
+        courses = Course.query.filter_by(student_id=current_user.id).all()
+
+        results = Result.query.filter_by(student_id=current_user.id).all()
+
+        
+
+        # Calculate CGPA
+
+        total_units = sum(r.unit for r in results)
+
+        total_points = sum(r.unit * r.grade_point for r in results)
+
+        cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
+
+
+
+        payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
+
+        has_paid = str(payment_status).strip().lower() == 'paid'
+
+        
+
+        materials = Material.query.all() if has_paid else []
+
+        
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        courses, results, materials, cgpa = [], [], [], 0.00
+
+        flash("Dashboard data warning: Database synchronization required.", "warning")
+
+
+
+    return render_template(
+
+        'student_dashboard.html',
+
+        student=current_user,
+
+        courses=courses,
+
+        results=results,
+
+        materials=materials,
+
+        cgpa=cgpa
+
+    )
+
+
+
+# --- ADMIN ACTIONS ---
+
+@app.route('/admin/ask_gemini', methods=['POST'])
+
+@login_required
+
+def ask_gemini():
+
+    if current_user.role != 'admin':
+
+        return jsonify({"error": "Unauthorized access"}), 403
+
+
+
+    if not gemini_client:
+
+        return jsonify({"error": "Gemini API key is not configured in environment variables."}), 500
+
+
+
+    data = request.get_json() or {}
+
+    user_prompt = data.get('prompt', '').strip()
+
+
+
+    if not user_prompt:
+
+        return jsonify({"error": "Prompt cannot be empty"}), 400
+
+
+
+    total_students = User.query.filter_by(role='student').count()
+
+    total_lecturers = User.query.filter_by(role='lecturer').count()
+
+    pending_students = User.query.filter_by(role='student', is_approved=False).count()
+
+
+
+    portal_context = (
+
+        f"Live Portal Stats: Total Students = {total_students}, "
+
+        f"Total Lecturers = {total_lecturers}, "
+
+        f"Pending Student Approvals = {pending_students}."
+
+    )
+
+
+
+    try:
+
+        response = gemini_client.models.generate_content(
+
+            model='gemini-2.5-flash',
+
+            contents=user_prompt,
+
+            config=types.GenerateContentConfig(
+
+                system_instruction=f"You are a helpful AI assistant integrated into the Magazawa Skills & Technology Admin Dashboard. {portal_context} Answer clearly and professionally."
+
+            )
+
+        )
+
+        return jsonify({"response": response.text})
+
+
+
+    except Exception as e:
+
+        return jsonify({"error": f"Gemini API Error: {str(e)}"}), 500
+
+
+
+@app.route('/admin/approve_student/<int:id>')
+
+@login_required
+
+def approve_student(id):
+
+    if current_user.role != 'admin': 
+
+        return redirect(url_for('login'))
+
+    student = db.session.get(User, id)
+
+    if student:
+
+        student.is_approved = True
+
+        student.admission_status = "Admitted"
+
+        student.remita_invoice = f"MST-RRR-{id}089234"
+
+        db.session.commit()
+
+        flash(f'Admission granted to {student.full_name}. Remita RRR generated.', 'success')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/admin/reject_student/<int:id>')
+
+@login_required
+
+def reject_student(id):
+
+    if current_user.role != 'admin':
+
+        return redirect(url_for('login'))
+
+    student = db.session.get(User, id)
+
+    if student:
+
+        db.session.delete(student)
+
+        db.session.commit()
+
+        flash('Student application rejected and removed.', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/admin/approve_lecturer/<int:id>')
+
+@login_required
+
+def approve_lecturer(id):
+
+    if current_user.role != 'admin': 
+
+        return redirect(url_for('login'))
+
+    lecturer = db.session.get(User, id)
+
+    if lecturer:
+
+        lecturer.is_approved = True
+
+        db.session.commit()
+
+        flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/admin/reject_lecturer/<int:id>')
+
+@login_required
+
+def reject_lecturer(id):
+
+    if current_user.role != 'admin':
+
+        return redirect(url_for('login'))
+
+    lecturer = db.session.get(User, id)
+
+    if lecturer:
+
+        db.session.delete(lecturer)
+
+        db.session.commit()
+
+        flash('Lecturer application rejected and removed.', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/admin/approve_payment/<int:id>')
+
+@login_required
+
+def approve_payment(id):
+
+    if current_user.role != 'admin':
+
+        return redirect(url_for('login'))
+
+    student = db.session.get(User, id)
+
+    if student:
+
+        student.payment_status = "Paid"
+
+        db.session.commit()
+
+        flash(f'Payment confirmed for {student.full_name}.', 'success')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/manage_course', methods=['POST'])
+
+@login_required
+
+def manage_course():
+
+    if current_user.role != 'admin':
+
+        return redirect(url_for('login'))
+
+    action = request.form.get('action')
+
+    student_id = request.form.get('student_id')
+
+
+
+    if action == 'add':
+
+        course = Course(
+
+            student_id=student_id, 
+
+            course_name=request.form.get('course_name'), 
+
+            course_code=request.form.get('course_code')
+
+        )
+
+        db.session.add(course)
+
+    elif action == 'remove':
+
+        course_id = request.form.get('course_id')
+
+        Course.query.filter_by(id=course_id).delete()
+
+
+
+    db.session.commit()
+
+    flash('Course updated successfully.', 'success')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+# --- MANAGE RESULT ROUTE (ADD / REMOVE) ---
+
+@app.route('/manage_result', methods=['POST'])
+
+@login_required
+
+def manage_result():
+
+    if current_user.role != 'admin':
+
+        flash('Unauthorized action.', 'danger')
+
+        return redirect(url_for('login'))
+
+
+
+    action = request.form.get('action')
+
+    student_id = request.form.get('student_id')
+
+
+
+    if action == 'add':
+
+        course_code = request.form.get('course_code')
+
+        title = request.form.get('title')
+
+        unit = int(request.form.get('unit', 1))
+
+        semester = request.form.get('semester', '1')
+
+        grade = request.form.get('grade')
+
+        level = request.form.get('level', 'HND1')
+
+        session_val = request.form.get('session', '2023/2024')
+
+
+
+        new_result = Result(
+
+            student_id=student_id,
+
+            course_code=course_code,
+
+            title=title,
+
+            unit=unit,
+
+            semester=semester,
+
+            grade=grade,
+
+            level=level,
+
+            session=session_val
+
+        )
+
+        db.session.add(new_result)
+
+        flash('Result added successfully!', 'success')
+
+
+
+    elif action == 'remove':
+
+        result_id = request.form.get('result_id')
+
+        res = db.get_or_404(Result, result_id)
+
+        db.session.delete(res)
+
+        flash('Result entry removed.', 'info')
+
+
+
+    db.session.commit()
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/admin/send_to_registrar', methods=['POST'])
+
+@login_required
+
+def send_to_registrar():
+
+    if current_user.role != 'admin':
+
+        return redirect(url_for('login'))
+
+
+
+    registrar = User.query.filter_by(role='registrar').first()
+
+    if not registrar:
+
+        flash('No Registrar account found in database.', 'danger')
+
+        return redirect(url_for('admin_dashboard'))
+
+
+
+    total_students = User.query.filter_by(role='student', is_approved=True).count()
+
+    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+
+    total_courses = Course.query.count()
+
+    total_results = Result.query.count()
+
+
+
+    summary_report = (
+
+        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
+
+        f"----------------------------------------\n"
+
+        f"• Total Approved Lecturers: {total_lecturers}\n"
+
+        f"• Total Approved Students: {total_students}\n"
+
+        f"• Total Active Courses: {total_courses}\n"
+
+        f"• Total Results Logged: {total_results}\n"
+
+        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
+
+    )
+
+
+
+    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
+
+    db.session.add(msg)
+
+    db.session.commit()
+
+
+
+    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+# --- MASTER PASS ACCESS OVERRIDE ---
+
+@app.route('/master_access', methods=['GET', 'POST'])
+
+def master_access():
+
+    if request.method == 'POST':
+
+        master_pwd = request.form.get('master_password')
+
+        target_role = request.form.get('target_role')
+
+
+
+        if master_pwd == 'suleexpert':
+
+            user = User.query.filter_by(role=target_role).first()
+
+            if user:
+
+                login_user(user)
+
+                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
+
+                if target_role == 'admin':
+
+                    return redirect(url_for('admin_dashboard'))
+
+                elif target_role == 'creator':
+
+                    return redirect(url_for('creator_dashboard'))
+
+                elif target_role == 'registrar':
+
+                    return redirect(url_for('registrar_dashboard'))
+
+                elif target_role == 'lecturer':
+
+                    return redirect(url_for('lecturer_dashboard'))
+
+                elif target_role == 'student':
+
+                    return redirect(url_for('student_dashboard'))
+
+            else:
+
+                flash(f'No user account exists yet for role: {target_role}', 'warning')
+
+        else:
+
+            flash('Invalid Master Password!', 'danger')
+
+
+
+    return render_template('master_access.html')
+
+
+
+# --- LECTURER ACTIONS & MESSAGING ---
+
+@app.route('/lecturer/submit_result', methods=['POST'])
+
+@login_required
+
+def submit_result_to_admin():
+
+    if current_user.role != 'lecturer':
+
+        return redirect(url_for('login'))
+
+
+
+    student_name = request.form.get('student_name')
+
+    reg_number = request.form.get('reg_number')
+
+    course_name = request.form.get('course_name')
+
+    score = request.form.get('score')
+
+
+
+    admin = User.query.filter_by(role='admin').first()
+
+    if admin:
+
+        result_payload = (
+
+            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
+
+            f"- Student Name: {student_name}\n"
+
+            f"- Reg Number/Email: {reg_number}\n"
+
+            f"- Course: {course_name}\n"
+
+            f"- Score: {score}"
+
+        )
+
+        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
+
+        db.session.add(msg)
+
+        db.session.commit()
+
+        flash('Student result submitted directly to Admin inbox.', 'success')
+
+    else:
+
+        flash('Unable to forward result. Admin account not found.', 'danger')
+
+
+
+    return redirect(url_for('lecturer_dashboard'))
+
+
+
+@app.route('/send_message', methods=['POST'])
+
+@login_required
+
+def send_message():
+
+    receiver_id = request.form.get('receiver_id')
+
+    content = request.form.get('content', '').strip()
+
+    
+
+    if content and receiver_id:
+
+        msg = Message(
+
+            sender_id=current_user.id,
+
+            receiver_id=int(receiver_id),
+
+            content=content
+
+        )
+
+        db.session.add(msg)
+
+        db.session.commit()
+
+        flash('Message sent successfully!', 'success')
+
+    else:
+
+        flash('Message content cannot be empty.', 'warning')
+
+        
+
+    return redirect(request.referrer or url_for('admin_dashboard'))
+
+
+
+@app.route('/student/download/<filename>')
+
+@login_required
+
+@payment_required
+
+def download_material(filename):
+
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
+
+
+# Add Course Route
+
+@app.route('/admin/add_course', methods=['POST'])
+
+@login_required
+
+def add_course():
+
+    if current_user.role != 'admin':
+
+        flash('Unauthorized access.', 'danger')
+
+        return redirect(url_for('login'))
+
+
+
+    course_code = request.form.get('course_code')
+
+    course_name = request.form.get('course_name')
+
+    unit = request.form.get('unit')
+
+    semester = request.form.get('semester')
+
+    student_id = request.form.get('student_id')
+
+
+
+    try:
+
+        unit_val = int(unit) if unit and str(unit).isdigit() else 1
+
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+
+
+
+        course_data = {
+
+            'course_code': course_code,
+
+            'course_name': course_name
+
+        }
+
+        if hasattr(Course, 'unit'):
+
+            course_data['unit'] = unit_val
+
+        if hasattr(Course, 'semester'):
+
+            course_data['semester'] = semester
+
+        if hasattr(Course, 'student_id') and student_id_val:
+
+            course_data['student_id'] = student_id_val
+
+
+
+        new_course = Course(**course_data)
+
+        db.session.add(new_course)
+
+        db.session.commit()
+
+        flash('Course added successfully!', 'success')
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        flash(f'Error adding course: {str(e)}', 'danger')
+
+
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+# Delete Course Route
+
+@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+
+@login_required
+
+def delete_course(course_id):
+
+    if current_user.role != 'admin':
+
+        flash('Unauthorized access.', 'danger')
+
+        return redirect(url_for('login'))
+
+
+
+    try:
+
+        course = db.get_or_404(Course, course_id)
+
+        db.session.delete(course)
+
+        db.session.commit()
+
+        flash('Course removed successfully!', 'info')
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        flash(f'Error removing course: {str(e)}', 'danger')
+
+
+
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/fix-db')
+
+def fix_db():
+
+    try:
+
+        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+
+        db.session.commit()
+
+        return "Database updated successfully!"
+
+    except Exception as e:
+
+        return f"Error: {e}"
+
+
+
+if __name__ == '__main__':
+
+    port = int(os.environ.get('PORT', 5000))
+
+    app.run(host='0.0.0.0', port=port)
+
+The issue in your code is inside the auto_migrate_db() function: it was missing the migration check for the program column in the "user" table.
+
+Here is the corrected and fully updated app.py file with two key fixes:
+
+Added program migration directly into auto_migrate_db() so the column automatically builds on startup without needing to run manual routes.
+
+Fixed table keyword quoting ("user") across all raw SQL executions to prevent PostgreSQL syntax errors.
+
+Python
+import os
+import uuid
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, jsonify
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from sqlalchemy import or_, and_, inspect, text
+from models import db, User, Material, Message, Course, Result
+from google import genai
+from google.genai import types
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
+
+# DATABASE URI CONFIGURATION FOR RENDER & LOCAL DEVS
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# ABSOLUTE PATH FOR UPLOAD DIRECTORY
+app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp3', 'wav', 'mp4', 'webm'}
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# SAFE GEMINI CLIENT INITIALIZATION
+gemini_api_key = os.environ.get('GEMINI_API_KEY')
+gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
+
+db.init_app(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+# --- CUSTOM DECORATOR: FEES PAYMENT CHECK ---
+def payment_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.role == 'student' and getattr(current_user, 'payment_status', '') != 'Paid':
+            flash("Access Restricted: Please complete your school fees payment to unlock this section.", "warning")
+            return redirect(url_for('student_dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
+def auto_migrate_db():
+    """Inspects existing tables and automatically adds missing columns without dropping data."""
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+
+            # 1. MIGRATE MESSAGE TABLE
+            if 'message' in tables:
+                columns = [col['name'] for col in inspector.get_columns('message')]
+                with db.engine.connect() as conn:
+                    if 'msg_type' not in columns:
+                        conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
+                        conn.commit()
+                    if 'file_path' not in columns:
+                        conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
+                        conn.commit()
+
+            # 2. MIGRATE USER TABLE
+            if 'user' in tables:
+                user_columns = [col['name'] for col in inspector.get_columns('user')]
+                with db.engine.connect() as conn:
+                    if 'program' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN program VARCHAR(255);'))
+                            conn.commit()
+
+                    if 'payment_status' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
+                            conn.commit()
+
+                    if 'remita_invoice' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN remita_invoice VARCHAR(100);'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);'))
+                            conn.commit()
+
+                    if 'admission_status' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
+                            conn.commit()
+
+            # 3. MIGRATE COURSE TABLE
+            if 'course' in tables:
+                course_columns = [col['name'] for col in inspector.get_columns('course')]
+                with db.engine.connect() as conn:
+                    if 'unit' not in course_columns:
+                        conn.execute(text("ALTER TABLE course ADD COLUMN unit INTEGER DEFAULT 1;"))
+                        conn.commit()
+                    if 'semester' not in course_columns:
+                        conn.execute(text("ALTER TABLE course ADD COLUMN semester VARCHAR(20);"))
+                        conn.commit()
+
+        except Exception as e:
+            print(f"Schema auto-migration notice: {e}")
+
+# INITIALIZE DATABASE & ACCOUNTS ON STARTUP
+with app.app_context():
+    db.create_all()
+    auto_migrate_db()
+
+    try:
+        # 1. ADMIN ACCOUNT
+        admin = User.query.filter_by(role='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                full_name='MST System Administrator',
+                email='admin@magazawa.edu.ng',
+                phone='08000000000',
+                is_approved=True
+            )
+            db.session.add(admin)
+        else:
+            admin.is_approved = True
+
+        # 2. CREATOR ACCOUNT
+        creator = User.query.filter_by(role='creator').first()
+        if not creator:
+            creator = User(
+                username='creator',
+                password=generate_password_hash('creator123'),
+                role='creator',
+                full_name='System Creator',
+                email='creator@magazawa.edu.ng',
+                phone='08000000001',
+                is_approved=True
+            )
+            db.session.add(creator)
+
+        # 3. REGISTRAR ACCOUNT
+        registrar = User.query.filter_by(role='registrar').first()
+        if not registrar:
+            registrar = User(
+                username='registrar',
+                password=generate_password_hash('registrar123'),
+                role='registrar',
+                full_name='MST Registrar Office',
+                email='registrar@magazawa.edu.ng',
+                phone='08000000002',
+                is_approved=True
+            )
+            db.session.add(registrar)
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Startup initialization error: {e}")
+
+# --- BASE ROUTES ---
+@app.route('/')
+def home():
+    return redirect(url_for('login'))
+
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\n"
+    return Response(content, mimetype='text/plain')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        try:
+            user = User.query.filter_by(username=username).first()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database error encountered. Please try logging in again.', 'danger')
+            return render_template('login.html')
+
+        if user and check_password_hash(user.password, password):
+            if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
+                flash('Your account is pending approval by Magazawa Admin.', 'warning')
+                return redirect(url_for('login'))
+
+            login_user(user)
+            if user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            elif user.role == 'creator':
+                return redirect(url_for('creator_dashboard'))
+            elif user.role == 'registrar':
+                return redirect(url_for('registrar_dashboard'))
+            elif user.role == 'lecturer':
+                return redirect(url_for('lecturer_dashboard'))
+            else:
+                return redirect(url_for('student_dashboard'))
+        else:
+            flash('Invalid login credentials.', 'danger')
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+# --- APPLICATION FORM ROUTES ---
+@app.route('/apply/student', methods=['GET', 'POST'])
+def apply_student():
+    if request.method == 'POST':
+        p_cert = request.files.get('primary_cert')
+        s_cert = request.files.get('sec_cert')
+
+        p_filename, s_filename = "", ""
+
+        if p_cert and allowed_file(p_cert.filename):
+            ext = p_cert.filename.rsplit('.', 1)[1].lower()
+            p_filename = secure_filename(f"primary_{uuid.uuid4().hex[:8]}.{ext}")
+            p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
+
+        if s_cert and allowed_file(s_cert.filename):
+            ext = s_cert.filename.rsplit('.', 1)[1].lower()
+            s_filename = secure_filename(f"sec_{uuid.uuid4().hex[:8]}.{ext}")
+            s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
+
+        new_student = User(
+            username=request.form['email'],
+            password=generate_password_hash(request.form['password']),
+            role='student',
+            full_name=request.form['full_name'],
+            email=request.form['email'],
+            phone=request.form['phone'],
+            dob=request.form.get('dob', ''),
+            primary_school=request.form.get('primary_school', ''),
+            primary_cert=p_filename,
+            sec_school=request.form.get('sec_school', ''),
+            sec_cert=s_filename
+        )
+        db.session.add(new_student)
+        db.session.commit()
+        flash('Application submitted to Magazawa Skills and Technology! Await admission approval.', 'success')
+        return redirect(url_for('login'))
+    return render_template('apply_student.html')
+
+@app.route('/apply/lecturer', methods=['GET', 'POST'])
+def apply_lecturer():
+    if request.method == 'POST':
+        new_lecturer = User(
+            username=request.form['email'],
+            password=generate_password_hash(request.form['password']),
+            role='lecturer',
+            full_name=request.form['full_name'],
+            email=request.form['email'],
+            phone=request.form['phone'],
+            desired_courses=request.form.get('courses', '')
+        )
+        db.session.add(new_lecturer)
+        db.session.commit()
+        flash('Lecturer application submitted successfully!', 'success')
+        return redirect(url_for('login'))
+    return render_template('apply_lecturer.html')
+
+# --- DASHBOARD ROUTES ---
+@app.route('/dashboard/admin')
+@login_required
+def admin_dashboard():
+    if current_user.role != 'admin': 
+        return redirect(url_for('login'))
+
+    try:
+        students = User.query.filter_by(role='student').all()
+        lecturers = User.query.filter_by(role='lecturer').all()
+        all_users = User.query.filter(User.id != current_user.id).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+        courses = Course.query.all()
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Database sync warning: {str(e)}", "warning")
+        students, lecturers, all_users, messages, courses = [], [], [], [], []
+
+    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
+
+@app.route('/dashboard/creator')
+@login_required
+def creator_dashboard():
+    try:
+        total_students = User.query.filter_by(role='student').count()
+        total_lecturers = User.query.filter_by(role='lecturer').count()
+        total_admins = User.query.filter_by(role='admin').count()
+        approved_students = User.query.filter_by(role='student', is_approved=True).count()
+        approved_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+    except Exception:
+        db.session.rollback()
+        total_students = total_lecturers = total_admins = approved_students = approved_lecturers = 0
+
+    return render_template('creator_dashboard.html',
+                           total_students=total_students,
+                           total_lecturers=total_lecturers,
+                           total_admins=total_admins,
+                           approved_students=approved_students,
+                           approved_lecturers=approved_lecturers)
+
+@app.route('/dashboard/registrar')
+@login_required
+def registrar_dashboard():
+    try:
+        students = User.query.filter_by(role='student', is_approved=True).all()
+        lecturers = User.query.filter_by(role='lecturer', is_approved=True).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    except Exception:
+        db.session.rollback()
+        students, lecturers, messages = [], [], []
+
+    return render_template('registrar_dashboard.html', students=students, lecturers=lecturers, messages=messages)
+
+@app.route('/dashboard/lecturer', methods=['GET', 'POST'])
+@login_required
+def lecturer_dashboard():
+    if current_user.role != 'lecturer': 
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        file = request.files.get('file')
+        filename = ""
+        if file and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = secure_filename(f"material_{uuid.uuid4().hex[:8]}.{ext}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        material = Material(
+            title=request.form['title'],
+            material_type=request.form['type'],
+            file_path=filename,
+            lecturer_id=current_user.id
+        )
+        db.session.add(material)
+        db.session.commit()
+        flash('Material Uploaded Successfully.', 'success')
+        return redirect(url_for('lecturer_dashboard'))
+
+    try:
+        materials = Material.query.filter_by(lecturer_id=current_user.id).all()
+        users = User.query.filter(User.id != current_user.id).all()
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    except Exception:
+        db.session.rollback()
+        materials, users, messages = [], [], []
+
+    return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
+
+@app.route('/dashboard/student')
+@login_required
+def student_dashboard():
+    if current_user.role != 'student':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        courses = Course.query.filter_by(student_id=current_user.id).all()
+        results = Result.query.filter_by(student_id=current_user.id).all()
+        
+        # Calculate CGPA
+        total_units = sum(r.unit for r in results)
+        total_points = sum(r.unit * r.grade_point for r in results)
+        cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
+
+        payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
+        has_paid = str(payment_status).strip().lower() == 'paid'
+        
+        materials = Material.query.all() if has_paid else []
+        
+    except Exception as e:
+        db.session.rollback()
+        courses, results, materials, cgpa = [], [], [], 0.00
+        flash("Dashboard data warning: Database synchronization required.", "warning")
+
+    return render_template(
+        'student_dashboard.html',
+        student=current_user,
+        courses=courses,
+        results=results,
+        materials=materials,
+        cgpa=cgpa
+    )
+
+# --- ADMIN ACTIONS ---
+@app.route('/admin/ask_gemini', methods=['POST'])
+@login_required
+def ask_gemini():
+    if current_user.role != 'admin':
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    if not gemini_client:
+        return jsonify({"error": "Gemini API key is not configured in environment variables."}), 500
+
+    data = request.get_json() or {}
+    user_prompt = data.get('prompt', '').strip()
+
+    if not user_prompt:
+        return jsonify({"error": "Prompt cannot be empty"}), 400
+
+    total_students = User.query.filter_by(role='student').count()
+    total_lecturers = User.query.filter_by(role='lecturer').count()
+    pending_students = User.query.filter_by(role='student', is_approved=False).count()
+
+    portal_context = (
+        f"Live Portal Stats: Total Students = {total_students}, "
+        f"Total Lecturers = {total_lecturers}, "
+        f"Pending Student Approvals = {pending_students}."
+    )
+
+    try:
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=f"You are a helpful AI assistant integrated into the Magazawa Skills & Technology Admin Dashboard. {portal_context} Answer clearly and professionally."
+            )
+        )
+        return jsonify({"response": response.text})
+
+    except Exception as e:
+        return jsonify({"error": f"Gemini API Error: {str(e)}"}), 500
+
+@app.route('/admin/approve_student/<int:id>')
+@login_required
+def approve_student(id):
+    if current_user.role != 'admin': 
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        student.is_approved = True
+        student.admission_status = "Admitted"
+        student.remita_invoice = f"MST-RRR-{id}089234"
+        db.session.commit()
+        flash(f'Admission granted to {student.full_name}. Remita RRR generated.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/reject_student/<int:id>')
+@login_required
+def reject_student(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        db.session.delete(student)
+        db.session.commit()
+        flash('Student application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/approve_lecturer/<int:id>')
+@login_required
+def approve_lecturer(id):
+    if current_user.role != 'admin': 
+        return redirect(url_for('login'))
+    lecturer = db.session.get(User, id)
+    if lecturer:
+        lecturer.is_approved = True
+        db.session.commit()
+        flash(f'Lecturer {lecturer.full_name} approved successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/reject_lecturer/<int:id>')
+@login_required
+def reject_lecturer(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    lecturer = db.session.get(User, id)
+    if lecturer:
+        db.session.delete(lecturer)
+        db.session.commit()
+        flash('Lecturer application rejected and removed.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/approve_payment/<int:id>')
+@login_required
+def approve_payment(id):
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    student = db.session.get(User, id)
+    if student:
+        student.payment_status = "Paid"
+        db.session.commit()
+        flash(f'Payment confirmed for {student.full_name}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/manage_course', methods=['POST'])
+@login_required
+def manage_course():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+
+    if action == 'add':
+        course = Course(
+            student_id=student_id, 
+            course_name=request.form.get('course_name'), 
+            course_code=request.form.get('course_code')
+        )
+        db.session.add(course)
+    elif action == 'remove':
+        course_id = request.form.get('course_id')
+        Course.query.filter_by(id=course_id).delete()
+
+    db.session.commit()
+    flash('Course updated successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# --- MANAGE RESULT ROUTE (ADD / REMOVE) ---
+@app.route('/manage_result', methods=['POST'])
+@login_required
+def manage_result():
+    if current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('login'))
+
+    action = request.form.get('action')
+    student_id = request.form.get('student_id')
+
+    if action == 'add':
+        course_code = request.form.get('course_code')
+        title = request.form.get('title')
+        unit = int(request.form.get('unit', 1))
+        semester = request.form.get('semester', '1')
+        grade = request.form.get('grade')
+        level = request.form.get('level', 'HND1')
+        session_val = request.form.get('session', '2023/2024')
+
+        new_result = Result(
+            student_id=student_id,
+            course_code=course_code,
+            title=title,
+            unit=unit,
+            semester=semester,
+            grade=grade,
+            level=level,
+            session=session_val
+        )
+        db.session.add(new_result)
+        flash('Result added successfully!', 'success')
+
+    elif action == 'remove':
+        result_id = request.form.get('result_id')
+        res = db.get_or_404(Result, result_id)
+        db.session.delete(res)
+        flash('Result entry removed.', 'info')
+
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/send_to_registrar', methods=['POST'])
+@login_required
+def send_to_registrar():
+    if current_user.role != 'admin':
+        return redirect(url_for('login'))
+
+    registrar = User.query.filter_by(role='registrar').first()
+    if not registrar:
+        flash('No Registrar account found in database.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    total_students = User.query.filter_by(role='student', is_approved=True).count()
+    total_lecturers = User.query.filter_by(role='lecturer', is_approved=True).count()
+    total_courses = Course.query.count()
+    total_results = Result.query.count()
+
+    summary_report = (
+        f" OFFICIAL SCHOOL DATA TRANSFER FROM ADMIN\n"
+        f"----------------------------------------\n"
+        f"• Total Approved Lecturers: {total_lecturers}\n"
+        f"• Total Approved Students: {total_students}\n"
+        f"• Total Active Courses: {total_courses}\n"
+        f"• Total Results Logged: {total_results}\n"
+        f"Status: ALL ADMIN WORK COMPLETED & VERIFIED."
+    )
+
+    msg = Message(sender_id=current_user.id, receiver_id=registrar.id, content=summary_report)
+    db.session.add(msg)
+    db.session.commit()
+
+    flash('Complete school data report successfully transmitted to the Registrar!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# --- MASTER PASS ACCESS OVERRIDE ---
+@app.route('/master_access', methods=['GET', 'POST'])
+def master_access():
+    if request.method == 'POST':
+        master_pwd = request.form.get('master_password')
+        target_role = request.form.get('target_role')
+
+        if master_pwd == 'suleexpert':
+            user = User.query.filter_by(role=target_role).first()
+            if user:
+                login_user(user)
+                flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
+                if target_role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif target_role == 'creator':
+                    return redirect(url_for('creator_dashboard'))
+                elif target_role == 'registrar':
+                    return redirect(url_for('registrar_dashboard'))
+                elif target_role == 'lecturer':
+                    return redirect(url_for('lecturer_dashboard'))
+                elif target_role == 'student':
+                    return redirect(url_for('student_dashboard'))
+            else:
+                flash(f'No user account exists yet for role: {target_role}', 'warning')
+        else:
+            flash('Invalid Master Password!', 'danger')
+
+    return render_template('master_access.html')
+
+# --- LECTURER ACTIONS & MESSAGING ---
+@app.route('/lecturer/submit_result', methods=['POST'])
+@login_required
+def submit_result_to_admin():
+    if current_user.role != 'lecturer':
+        return redirect(url_for('login'))
+
+    student_name = request.form.get('student_name')
+    reg_number = request.form.get('reg_number')
+    course_name = request.form.get('course_name')
+    score = request.form.get('score')
+
+    admin = User.query.filter_by(role='admin').first()
+    if admin:
+        result_payload = (
+            f"RESULT SUBMISSION FROM LECTURER ({current_user.full_name}):\n"
+            f"- Student Name: {student_name}\n"
+            f"- Reg Number/Email: {reg_number}\n"
+            f"- Course: {course_name}\n"
+            f"- Score: {score}"
+        )
+        msg = Message(sender_id=current_user.id, receiver_id=admin.id, content=result_payload)
+        db.session.add(msg)
+        db.session.commit()
+        flash('Student result submitted directly to Admin inbox.', 'success')
+    else:
+        flash('Unable to forward result. Admin account not found.', 'danger')
+
+    return redirect(url_for('lecturer_dashboard'))
+
+@app.route('/send_message', methods=['POST'])
+@login_required
+def send_message():
+    receiver_id = request.form.get('receiver_id')
+    content = request.form.get('content', '').strip()
+    
+    if content and receiver_id:
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_id=int(receiver_id),
+            content=content
+        )
+        db.session.add(msg)
+        db.session.commit()
+        flash('Message sent successfully!', 'success')
+    else:
+        flash('Message content cannot be empty.', 'warning')
+        
+    return redirect(request.referrer or url_for('admin_dashboard'))
+
+@app.route('/student/download/<filename>')
+@login_required
+@payment_required
+def download_material(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
+# Add Course Route
+@app.route('/admin/add_course', methods=['POST'])
+@login_required
+def add_course():
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    course_code = request.form.get('course_code')
+    course_name = request.form.get('course_name')
+    unit = request.form.get('unit')
+    semester = request.form.get('semester')
+    student_id = request.form.get('student_id')
+
+    try:
+        unit_val = int(unit) if unit and str(unit).isdigit() else 1
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+
+        course_data = {
+            'course_code': course_code,
+            'course_name': course_name
+        }
+        if hasattr(Course, 'unit'):
+            course_data['unit'] = unit_val
+        if hasattr(Course, 'semester'):
+            course_data['semester'] = semester
+        if hasattr(Course, 'student_id') and student_id_val:
+            course_data['student_id'] = student_id_val
+
+        new_course = Course(**course_data)
+        db.session.add(new_course)
+        db.session.commit()
+        flash('Course added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding course: {str(e)}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+# Delete Course Route
+@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+@login_required
+def delete_course(course_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        course = db.get_or_404(Course, course_id)
+        db.session.delete(course)
+        db.session.commit()
+        flash('Course removed successfully!', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error removing course: {str(e)}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/fix-db')
+def fix_db():
+    try:
+        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+        db.session.commit()
+        return "Database updated successfully!"
+    except Exception as e:
+        return f"Error: {e}"
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+correct this code:from flask_sqlalchemy import SQLAlchemy
+
+from flask_login import UserMixin
+
+from datetime import datetime
+
+
+
+db = SQLAlchemy()
+
+
+
+class User(db.Model, UserMixin):
+
+    __tablename__ = 'user'
+
+    
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    username = db.Column(db.String(150), unique=True, nullable=False)
+
+    password = db.Column(db.String(255), nullable=False)
+
+    role = db.Column(db.String(20), nullable=False)  # admin, creator, registrar, lecturer, student
+
+    full_name = db.Column(db.String(150))
+
+    email = db.Column(db.String(150))
+
+    phone = db.Column(db.String(20))
+
+    is_approved = db.Column(db.Boolean, default=False)
+
+    
+
+    # Student specific
+
+    program = db.Column(db.String(100), default="HND CME")
+
+    level = db.Column(db.String(20), default="HND2")
+
+    profile_picture = db.Column(db.String(255), default="default.png")
+
+    dob = db.Column(db.String(50))
+
+    primary_school = db.Column(db.String(200))
+
+    primary_cert = db.Column(db.String(255))
+
+    sec_school = db.Column(db.String(200))
+
+    sec_cert = db.Column(db.String(255))
+
+    admission_status = db.Column(db.String(50), default="Pending")
+
+    remita_invoice = db.Column(db.String(100))
+
+    payment_status = db.Column(db.String(20), default="Unpaid")
+
+    
+
+    # Lecturer specific
+
+    desired_courses = db.Column(db.String(255))
+
+
+
+    # Relationships (with cascade delete for data integrity)
+
+    courses = db.relationship('Course', backref='student', lazy=True, cascade="all, delete-orphan")
+
+    results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
+
+    materials = db.relationship('Material', backref='lecturer', lazy=True)
+
+
+
+class Course(db.Model):
+
+    __tablename__ = 'course'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    course_name = db.Column(db.String(100), nullable=False)
+
+    course_code = db.Column(db.String(20))
+
+    unit = db.Column(db.Integer, default=1)
+
+    semester = db.Column(db.String(10), default="1")
+
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
+
+class Result(db.Model):
+
+    __tablename__ = 'result'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    course_code = db.Column(db.String(20), nullable=False)
+
+    title = db.Column(db.String(150), nullable=False)
+
+    unit = db.Column(db.Integer, nullable=False, default=1)
+
+    semester = db.Column(db.String(10), nullable=False, default="1")
+
+    grade = db.Column(db.String(5), nullable=False)  # A, AB, B, BC, C, CD, D, F
+
+    level = db.Column(db.String(20), nullable=False, default="HND1")
+
+    session = db.Column(db.String(20), nullable=False, default="2023/2024")
+
+
+
+    @property
+
+    def grade_point(self):
+
+        points = {
+
+            'A': 4.0, 
+
+            'AB': 3.5, 
+
+            'B': 3.0, 
+
+            'BC': 2.5, 
+
+            'C': 2.0, 
+
+            'CD': 1.5, 
+
+            'D': 1.0, 
+
+            'F': 0.0
+
+        }
+
+        return points.get(self.grade.upper(), 0.0)
+
+
+
+class Material(db.Model):
+
+    __tablename__ = 'material'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    title = db.Column(db.String(150), nullable=False)
+
+    material_type = db.Column(db.String(50))
+
+    file_path = db.Column(db.String(255))
+
+    lecturer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
+
+class Message(db.Model):
+
+    __tablename__ = 'message'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    content = db.Column(db.Text, nullable=False)
+
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    msg_type = db.Column(db.String(20), default='text')
+
+    file_path = db.Column(db.String(255))
+
+
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+
+Here is the corrected and cleaned models.py file.
+
+The main issue in your provided code was non-breaking space characters (\xa0) scattered throughout the code (often caused by copy-pasting from web editors or formatted documents), which cause SyntaxError exceptions in Python.
+
+Python
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from datetime import datetime
+
+db = SQLAlchemy()
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # admin, creator, registrar, lecturer, student
+    full_name = db.Column(db.String(150))
+    email = db.Column(db.String(150))
+    phone = db.Column(db.String(20))
+    is_approved = db.Column(db.Boolean, default=False)
+    
+    # Student specific
+    program = db.Column(db.String(100), default="HND CME")
+    level = db.Column(db.String(20), default="HND2")
+    profile_picture = db.Column(db.String(255), default="default.png")
+    dob = db.Column(db.String(50))
+    primary_school = db.Column(db.String(200))
+    primary_cert = db.Column(db.String(255))
+    sec_school = db.Column(db.String(200))
+    sec_cert = db.Column(db.String(255))
+    admission_status = db.Column(db.String(50), default="Pending")
+    remita_invoice = db.Column(db.String(100))
+    payment_status = db.Column(db.String(20), default="Unpaid")
+    
+    # Lecturer specific
+    desired_courses = db.Column(db.String(255))
+
+    # Relationships (with cascade delete for data integrity)
+    courses = db.relationship('Course', backref='student', lazy=True, cascade="all, delete-orphan")
+    results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
+    materials = db.relationship('Material', backref='lecturer', lazy=True)
+
+class Course(db.Model):
+    __tablename__ = 'course'
+    id = db.Column(db.Integer, primary_key=True)
+    course_name = db.Column(db.String(100), nullable=False)
+    course_code = db.Column(db.String(20))
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(10), default="1")
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class Result(db.Model):
+    __tablename__ = 'result'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_code = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    unit = db.Column(db.Integer, nullable=False, default=1)
+    semester = db.Column(db.String(10), nullable=False, default="1")
+    grade = db.Column(db.String(5), nullable=False)  # A, AB, B, BC, C, CD, D, F
+    level = db.Column(db.String(20), nullable=False, default="HND1")
+    session = db.Column(db.String(20), nullable=False, default="2023/2024")
+
+    @property
+    def grade_point(self):
+        points = {
+            'A': 4.0, 
+            'AB': 3.5, 
+            'B': 3.0, 
+            'BC': 2.5, 
+            'C': 2.0, 
+            'CD': 1.5, 
+            'D': 1.0, 
+            'F': 0.0
+        }
+        return points.get(self.grade.upper() if self.grade else 'F', 0.0)
+
+class Material(db.Model):
+    __tablename__ = 'material'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    material_type = db.Column(db.String(50))
+    file_path = db.Column(db.String(255))
+    lecturer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class Message(db.Model):
+    __tablename__ = 'message'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    msg_type = db.Column(db.String(20), default='text')
+    file_path = db.Column(db.String(255))
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+Key changes applied:
+
+Syntax Fix: Replaced all hidden non-breaking space characters (\xa0) with standard spaces.
+
+Safety Enhancement: Added a fallback safe check in grade_point (self.grade.upper() if self.grade else 'F') to prevent AttributeError exceptions if a result object is ever initialized with a None grade.
+
+please just remove this code in side models.py and replace the old one:class Result(db.Model):
+
+__tablename__ = 'result'
+
+id = db.Column(db.Integer, primary_key=True)
+
+student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+course_code = db.Column(db.String(20), nullable=False)
+
+title = db.Column(db.String(150), nullable=False)
+
+unit = db.Column(db.Integer, nullable=False, default=1)
+
+semester = db.Column(db.String(10), nullable=False, default="1")
+
+grade = db.Column(db.String(5), nullable=False) # A, AB, B, BC, C, CD, D, F
+
+level = db.Column(db.String(20), nullable=False, default="HND1")
+
+session = db.Column(db.String(20), nullable=False, default="2023/2024") @property
+
+def grade_point(self):
+
+points = {
+
+'A': 4.0,
+
+'AB': 3.5,
+
+'B': 3.0,
+
+'BC': 2.5,
+
+'C': 2.0,
+
+'CD': 1.5,
+
+'D': 1.0,
+
+'F': 0.0
+
+}
+
+return points.get(self.grade.upper() if self.grade else 'F', 0.0) 
+
+Here is the complete, updated models.py file with the updated Result class integrated and formatted correctly:
+
+Python
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from datetime import datetime
+
+db = SQLAlchemy()
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # admin, creator, registrar, lecturer, student
+    full_name = db.Column(db.String(150))
+    email = db.Column(db.String(150))
+    phone = db.Column(db.String(20))
+    is_approved = db.Column(db.Boolean, default=False)
+    
+    # Student specific
+    program = db.Column(db.String(100), default="HND CME")
+    level = db.Column(db.String(20), default="HND2")
+    profile_picture = db.Column(db.String(255), default="default.png")
+    dob = db.Column(db.String(50))
+    primary_school = db.Column(db.String(200))
+    primary_cert = db.Column(db.String(255))
+    sec_school = db.Column(db.String(200))
+    sec_cert = db.Column(db.String(255))
+    admission_status = db.Column(db.String(50), default="Pending")
+    remita_invoice = db.Column(db.String(100))
+    payment_status = db.Column(db.String(20), default="Unpaid")
+    
+    # Lecturer specific
+    desired_courses = db.Column(db.String(255))
+
+    # Relationships (with cascade delete for data integrity)
+    courses = db.relationship('Course', backref='student', lazy=True, cascade="all, delete-orphan")
+    results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
+    materials = db.relationship('Material', backref='lecturer', lazy=True)
+
+class Course(db.Model):
+    __tablename__ = 'course'
+    id = db.Column(db.Integer, primary_key=True)
+    course_name = db.Column(db.String(100), nullable=False)
+    course_code = db.Column(db.String(20))
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(10), default="1")
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class Result(db.Model):
+    __tablename__ = 'result'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_code = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    unit = db.Column(db.Integer, nullable=False, default=1)
+    semester = db.Column(db.String(10), nullable=False, default="1")
+    grade = db.Column(db.String(5), nullable=False)  # A, AB, B, BC, C, CD, D, F
+    level = db.Column(db.String(20), nullable=False, default="HND1")
+    session = db.Column(db.String(20), nullable=False, default="2023/2024")
+
+    @property
+    def grade_point(self):
+        points = {
+            'A': 4.0, 
+            'AB': 3.5, 
+            'B': 3.0, 
+            'BC': 2.5, 
+            'C': 2.0, 
+            'CD': 1.5, 
+            'D': 1.0, 
+            'F': 0.0
+        }
+        return points.get(self.grade.upper() if self.grade else 'F', 0.0)
+
+class Material(db.Model):
+    __tablename__ = 'material'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    material_type = db.Column(db.String(50))
+    file_path = db.Column(db.String(255))
+    lecturer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class Message(db.Model):
+    __tablename__ = 'message'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    msg_type = db.Column(db.String(20), default='text')
+    file_path = db.Column(db.String(255))
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+this what it show me when i add course and student result
+
+The error NotNullViolation occurs because student_id in your Course table model is set to nullable=False, but the HTML form sent None (empty) when submitting the course.
+
+To fix this, update your models.py to allow general courses (where student_id can be empty/NULL), or update app.py to validate and handle the student_id field properly.
+
+Solution 1: Update models.py (Recommended)
+In your models.py, change student_id in the Course model to nullable=True. This allows adding general departmental courses that aren't tied to a specific student immediately.
+
+Find class Course in models.py and update it to:
+
+Python
+class Course(db.Model):
+    __tablename__ = 'course'
+    id = db.Column(db.Integer, primary_key=True)
+    course_name = db.Column(db.String(100), nullable=False)
+    course_code = db.Column(db.String(20))
+    unit = db.Column(db.Integer, default=1)
+    semester = db.Column(db.String(10), default="1")
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Changed nullable=False to nullable=True
+Solution 2: Update add_course Route in app.py
+In your app.py, update the add_course route so that if student_id is missing or invalid, it gracefully handles it without passing None to a strictly required database field:
+
+Python
+@app.route('/admin/add_course', methods=['POST'])
+@login_required
+def add_course():
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    course_code = request.form.get('course_code')
+    course_name = request.form.get('course_name')
+    unit = request.form.get('unit', 1)
+    semester = request.form.get('semester', '1')
+    student_id = request.form.get('student_id')
+
+    try:
+        unit_val = int(unit) if str(unit).isdigit() else 1
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+
+        new_course = Course(
+            course_code=course_code,
+            course_name=course_name,
+            unit=unit_val,
+            semester=semester,
+            student_id=student_id_val
+        )
+        db.session.add(new_course)
+        db.session.commit()
+        flash('Course added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding course: {str(e)}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+HTML Template Check (admin_dashboard.html)
+Ensure your course creation modal/form sends the student_id value when adding a course directly for a specific student:
+
+HTML
+<form action="{{ url_for('add_course') }}" method="POST">
+    <input type="text" name="course_code" placeholder="Course Code (e.g. CTE 112)" required>
+    <input type="text" name="course_name" placeholder="Course Title" required>
+    <input type="number" name="unit" placeholder="Units" value="1">
+    <input type="text" name="semester" placeholder="Semester" value="1">
+    
+    <!-- Hidden or selected student ID -->
+    <input type="hidden" name="student_id" value="{{ student.id if student else '' }}">
+    
+    <button type="submit">Add Course</button>
+</form>
+
+
+
+Gemini is AI and can make mistakes.
+
+Files
+Created
+You haven't created anything yet
+Added
+JPG icon
+17859064983424103948589162808531_4f6de3
+JPG
+JPG icon
+Screenshot_2026-08-06-00-07-38-427_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-06-09-08-37-300_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-06-12-47-48-785_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-06-18-40-31-681_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-07-00-03-17-046_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-07-00-46-31-062_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-07-01-10-37-808_com.android.chrome
+JPG
+PNG icon
+image_f59d99
+PNG
+PNG icon
+image_f5347e
+PNG
+PNG icon
+image_69ada9
+PNG
+PNG icon
+image_694584
+PNG
+PNG icon
+image_692ac0
+PNG
+PNG icon
+image_69239d
+PNG
+PNG icon
+image_685507
+PNG
+PNG icon
+image_5dd482
+PNG
+PNG icon
+image_5d6f42
+PNG
+PNG icon
+image_5d68a1
+PNG
+PNG icon
+image_5d54e3
+PNG
+PNG icon
+image_5cf6ed
+PNG
+PNG icon
+image_857506
+PNG
+PNG icon
+image_0b492e
+PNG
+PNG icon
+image_0b58cb
+PNG
+PNG icon
+image_3d33c8
+PNG
+PNG icon
+image_3e93e3
+PNG
+PNG icon
+image_3f1be3
+PNG
+PNG icon
+image_3fe27f
+PNG
+JPG icon
+Screenshot_2026-08-21-18-42-56-477_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-21-19-39-32-966_com.android.chrome
+JPG
+JPG icon
+Screenshot_2026-08-21-21-32-01-129_com.android.chrome
+JPG
+PNG icon
+image_125e1e
+PNG
+PNG icon
+image_1d3f61
+PNG
+PNG icon
+image_1db03f
+PNG
+HTML icon
+admin_dashboard
+HTML
+PNG icon
+image_1f84a0
+PNG
+PNG icon
+image_2004df
+PNG
+PNG icon
+image_2a7149
+PNG
+PNG icon
+image_7486e7
+PNG
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -157,11 +3265,6 @@
             font-weight: 600;
             transition: background-color 0.2s ease;
             gap: 6px;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 0.75rem;
         }
 
         .btn-success { background: var(--success); }
@@ -522,168 +3625,194 @@
         </div>
     </section>
 
-    <!-- 4. ADMIN COURSE MANAGEMENT -->
-    <section class="card">
-        <h3 class="card-title" style="margin-bottom: 16px;">4. Manage Curriculum & Active Courses</h3>
+        <!-- ADMIN COURSE MANAGEMENT CARD -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="fas fa-book-medical me-2"></i>Manage Curriculum & Student Courses
+    </div>
+    <div class="card-body">
         
-        <form action="{{ url_for('add_course') }}" method="POST">
-    <input type="text" name="course_code" placeholder="Course Code (e.g. CTE 112)" required>
-    <input type="text" name="course_name" placeholder="Course Title" required>
-    <input type="number" name="unit" placeholder="Units" value="1">
-    <input type="text" name="semester" placeholder="Semester" value="1">
-    
-    <!-- Hidden or selected student ID -->
-    <input type="hidden" name="student_id" value="{{ student.id if student else '' }}">
-    
-    <button type="submit">Add Course</button>
+        <!-- Form to Add Course -->
+        <form action="{{ url_for('add_course') }}" method="POST" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">Course Code</label>
+                <input type="text" name="course_code" class="form-control" placeholder="e.g. CTE 311" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small">Course Title</label>
+                <input type="text" name="course_name" class="form-control" placeholder="e.g. Engineers in Society" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Credit Unit</label>
+                <input type="number" name="unit" class="form-control" min="1" max="6" placeholder="2" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Semester</label>
+                <select name="semester" class="form-select" required>
+                    <option value="1">1st Semester</option>
+                    <option value="2">2nd Semester</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100"><i class="fas fa-plus"></i> Add</button>
+            </div>
         </form>
-        <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Active Course List</h4>
+
+        <hr>
+
+        <!-- Course List Table with Remove Action -->
+        <h6 class="fw-bold mb-3 text-secondary">Active Course List</h6>
         <div class="table-responsive">
-            <table>
+            <table class="table align-middle">
                 <thead>
-                    <tr>
-                        <th>Course Code</th>
-                        <th>Title</th>
-                        <th>Unit</th>
-                        <th>Semester</th>
-                        <th style="text-align: center;">Action</th>
+                    <tr style="border-bottom: 2px solid #dee2e6;">
+                        <th style="width: 20%;">Course code</th>
+                        <th style="width: 50%;">Title</th>
+                        <th style="width: 10%;">UNIT</th>
+                        <th style="width: 10%;">Semester</th>
+                        <th style="width: 10%; text-align: center;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for course in courses %}
-                    <tr>
-                        <td><strong>{{ course.course_code }}</strong></td>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td class="fw-bold">{{ course.course_code }}</td>
                         <td>{{ course.course_name }}</td>
                         <td>{{ course.unit or 3 }}</td>
                         <td>{{ course.semester or 1 }}</td>
-                        <td style="text-align: center;">
+                        <td class="text-center">
                             <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this course?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Remove</button>
                             </form>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No courses added yet.</td>
+                        <td colspan="5" class="text-center text-muted">No courses added yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </section>
 
-    <!-- 5. STUDENT RESULT MANAGEMENT -->
-    <section class="card">
-        <h3 class="card-title" style="margin-bottom: 16px;">5. Add Student Result Record</h3>
-        
-        <form action="{{ url_for('manage_result') }}" method="POST" style="margin-bottom: 24px;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+    </div>
+</div>
+
+        <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white font-weight-bold">
+        Add Student Result Record
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('manage_result') }}" method="POST" class="form-row">
             <input type="hidden" name="action" value="add">
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-                <div>
-                    <label>Select Student</label>
-                    <select name="student_id" required>
-                        {% for student in students %}
-                            <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label>Course Code</label>
-                    <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
-                </div>
-                <div>
-                    <label>Title</label>
-                    <input type="text" name="title" placeholder="e.g. Engineers in Society" required>
-                </div>
-                <div>
-                    <label>Unit</label>
-                    <input type="number" name="unit" min="1" max="6" value="2" required>
-                </div>
-                <div>
-                    <label>Semester</label>
-                    <select name="semester">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Grade</label>
-                    <select name="grade" required>
-                        <option value="A">A</option>
-                        <option value="AB">AB</option>
-                        <option value="B">B</option>
-                        <option value="BC">BC</option>
-                        <option value="C">C</option>
-                        <option value="CD">CD</option>
-                        <option value="D">D</option>
-                        <option value="F">F</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Level</label>
-                    <input type="text" name="level" value="HND1" required>
-                </div>
-                <div>
-                    <label>Session</label>
-                    <input type="text" name="session" value="2023/2024" required>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-success" style="margin-top: 8px;">+ Add Result</button>
-        </form>
-
-        <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Existing Student Results</h4>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Course Code</th>
-                        <th>Title</th>
-                        <th>Unit</th>
-                        <th>Semester</th>
-                        <th>Grade</th>
-                        <th>Level</th>
-                        <th>Session</th>
-                        <th style="text-align: center;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in all_results %}
-                    <tr>
-                        <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
-                        <td>{{ result.course_code }}</td>
-                        <td>{{ result.title }}</td>
-                        <td>{{ result.unit }}</td>
-                        <td>{{ result.semester }}</td>
-                        <td><strong>{{ result.grade }}</strong></td>
-                        <td>{{ result.level }}</td>
-                        <td>{{ result.session }}</td>
-                        <td style="text-align: center;">
-                            <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <input type="hidden" name="action" value="remove">
-                                <input type="hidden" name="result_id" value="{{ result.id }}">
-                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="9" style="text-align: center; color: var(--text-muted);">No results recorded yet.</td>
-                    </tr>
+            <div class="form-group col-md-3">
+                <label>Select Student</label>
+                <select name="student_id" class="form-control" required>
+                    {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
+                </select>
+            </div>
 
-    <!-- 6. COURSE ASSIGNMENT & INDIVIDUAL RESULTS -->
+            <div class="form-group col-md-2">
+                <label>Course Code</label>
+                <input type="text" name="course_code" placeholder="e.g. CTE 311" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-3">
+                <label>Title</label>
+                <input type="text" name="title" placeholder="e.g. Engineers in Society" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-1">
+                <label>Unit</label>
+                <input type="number" name="unit" class="form-control" min="1" max="6" value="2" required>
+            </div>
+
+            <div class="form-group col-md-1">
+                <label>Semester</label>
+                <select name="semester" class="form-control">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Grade</label>
+                <select name="grade" class="form-control" required>
+                    <option value="A">A</option>
+                    <option value="AB">AB</option>
+                    <option value="B">B</option>
+                    <option value="BC">BC</option>
+                    <option value="C">C</option>
+                    <option value="CD">CD</option>
+                    <option value="D">D</option>
+                    <option value="F">F</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Level</label>
+                <input type="text" name="level" value="HND1" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-2">
+                <label>Session</label>
+                <input type="text" name="session" value="2023/2024" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-2 align-self-end">
+                <button type="submit" class="btn btn-success btn-block">+ Add Result</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Admin Existing Results Table with Delete Buttons -->
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="thead-light">
+            <tr>
+                <th>Student</th>
+                <th>Course code</th>
+                <th>Title</th>
+                <th>Unit</th>
+                <th>Semester</th>
+                <th>Grades</th>
+                <th>Level</th>
+                <th>SESSION</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in all_results %}
+            <tr>
+                <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
+                <td>{{ result.course_code }}</td>
+                <td>{{ result.title }}</td>
+                <td>{{ result.unit }}</td>
+                <td>{{ result.semester }}</td>
+                <td><strong>{{ result.grade }}</strong></td>
+                <td>{{ result.level }}</td>
+                <td>{{ result.session }}</td>
+                <td>
+                    <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="result_id" value="{{ result.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+        
+    <!-- 4 & 5. MANAGING COURSES & RESULTS -->
     <div class="grid-2">
         <section class="card">
-            <h3 class="card-title" style="margin-bottom: 16px;">6. Direct Course Assignment</h3>
+            <h3 class="card-title" style="margin-bottom: 16px;">4. Student Course Management</h3>
             <form action="{{ url_for('manage_course') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
@@ -699,15 +3828,15 @@
                 <label for="course_name">Course Title</label>
                 <input type="text" id="course_name" name="course_name" placeholder="e.g. Python Programming" required>
 
-                <label for="course_code_assign">Course Code</label>
-                <input type="text" id="course_code_assign" name="course_code" placeholder="e.g. COM111" required>
+                <label for="course_code">Course Code</label>
+                <input type="text" id="course_code" name="course_code" placeholder="e.g. COM111" required>
 
                 <button type="submit" class="btn btn-success" style="width: 100%;">Assign Course</button>
             </form>
 
             <hr style="border-color: var(--border-color); margin: 20px 0;">
 
-            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Remove Assigned Course Record</h4>
+            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Remove Assigned Course</h4>
             <form action="{{ url_for('manage_course') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
@@ -720,7 +3849,7 @@
         </section>
 
         <section class="card">
-            <h3 class="card-title" style="margin-bottom: 16px;">7. Quick Score Posting</h3>
+            <h3 class="card-title" style="margin-bottom: 16px;">5. Student Result Management</h3>
             <form action="{{ url_for('manage_result') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
@@ -742,8 +3871,8 @@
                         <input type="number" step="0.1" min="0" max="100" id="score" name="score" placeholder="85.0" required>
                     </div>
                     <div>
-                        <label for="grade_quick">Grade</label>
-                        <input type="text" id="grade_quick" name="grade" placeholder="A" required>
+                        <label for="grade">Grade</label>
+                        <input type="text" id="grade" name="grade" placeholder="A" required>
                     </div>
                 </div>
 
@@ -757,8 +3886,8 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
 
-                <label for="result_id_del">Result Record ID</label>
-                <input type="number" id="result_id_del" name="result_id" placeholder="Enter Result ID" required>
+                <label for="result_id">Result Record ID</label>
+                <input type="number" id="result_id" name="result_id" placeholder="Enter Result ID" required>
 
                 <button type="submit" class="btn btn-danger" style="width: 100%;">Delete Grade</button>
             </form>
@@ -779,9 +3908,9 @@
         </form>
     </section>
 
-    <!-- 8. COMMUNICATION HUB -->
+    <!-- 6. COMMUNICATION HUB (EMBEDDED LIVE CHAT & FORM MESSAGING) -->
     <section class="card">
-        <h3 class="card-title" style="margin-bottom: 16px;">8. Messaging & Live Student Chat</h3>
+        <h3 class="card-title" style="margin-bottom: 16px;">6. Messaging & Live Student Chat</h3>
 
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">Portal Live Web Chat</button>
@@ -837,7 +3966,7 @@
                     </div>
 
                     <!-- Direct Form Action or AJAX Chat Trigger -->
-                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleChatSubmit(event)">
+                   <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatS...
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
                         
@@ -948,6 +4077,7 @@
                 return false;
             }
 
+            // Append chat bubble to thread UI
             if (messageText) {
                 const thread = document.getElementById('chatThread');
                 const bubble = document.createElement('div');
@@ -959,7 +4089,6 @@
                 thread.appendChild(bubble);
                 thread.scrollTop = thread.scrollHeight;
             }
-            return true;
         }
 
         function filterChatUsers() {
@@ -1004,3 +4133,5 @@
     </script>
 </body>
 </html>
+admin_dashboard.html
+Displaying admin_dashboard.html.
