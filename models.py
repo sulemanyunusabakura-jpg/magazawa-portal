@@ -42,12 +42,20 @@ class Course(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class Result(db.Model):
-    __tablename__ = 'result'
     id = db.Column(db.Integer, primary_key=True)
-    course_name = db.Column(db.String(100), nullable=False)
-    score = db.Column(db.String(10))
-    grade = db.Column(db.String(5))
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_code = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    unit = db.Column(db.Integer, nullable=False, default=1)
+    semester = db.Column(db.String(10), nullable=False, default="1")
+    grade = db.Column(db.String(5), nullable=False)  # A, AB, B, BC, C, CD, D, F
+    level = db.Column(db.String(20), nullable=False, default="HND1")
+    session = db.Column(db.String(20), nullable=False, default="2023/2024")
+
+    @property
+    def grade_point(self):
+        points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+        return points.get(self.grade.upper(), 0.0)
 
 class Material(db.Model):
     __tablename__ = 'material'
