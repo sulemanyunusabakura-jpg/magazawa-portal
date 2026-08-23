@@ -94,6 +94,18 @@ def auto_migrate_db():
                         except Exception:
                             conn.execute(text("ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
                             conn.commit()
+
+            # 3. MIGRATE COURSE TABLE (Ensure unit & semester columns exist)
+            if 'course' in tables:
+                course_columns = [col['name'] for col in inspector.get_columns('course')]
+                with db.engine.connect() as conn:
+                    if 'unit' not in course_columns:
+                        conn.execute(text("ALTER TABLE course ADD COLUMN unit INTEGER DEFAULT 1;"))
+                        conn.commit()
+                    if 'semester' not in course_columns:
+                        conn.execute(text("ALTER TABLE course ADD COLUMN semester VARCHAR(20);"))
+                        conn.commit()
+
         except Exception as e:
             print(f"Schema auto-migration notice: {e}")
 
@@ -270,12 +282,13 @@ def admin_dashboard():
         lecturers = User.query.filter_by(role='lecturer').all()
         all_users = User.query.filter(User.id != current_user.id).all()
         messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+        courses = Course.query.all()
     except Exception as e:
         db.session.rollback()
         flash(f"Database sync warning: {str(e)}", "warning")
-        students, lecturers, all_users, messages = [], [], [], []
+        students, lecturers, all_users, messages, courses = [], [], [], [], []
 
-    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages)
+    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
 
 @app.route('/dashboard/creator')
 @login_required
@@ -642,30 +655,61 @@ def download_material(filename):
 
 # Add Course Route
 @app.route('/admin/add_course', methods=['POST'])
+@login_required
 def add_course():
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
     course_code = request.form.get('course_code')
     course_name = request.form.get('course_name')
     unit = request.form.get('unit')
     semester = request.form.get('semester')
+    student_id = request.form.get('student_id')
 
-    new_course = Course(
-        course_code=course_code,
-        course_name=course_name,
-        unit=unit,
-        semester=semester
-    )
-    db.session.add(new_course)
-    db.session.commit()
-    flash('Course added successfully!', 'success')
+    try:
+        unit_val = int(unit) if unit and str(unit).isdigit() else 1
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+
+        # Instantiates fields safely depending on models.py definition
+        course_data = {
+            'course_code': course_code,
+            'course_name': course_name
+        }
+        if hasattr(Course, 'unit'):
+            course_data['unit'] = unit_val
+        if hasattr(Course, 'semester'):
+            course_data['semester'] = semester
+        if hasattr(Course, 'student_id') and student_id_val:
+            course_data['student_id'] = student_id_val
+
+        new_course = Course(**course_data)
+        db.session.add(new_course)
+        db.session.commit()
+        flash('Course added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding course: {str(e)}', 'danger')
+
     return redirect(url_for('admin_dashboard'))
 
 # Delete Course Route
 @app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+@login_required
 def delete_course(course_id):
-    course = Course.query.get_or_404(course_id)
-    db.session.delete(course)
-    db.session.commit()
-    flash('Course removed successfully!', 'info')
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        course = db.get_or_404(Course, course_id)
+        db.session.delete(course)
+        db.session.commit()
+        flash('Course removed successfully!', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error removing course: {str(e)}', 'danger')
+
     return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
