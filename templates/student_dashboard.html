@@ -198,35 +198,38 @@
 
             <div class="card-body tab-content">
                 
-                <!-- 1. Registered Courses -->
-                <div class="tab-pane fade show active" id="courses" role="tabpanel">
-                    <h5 class="card-title mb-3">Semester Registered Courses</h5>
-                    {% if courses %}
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-primary">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Course Code</th>
-                                        <th>Course Name</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for course in courses %}
-                                    <tr>
-                                        <td>{{ loop.index }}</td>
-                                        <td><span class="badge bg-secondary">{{ course.course_code }}</span></td>
-                                        <td>{{ course.course_name }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info mb-0">No courses registered yet for this session.</div>
-                    {% endif %}
-                </div>
+              <!-- STUDENT DASHBOARD: REGISTERED COURSES TAB -->
+<div class="tab-pane fade show active" id="courses" role="tabpanel">
+    
+    <!-- Clean Polytechnic Header Layout -->
+    <div class="p-3 bg-white rounded border mb-3">
+        <table class="table mb-0" style="font-family: Arial, sans-serif; color: #212529;">
+            <thead>
+                <tr style="border-bottom: 2px solid #333;">
+                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 20%;">Course code</th>
+                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 55%;">Title</th>
+                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 12.5%;">UNIT</th>
+                    <th style="padding: 12px 8px; font-size: 1.05rem; font-weight: bold; width: 12.5%;">Semester</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr style="border-bottom: 1px solid #e0e0e0; font-size: 0.95rem;">
+                    <td style="padding: 12px 8px; font-weight: 500; color: #111;">{{ course.course_code }}</td>
+                    <td style="padding: 12px 8px; color: #333;">{{ course.course_name }}</td>
+                    <td style="padding: 12px 8px; color: #333;">{{ course.unit or 3 }}</td>
+                    <td style="padding: 12px 8px; color: #333;">{{ course.semester or 1 }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No registered courses found for this semester.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
+</div>
                 <!-- 2. Lecture Materials -->
                 <div class="tab-pane fade" id="materials" role="tabpanel">
                     <h5 class="card-title mb-3">Course Lecture Materials</h5>
