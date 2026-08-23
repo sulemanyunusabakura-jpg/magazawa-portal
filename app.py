@@ -61,60 +61,48 @@ def auto_migrate_db():
             # 1. MIGRATE MESSAGE TABLE
             if 'message' in tables:
                 columns = [col['name'] for col in inspector.get_columns('message')]
-                with db.engine.connect() as conn:
+                with db.engine.begin() as conn:
                     if 'msg_type' not in columns:
                         conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
-                        conn.commit()
                     if 'file_path' not in columns:
                         conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
-                        conn.commit()
 
             # 2. MIGRATE USER TABLE
             if 'user' in tables:
                 user_columns = [col['name'] for col in inspector.get_columns('user')]
-                with db.engine.connect() as conn:
+                with db.engine.begin() as conn:
                     if 'program' not in user_columns:
                         try:
                             conn.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
-                            conn.commit()
                         except Exception:
                             conn.execute(text('ALTER TABLE user ADD COLUMN program VARCHAR(255);'))
-                            conn.commit()
 
                     if 'payment_status' not in user_columns:
                         try:
                             conn.execute(text('ALTER TABLE "user" ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
-                            conn.commit()
                         except Exception:
                             conn.execute(text('ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
-                            conn.commit()
 
                     if 'remita_invoice' not in user_columns:
                         try:
                             conn.execute(text('ALTER TABLE "user" ADD COLUMN remita_invoice VARCHAR(100);'))
-                            conn.commit()
                         except Exception:
                             conn.execute(text('ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);'))
-                            conn.commit()
 
                     if 'admission_status' not in user_columns:
                         try:
                             conn.execute(text('ALTER TABLE "user" ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
-                            conn.commit()
                         except Exception:
                             conn.execute(text('ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
-                            conn.commit()
 
             # 3. MIGRATE COURSE TABLE
             if 'course' in tables:
                 course_columns = [col['name'] for col in inspector.get_columns('course')]
-                with db.engine.connect() as conn:
+                with db.engine.begin() as conn:
                     if 'unit' not in course_columns:
                         conn.execute(text("ALTER TABLE course ADD COLUMN unit INTEGER DEFAULT 1;"))
-                        conn.commit()
                     if 'semester' not in course_columns:
                         conn.execute(text("ALTER TABLE course ADD COLUMN semester VARCHAR(20);"))
-                        conn.commit()
 
         except Exception as e:
             print(f"Schema auto-migration notice: {e}")
@@ -504,6 +492,7 @@ def approve_payment(id):
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# --- COURSE MANAGEMENT ROUTES ---
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
 def add_course():
@@ -513,27 +502,50 @@ def add_course():
 
     course_code = request.form.get('course_code')
     course_name = request.form.get('course_name')
-    unit = request.form.get('unit', 1)
-    semester = request.form.get('semester', '1')
+    unit = request.form.get('unit')
+    semester = request.form.get('semester')
     student_id = request.form.get('student_id')
 
     try:
-        unit_val = int(unit) if str(unit).isdigit() else 1
+        unit_val = int(unit) if unit and str(unit).isdigit() else 1
         student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
-        new_course = Course(
-            course_code=course_code,
-            course_name=course_name,
-            unit=unit_val,
-            semester=semester,
-            student_id=student_id_val
-        )
+        course_data = {
+            'course_code': course_code,
+            'course_name': course_name
+        }
+        if hasattr(Course, 'unit'):
+            course_data['unit'] = unit_val
+        if hasattr(Course, 'semester'):
+            course_data['semester'] = semester
+        if hasattr(Course, 'student_id') and student_id_val:
+            course_data['student_id'] = student_id_val
+
+        new_course = Course(**course_data)
         db.session.add(new_course)
         db.session.commit()
         flash('Course added successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error adding course: {str(e)}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+@login_required
+def delete_course(course_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        course = db.get_or_404(Course, course_id)
+        db.session.delete(course)
+        db.session.commit()
+        flash('Course removed successfully!', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error removing course: {str(e)}', 'danger')
 
     return redirect(url_for('admin_dashboard'))
 
@@ -697,71 +709,14 @@ def send_message():
 def download_material(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
-# Add Course Route
-@app.route('/admin/add_course', methods=['POST'])
-@login_required
-def add_course():
-    if current_user.role != 'admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
-
-    course_code = request.form.get('course_code')
-    course_name = request.form.get('course_name')
-    unit = request.form.get('unit')
-    semester = request.form.get('semester')
-    student_id = request.form.get('student_id')
-
-    try:
-        unit_val = int(unit) if unit and str(unit).isdigit() else 1
-        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
-
-        course_data = {
-            'course_code': course_code,
-            'course_name': course_name
-        }
-        if hasattr(Course, 'unit'):
-            course_data['unit'] = unit_val
-        if hasattr(Course, 'semester'):
-            course_data['semester'] = semester
-        if hasattr(Course, 'student_id') and student_id_val:
-            course_data['student_id'] = student_id_val
-
-        new_course = Course(**course_data)
-        db.session.add(new_course)
-        db.session.commit()
-        flash('Course added successfully!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error adding course: {str(e)}', 'danger')
-
-    return redirect(url_for('admin_dashboard'))
-
-# Delete Course Route
-@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
-@login_required
-def delete_course(course_id):
-    if current_user.role != 'admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
-
-    try:
-        course = db.get_or_404(Course, course_id)
-        db.session.delete(course)
-        db.session.commit()
-        flash('Course removed successfully!', 'info')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error removing course: {str(e)}', 'danger')
-
-    return redirect(url_for('admin_dashboard'))
-
 @app.route('/fix-db')
 def fix_db():
     try:
-        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
         db.session.commit()
         return "Database updated successfully!"
     except Exception as e:
+        db.session.rollback()
         return f"Error: {e}"
 
 if __name__ == '__main__':
