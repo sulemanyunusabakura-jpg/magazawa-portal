@@ -735,6 +735,15 @@ def delete_course(course_id):
 
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/fix-db')
+def fix_db():
+    try:
+        db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
+        db.session.commit()
+        return "Database updated successfully!"
+    except Exception as e:
+        return f"Error: {e}"
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
