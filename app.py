@@ -369,6 +369,11 @@ def student_dashboard():
         courses = Course.query.filter_by(student_id=current_user.id).all()
         results = Result.query.filter_by(student_id=current_user.id).all()
         
+        # Calculate CGPA
+        total_units = sum(r.unit for r in results)
+        total_points = sum(r.unit * r.grade_point for r in results)
+        cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
+
         payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
         has_paid = str(payment_status).strip().lower() == 'paid'
         
@@ -376,7 +381,7 @@ def student_dashboard():
         
     except Exception as e:
         db.session.rollback()
-        courses, results, materials = [], [], []
+        courses, results, materials, cgpa = [], [], [], 0.00
         flash("Dashboard data warning: Database synchronization required.", "warning")
 
     return render_template(
@@ -384,7 +389,8 @@ def student_dashboard():
         student=current_user,
         courses=courses,
         results=results,
-        materials=materials
+        materials=materials,
+        cgpa=cgpa
     )
 
 # --- ADMIN ACTIONS ---
@@ -553,21 +559,6 @@ def manage_result():
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
 
-# --- STUDENT DASHBOARD ROUTE ---
-@app.route('/dashboard/student')
-@login_required
-def student_dashboard():
-    if current_user.role != 'student':
-        return redirect(url_for('login'))
-
-    results = Result.query.filter_by(student_id=current_user.id).all()
-    
-    # Calculate CGPA automatically
-    total_units = sum(r.unit for r in results)
-    total_points = sum(r.unit * r.grade_point for r in results)
-    cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
-
-    return render_template('student_dashboard.html', student=current_user, results=results, cgpa=cgpa)
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
@@ -704,7 +695,6 @@ def add_course():
         unit_val = int(unit) if unit and str(unit).isdigit() else 1
         student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
-        # Instantiates fields safely depending on models.py definition
         course_data = {
             'course_code': course_code,
             'course_name': course_name
