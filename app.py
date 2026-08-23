@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_, inspect, text
+from sqlalchemy import inspect, text
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -17,8 +17,16 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technol
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Optimize PostgreSQL pooled connections
+if 'postgresql' in db_url:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
 
 # ABSOLUTE PATH FOR UPLOAD DIRECTORY
 app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
@@ -26,7 +34,10 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    if '.' not in filename:
+        return False
+    ext = os.path.splitext(filename)[1].lstrip('.').lower()
+    return ext in ALLOWED_EXTENSIONS
 
 # SAFE GEMINI CLIENT INITIALIZATION
 gemini_api_key = os.environ.get('GEMINI_API_KEY')
@@ -71,29 +82,17 @@ def auto_migrate_db():
             if 'user' in tables:
                 user_columns = [col['name'] for col in inspector.get_columns('user')]
                 with db.engine.begin() as conn:
-                    if 'program' not in user_columns:
-                        try:
-                            conn.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
-                        except Exception:
-                            conn.execute(text('ALTER TABLE user ADD COLUMN program VARCHAR(255);'))
-
-                    if 'payment_status' not in user_columns:
-                        try:
-                            conn.execute(text('ALTER TABLE "user" ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
-                        except Exception:
-                            conn.execute(text('ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
-
-                    if 'remita_invoice' not in user_columns:
-                        try:
-                            conn.execute(text('ALTER TABLE "user" ADD COLUMN remita_invoice VARCHAR(100);'))
-                        except Exception:
-                            conn.execute(text('ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);'))
-
-                    if 'admission_status' not in user_columns:
-                        try:
-                            conn.execute(text('ALTER TABLE "user" ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
-                        except Exception:
-                            conn.execute(text('ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
+                    for col_name, col_sql in [
+                        ('program', 'VARCHAR(255)'),
+                        ('payment_status', "VARCHAR(20) DEFAULT 'Unpaid'"),
+                        ('remita_invoice', 'VARCHAR(100)'),
+                        ('admission_status', "VARCHAR(50) DEFAULT 'Admitted'")
+                    ]:
+                        if col_name not in user_columns:
+                            try:
+                                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col_name} {col_sql};'))
+                            except Exception:
+                                conn.execute(text(f'ALTER TABLE user ADD COLUMN {col_name} {col_sql};'))
 
             # 3. MIGRATE COURSE TABLE
             if 'course' in tables:
@@ -113,49 +112,27 @@ with app.app_context():
     auto_migrate_db()
 
     try:
-        # 1. ADMIN ACCOUNT
-        admin = User.query.filter_by(role='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                password=generate_password_hash('admin123'),
-                role='admin',
-                full_name='MST System Administrator',
-                email='admin@magazawa.edu.ng',
-                phone='08000000000',
-                is_approved=True
-            )
-            db.session.add(admin)
-        else:
-            admin.is_approved = True
+        default_accounts = [
+            ('admin', 'admin123', 'admin', 'MST System Administrator', 'admin@magazawa.edu.ng', '08000000000'),
+            ('creator', 'creator123', 'creator', 'System Creator', 'creator@magazawa.edu.ng', '08000000001'),
+            ('registrar', 'registrar123', 'registrar', 'MST Registrar Office', 'registrar@magazawa.edu.ng', '08000000002'),
+        ]
 
-        # 2. CREATOR ACCOUNT
-        creator = User.query.filter_by(role='creator').first()
-        if not creator:
-            creator = User(
-                username='creator',
-                password=generate_password_hash('creator123'),
-                role='creator',
-                full_name='System Creator',
-                email='creator@magazawa.edu.ng',
-                phone='08000000001',
-                is_approved=True
-            )
-            db.session.add(creator)
-
-        # 3. REGISTRAR ACCOUNT
-        registrar = User.query.filter_by(role='registrar').first()
-        if not registrar:
-            registrar = User(
-                username='registrar',
-                password=generate_password_hash('registrar123'),
-                role='registrar',
-                full_name='MST Registrar Office',
-                email='registrar@magazawa.edu.ng',
-                phone='08000000002',
-                is_approved=True
-            )
-            db.session.add(registrar)
+        for username, pwd, role, full_name, email, phone in default_accounts:
+            user = User.query.filter_by(role=role).first()
+            if not user:
+                user = User(
+                    username=username,
+                    password=generate_password_hash(pwd),
+                    role=role,
+                    full_name=full_name,
+                    email=email,
+                    phone=phone,
+                    is_approved=True
+                )
+                db.session.add(user)
+            else:
+                user.is_approved = True
 
         db.session.commit()
     except Exception as e:
@@ -180,7 +157,7 @@ def login():
         
         try:
             user = User.query.filter_by(username=username).first()
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Database error encountered. Please try logging in again.', 'danger')
             return render_template('login.html')
@@ -191,16 +168,14 @@ def login():
                 return redirect(url_for('login'))
 
             login_user(user)
-            if user.role == 'admin':
-                return redirect(url_for('admin_dashboard'))
-            elif user.role == 'creator':
-                return redirect(url_for('creator_dashboard'))
-            elif user.role == 'registrar':
-                return redirect(url_for('registrar_dashboard'))
-            elif user.role == 'lecturer':
-                return redirect(url_for('lecturer_dashboard'))
-            else:
-                return redirect(url_for('student_dashboard'))
+            role_routes = {
+                'admin': 'admin_dashboard',
+                'creator': 'creator_dashboard',
+                'registrar': 'registrar_dashboard',
+                'lecturer': 'lecturer_dashboard',
+                'student': 'student_dashboard'
+            }
+            return redirect(url_for(role_routes.get(user.role, 'student_dashboard')))
         else:
             flash('Invalid login credentials.', 'danger')
             
@@ -222,12 +197,12 @@ def apply_student():
         p_filename, s_filename = "", ""
 
         if p_cert and allowed_file(p_cert.filename):
-            ext = p_cert.filename.rsplit('.', 1)[1].lower()
+            ext = os.path.splitext(p_cert.filename)[1].lstrip('.').lower()
             p_filename = secure_filename(f"primary_{uuid.uuid4().hex[:8]}.{ext}")
             p_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], p_filename))
 
         if s_cert and allowed_file(s_cert.filename):
-            ext = s_cert.filename.rsplit('.', 1)[1].lower()
+            ext = os.path.splitext(s_cert.filename)[1].lstrip('.').lower()
             s_filename = secure_filename(f"sec_{uuid.uuid4().hex[:8]}.{ext}")
             s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
 
@@ -331,7 +306,7 @@ def lecturer_dashboard():
         file = request.files.get('file')
         filename = ""
         if file and allowed_file(file.filename):
-            ext = file.filename.rsplit('.', 1)[1].lower()
+            ext = os.path.splitext(file.filename)[1].lstrip('.').lower()
             filename = secure_filename(f"material_{uuid.uuid4().hex[:8]}.{ext}")
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
@@ -367,7 +342,6 @@ def student_dashboard():
         courses = Course.query.filter_by(student_id=current_user.id).all()
         results = Result.query.filter_by(student_id=current_user.id).all()
         
-        # Calculate CGPA
         total_units = sum(r.unit for r in results)
         total_points = sum(r.unit * r.grade_point for r in results)
         cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
@@ -377,7 +351,7 @@ def student_dashboard():
         
         materials = Material.query.all() if has_paid else []
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         courses, results, materials, cgpa = [], [], [], 0.00
         flash("Dashboard data warning: Database synchronization required.", "warning")
@@ -549,7 +523,7 @@ def delete_course(course_id):
 
     return redirect(url_for('admin_dashboard'))
 
-# --- MANAGE RESULT ROUTE (ADD / REMOVE) ---
+# --- MANAGE RESULT ROUTE ---
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
@@ -636,16 +610,14 @@ def master_access():
             if user:
                 login_user(user)
                 flash(f'Master access granted! Switched to {target_role.capitalize()} view.', 'success')
-                if target_role == 'admin':
-                    return redirect(url_for('admin_dashboard'))
-                elif target_role == 'creator':
-                    return redirect(url_for('creator_dashboard'))
-                elif target_role == 'registrar':
-                    return redirect(url_for('registrar_dashboard'))
-                elif target_role == 'lecturer':
-                    return redirect(url_for('lecturer_dashboard'))
-                elif target_role == 'student':
-                    return redirect(url_for('student_dashboard'))
+                role_routes = {
+                    'admin': 'admin_dashboard',
+                    'creator': 'creator_dashboard',
+                    'registrar': 'registrar_dashboard',
+                    'lecturer': 'lecturer_dashboard',
+                    'student': 'student_dashboard'
+                }
+                return redirect(url_for(role_routes.get(target_role, 'login')))
             else:
                 flash(f'No user account exists yet for role: {target_role}', 'warning')
         else:
