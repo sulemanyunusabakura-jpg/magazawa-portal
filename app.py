@@ -511,30 +511,63 @@ def manage_course():
     flash('Course updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# --- MANAGE RESULT ROUTE (ADD / REMOVE) ---
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
     if current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
         return redirect(url_for('login'))
+
     action = request.form.get('action')
     student_id = request.form.get('student_id')
 
     if action == 'add':
-        res = Result(
-            student_id=student_id, 
-            course_name=request.form.get('course_name'), 
-            score=request.form.get('score'), 
-            grade=request.form.get('grade')
+        course_code = request.form.get('course_code')
+        title = request.form.get('title')
+        unit = int(request.form.get('unit', 1))
+        semester = request.form.get('semester', '1')
+        grade = request.form.get('grade')
+        level = request.form.get('level', 'HND1')
+        session_val = request.form.get('session', '2023/2024')
+
+        new_result = Result(
+            student_id=student_id,
+            course_code=course_code,
+            title=title,
+            unit=unit,
+            semester=semester,
+            grade=grade,
+            level=level,
+            session=session_val
         )
-        db.session.add(res)
+        db.session.add(new_result)
+        flash('Result added successfully!', 'success')
+
     elif action == 'remove':
         result_id = request.form.get('result_id')
-        Result.query.filter_by(id=result_id).delete()
+        res = db.get_or_404(Result, result_id)
+        db.session.delete(res)
+        flash('Result entry removed.', 'info')
 
     db.session.commit()
-    flash('Result record updated successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# --- STUDENT DASHBOARD ROUTE ---
+@app.route('/dashboard/student')
+@login_required
+def student_dashboard():
+    if current_user.role != 'student':
+        return redirect(url_for('login'))
+
+    results = Result.query.filter_by(student_id=current_user.id).all()
+    
+    # Calculate CGPA automatically
+    total_units = sum(r.unit for r in results)
+    total_points = sum(r.unit * r.grade_point for r in results)
+    cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
+
+    return render_template('student_dashboard.html', student=current_user, results=results, cgpa=cgpa)
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
