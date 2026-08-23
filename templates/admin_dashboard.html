@@ -159,6 +159,11 @@
             gap: 6px;
         }
 
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+        }
+
         .btn-success { background: var(--success); }
         .btn-success:hover { background: var(--success-hover); }
         .btn-danger { background: var(--danger); }
@@ -517,194 +522,183 @@
         </div>
     </section>
 
-        <!-- ADMIN COURSE MANAGEMENT CARD -->
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-primary text-white fw-bold">
-        <i class="fas fa-book-medical me-2"></i>Manage Curriculum & Student Courses
-    </div>
-    <div class="card-body">
+    <!-- 4. ADMIN COURSE MANAGEMENT -->
+    <section class="card">
+        <h3 class="card-title" style="margin-bottom: 16px;">4. Manage Curriculum & Active Courses</h3>
         
-        <!-- Form to Add Course -->
-        <form action="{{ url_for('add_course') }}" method="POST" class="row g-3 mb-4">
-            <div class="col-md-3">
-                <label class="form-label fw-bold small">Course Code</label>
-                <input type="text" name="course_code" class="form-control" placeholder="e.g. CTE 311" required>
+        <form action="{{ url_for('add_course') }}" method="POST" style="margin-bottom: 24px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                <div>
+                    <label>Course Code</label>
+                    <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
+                </div>
+                <div>
+                    <label>Course Title</label>
+                    <input type="text" name="course_name" placeholder="e.g. Engineers in Society" required>
+                </div>
+                <div>
+                    <label>Credit Unit</label>
+                    <input type="number" name="unit" min="1" max="6" placeholder="2" required>
+                </div>
+                <div>
+                    <label>Semester</label>
+                    <select name="semester" required>
+                        <option value="1">1st Semester</option>
+                        <option value="2">2nd Semester</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold small">Course Title</label>
-                <input type="text" name="course_name" class="form-control" placeholder="e.g. Engineers in Society" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold small">Credit Unit</label>
-                <input type="number" name="unit" class="form-control" min="1" max="6" placeholder="2" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold small">Semester</label>
-                <select name="semester" class="form-select" required>
-                    <option value="1">1st Semester</option>
-                    <option value="2">2nd Semester</option>
-                </select>
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-success w-100"><i class="fas fa-plus"></i> Add</button>
-            </div>
+            <button type="submit" class="btn btn-success" style="margin-top: 8px;">+ Add Course</button>
         </form>
 
-        <hr>
-
-        <!-- Course List Table with Remove Action -->
-        <h6 class="fw-bold mb-3 text-secondary">Active Course List</h6>
+        <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Active Course List</h4>
         <div class="table-responsive">
-            <table class="table align-middle">
+            <table>
                 <thead>
-                    <tr style="border-bottom: 2px solid #dee2e6;">
-                        <th style="width: 20%;">Course code</th>
-                        <th style="width: 50%;">Title</th>
-                        <th style="width: 10%;">UNIT</th>
-                        <th style="width: 10%;">Semester</th>
-                        <th style="width: 10%; text-align: center;">Action</th>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Title</th>
+                        <th>Unit</th>
+                        <th>Semester</th>
+                        <th style="text-align: center;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for course in courses %}
-                    <tr style="border-bottom: 1px solid #e9ecef;">
-                        <td class="fw-bold">{{ course.course_code }}</td>
+                    <tr>
+                        <td><strong>{{ course.course_code }}</strong></td>
                         <td>{{ course.course_name }}</td>
                         <td>{{ course.unit or 3 }}</td>
                         <td>{{ course.semester or 1 }}</td>
-                        <td class="text-center">
+                        <td style="text-align: center;">
                             <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this course?');">
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Remove</button>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
                             </form>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center text-muted">No courses added yet.</td>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No courses added yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </section>
 
-    </div>
-</div>
-
-        <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white font-weight-bold">
-        Add Student Result Record
-    </div>
-    <div class="card-body">
-        <form action="{{ url_for('manage_result') }}" method="POST" class="form-row">
+    <!-- 5. STUDENT RESULT MANAGEMENT -->
+    <section class="card">
+        <h3 class="card-title" style="margin-bottom: 16px;">5. Add Student Result Record</h3>
+        
+        <form action="{{ url_for('manage_result') }}" method="POST" style="margin-bottom: 24px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <input type="hidden" name="action" value="add">
             
-            <div class="form-group col-md-3">
-                <label>Select Student</label>
-                <select name="student_id" class="form-control" required>
-                    {% for student in students %}
-                        <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
-                    {% endfor %}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                <div>
+                    <label>Select Student</label>
+                    <select name="student_id" required>
+                        {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Course Code</label>
+                    <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
+                </div>
+                <div>
+                    <label>Title</label>
+                    <input type="text" name="title" placeholder="e.g. Engineers in Society" required>
+                </div>
+                <div>
+                    <label>Unit</label>
+                    <input type="number" name="unit" min="1" max="6" value="2" required>
+                </div>
+                <div>
+                    <label>Semester</label>
+                    <select name="semester">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Grade</label>
+                    <select name="grade" required>
+                        <option value="A">A</option>
+                        <option value="AB">AB</option>
+                        <option value="B">B</option>
+                        <option value="BC">BC</option>
+                        <option value="C">C</option>
+                        <option value="CD">CD</option>
+                        <option value="D">D</option>
+                        <option value="F">F</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Level</label>
+                    <input type="text" name="level" value="HND1" required>
+                </div>
+                <div>
+                    <label>Session</label>
+                    <input type="text" name="session" value="2023/2024" required>
+                </div>
             </div>
-
-            <div class="form-group col-md-2">
-                <label>Course Code</label>
-                <input type="text" name="course_code" placeholder="e.g. CTE 311" class="form-control" required>
-            </div>
-
-            <div class="form-group col-md-3">
-                <label>Title</label>
-                <input type="text" name="title" placeholder="e.g. Engineers in Society" class="form-control" required>
-            </div>
-
-            <div class="form-group col-md-1">
-                <label>Unit</label>
-                <input type="number" name="unit" class="form-control" min="1" max="6" value="2" required>
-            </div>
-
-            <div class="form-group col-md-1">
-                <label>Semester</label>
-                <select name="semester" class="form-control">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                </select>
-            </div>
-
-            <div class="form-group col-md-2">
-                <label>Grade</label>
-                <select name="grade" class="form-control" required>
-                    <option value="A">A</option>
-                    <option value="AB">AB</option>
-                    <option value="B">B</option>
-                    <option value="BC">BC</option>
-                    <option value="C">C</option>
-                    <option value="CD">CD</option>
-                    <option value="D">D</option>
-                    <option value="F">F</option>
-                </select>
-            </div>
-
-            <div class="form-group col-md-2">
-                <label>Level</label>
-                <input type="text" name="level" value="HND1" class="form-control" required>
-            </div>
-
-            <div class="form-group col-md-2">
-                <label>Session</label>
-                <input type="text" name="session" value="2023/2024" class="form-control" required>
-            </div>
-
-            <div class="form-group col-md-2 align-self-end">
-                <button type="submit" class="btn btn-success btn-block">+ Add Result</button>
-            </div>
+            <button type="submit" class="btn btn-success" style="margin-top: 8px;">+ Add Result</button>
         </form>
-    </div>
-</div>
 
-<!-- Admin Existing Results Table with Delete Buttons -->
-<div class="table-responsive">
-    <table class="table table-bordered table-striped">
-        <thead class="thead-light">
-            <tr>
-                <th>Student</th>
-                <th>Course code</th>
-                <th>Title</th>
-                <th>Unit</th>
-                <th>Semester</th>
-                <th>Grades</th>
-                <th>Level</th>
-                <th>SESSION</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in all_results %}
-            <tr>
-                <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
-                <td>{{ result.course_code }}</td>
-                <td>{{ result.title }}</td>
-                <td>{{ result.unit }}</td>
-                <td>{{ result.semester }}</td>
-                <td><strong>{{ result.grade }}</strong></td>
-                <td>{{ result.level }}</td>
-                <td>{{ result.session }}</td>
-                <td>
-                    <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
-                        <input type="hidden" name="action" value="remove">
-                        <input type="hidden" name="result_id" value="{{ result.id }}">
-                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-        
-    <!-- 4 & 5. MANAGING COURSES & RESULTS -->
+        <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Existing Student Results</h4>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course Code</th>
+                        <th>Title</th>
+                        <th>Unit</th>
+                        <th>Semester</th>
+                        <th>Grade</th>
+                        <th>Level</th>
+                        <th>Session</th>
+                        <th style="text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in all_results %}
+                    <tr>
+                        <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
+                        <td>{{ result.course_code }}</td>
+                        <td>{{ result.title }}</td>
+                        <td>{{ result.unit }}</td>
+                        <td>{{ result.semester }}</td>
+                        <td><strong>{{ result.grade }}</strong></td>
+                        <td>{{ result.level }}</td>
+                        <td>{{ result.session }}</td>
+                        <td style="text-align: center;">
+                            <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <input type="hidden" name="action" value="remove">
+                                <input type="hidden" name="result_id" value="{{ result.id }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: var(--text-muted);">No results recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 6. COURSE ASSIGNMENT & INDIVIDUAL RESULTS -->
     <div class="grid-2">
         <section class="card">
-            <h3 class="card-title" style="margin-bottom: 16px;">4. Student Course Management</h3>
+            <h3 class="card-title" style="margin-bottom: 16px;">6. Direct Course Assignment</h3>
             <form action="{{ url_for('manage_course') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
@@ -720,15 +714,15 @@
                 <label for="course_name">Course Title</label>
                 <input type="text" id="course_name" name="course_name" placeholder="e.g. Python Programming" required>
 
-                <label for="course_code">Course Code</label>
-                <input type="text" id="course_code" name="course_code" placeholder="e.g. COM111" required>
+                <label for="course_code_assign">Course Code</label>
+                <input type="text" id="course_code_assign" name="course_code" placeholder="e.g. COM111" required>
 
                 <button type="submit" class="btn btn-success" style="width: 100%;">Assign Course</button>
             </form>
 
             <hr style="border-color: var(--border-color); margin: 20px 0;">
 
-            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Remove Assigned Course</h4>
+            <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Remove Assigned Course Record</h4>
             <form action="{{ url_for('manage_course') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
@@ -741,7 +735,7 @@
         </section>
 
         <section class="card">
-            <h3 class="card-title" style="margin-bottom: 16px;">5. Student Result Management</h3>
+            <h3 class="card-title" style="margin-bottom: 16px;">7. Quick Score Posting</h3>
             <form action="{{ url_for('manage_result') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="add">
@@ -763,8 +757,8 @@
                         <input type="number" step="0.1" min="0" max="100" id="score" name="score" placeholder="85.0" required>
                     </div>
                     <div>
-                        <label for="grade">Grade</label>
-                        <input type="text" id="grade" name="grade" placeholder="A" required>
+                        <label for="grade_quick">Grade</label>
+                        <input type="text" id="grade_quick" name="grade" placeholder="A" required>
                     </div>
                 </div>
 
@@ -778,8 +772,8 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="action" value="remove">
 
-                <label for="result_id">Result Record ID</label>
-                <input type="number" id="result_id" name="result_id" placeholder="Enter Result ID" required>
+                <label for="result_id_del">Result Record ID</label>
+                <input type="number" id="result_id_del" name="result_id" placeholder="Enter Result ID" required>
 
                 <button type="submit" class="btn btn-danger" style="width: 100%;">Delete Grade</button>
             </form>
@@ -800,9 +794,9 @@
         </form>
     </section>
 
-    <!-- 6. COMMUNICATION HUB (EMBEDDED LIVE CHAT & FORM MESSAGING) -->
+    <!-- 8. COMMUNICATION HUB -->
     <section class="card">
-        <h3 class="card-title" style="margin-bottom: 16px;">6. Messaging & Live Student Chat</h3>
+        <h3 class="card-title" style="margin-bottom: 16px;">8. Messaging & Live Student Chat</h3>
 
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">Portal Live Web Chat</button>
@@ -858,7 +852,7 @@
                     </div>
 
                     <!-- Direct Form Action or AJAX Chat Trigger -->
-                   <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatS...
+                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleChatSubmit(event)">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
                         
@@ -969,7 +963,6 @@
                 return false;
             }
 
-            // Append chat bubble to thread UI
             if (messageText) {
                 const thread = document.getElementById('chatThread');
                 const bubble = document.createElement('div');
@@ -981,6 +974,7 @@
                 thread.appendChild(bubble);
                 thread.scrollTop = thread.scrollHeight;
             }
+            return true;
         }
 
         function filterChatUsers() {
