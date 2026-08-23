@@ -526,32 +526,17 @@
     <section class="card">
         <h3 class="card-title" style="margin-bottom: 16px;">4. Manage Curriculum & Active Courses</h3>
         
-        <form action="{{ url_for('add_course') }}" method="POST" style="margin-bottom: 24px;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-                <div>
-                    <label>Course Code</label>
-                    <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
-                </div>
-                <div>
-                    <label>Course Title</label>
-                    <input type="text" name="course_name" placeholder="e.g. Engineers in Society" required>
-                </div>
-                <div>
-                    <label>Credit Unit</label>
-                    <input type="number" name="unit" min="1" max="6" placeholder="2" required>
-                </div>
-                <div>
-                    <label>Semester</label>
-                    <select name="semester" required>
-                        <option value="1">1st Semester</option>
-                        <option value="2">2nd Semester</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-success" style="margin-top: 8px;">+ Add Course</button>
+        <form action="{{ url_for('add_course') }}" method="POST">
+    <input type="text" name="course_code" placeholder="Course Code (e.g. CTE 112)" required>
+    <input type="text" name="course_name" placeholder="Course Title" required>
+    <input type="number" name="unit" placeholder="Units" value="1">
+    <input type="text" name="semester" placeholder="Semester" value="1">
+    
+    <!-- Hidden or selected student ID -->
+    <input type="hidden" name="student_id" value="{{ student.id if student else '' }}">
+    
+    <button type="submit">Add Course</button>
         </form>
-
         <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Active Course List</h4>
         <div class="table-responsive">
             <table>
