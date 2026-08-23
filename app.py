@@ -640,6 +640,34 @@ def send_message():
 def download_material(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
+# Add Course Route
+@app.route('/admin/add_course', methods=['POST'])
+def add_course():
+    course_code = request.form.get('course_code')
+    course_name = request.form.get('course_name')
+    unit = request.form.get('unit')
+    semester = request.form.get('semester')
+
+    new_course = Course(
+        course_code=course_code,
+        course_name=course_name,
+        unit=unit,
+        semester=semester
+    )
+    db.session.add(new_course)
+    db.session.commit()
+    flash('Course added successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# Delete Course Route
+@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+def delete_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    db.session.delete(course)
+    db.session.commit()
+    flash('Course removed successfully!', 'info')
+    return redirect(url_for('admin_dashboard'))
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
