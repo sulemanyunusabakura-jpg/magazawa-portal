@@ -504,27 +504,37 @@ def approve_payment(id):
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/manage_course', methods=['POST'])
+@app.route('/admin/add_course', methods=['POST'])
 @login_required
-def manage_course():
+def add_course():
     if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
-    action = request.form.get('action')
+
+    course_code = request.form.get('course_code')
+    course_name = request.form.get('course_name')
+    unit = request.form.get('unit', 1)
+    semester = request.form.get('semester', '1')
     student_id = request.form.get('student_id')
 
-    if action == 'add':
-        course = Course(
-            student_id=student_id, 
-            course_name=request.form.get('course_name'), 
-            course_code=request.form.get('course_code')
-        )
-        db.session.add(course)
-    elif action == 'remove':
-        course_id = request.form.get('course_id')
-        Course.query.filter_by(id=course_id).delete()
+    try:
+        unit_val = int(unit) if str(unit).isdigit() else 1
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
-    db.session.commit()
-    flash('Course updated successfully.', 'success')
+        new_course = Course(
+            course_code=course_code,
+            course_name=course_name,
+            unit=unit_val,
+            semester=semester,
+            student_id=student_id_val
+        )
+        db.session.add(new_course)
+        db.session.commit()
+        flash('Course added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding course: {str(e)}', 'danger')
+
     return redirect(url_for('admin_dashboard'))
 
 # --- MANAGE RESULT ROUTE (ADD / REMOVE) ---
