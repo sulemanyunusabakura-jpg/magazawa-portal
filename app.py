@@ -73,29 +73,39 @@ def auto_migrate_db():
             if 'user' in tables:
                 user_columns = [col['name'] for col in inspector.get_columns('user')]
                 with db.engine.connect() as conn:
-                    if 'payment_status' not in user_columns:
+                    if 'program' not in user_columns:
                         try:
-                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
                             conn.commit()
                         except Exception:
-                            conn.execute(text("ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT 'Unpaid';"))
-                            conn.commit()
-                    if 'remita_invoice' not in user_columns:
-                        try:
-                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN remita_invoice VARCHAR(100);"))
-                            conn.commit()
-                        except Exception:
-                            conn.execute(text("ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);"))
-                            conn.commit()
-                    if 'admission_status' not in user_columns:
-                        try:
-                            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
-                            conn.commit()
-                        except Exception:
-                            conn.execute(text("ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT 'Admitted';"))
+                            conn.execute(text('ALTER TABLE user ADD COLUMN program VARCHAR(255);'))
                             conn.commit()
 
-            # 3. MIGRATE COURSE TABLE (Ensure unit & semester columns exist)
+                    if 'payment_status' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN payment_status VARCHAR(20) DEFAULT \'Unpaid\';'))
+                            conn.commit()
+
+                    if 'remita_invoice' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN remita_invoice VARCHAR(100);'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN remita_invoice VARCHAR(100);'))
+                            conn.commit()
+
+                    if 'admission_status' not in user_columns:
+                        try:
+                            conn.execute(text('ALTER TABLE "user" ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
+                            conn.commit()
+                        except Exception:
+                            conn.execute(text('ALTER TABLE user ADD COLUMN admission_status VARCHAR(50) DEFAULT \'Admitted\';'))
+                            conn.commit()
+
+            # 3. MIGRATE COURSE TABLE
             if 'course' in tables:
                 course_columns = [col['name'] for col in inspector.get_columns('course')]
                 with db.engine.connect() as conn:
