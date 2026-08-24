@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -61,50 +61,15 @@ def payment_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- AUTOMATIC SCHEMA MIGRATION FUNCTION ---
+# --- SAFE DB SCHEMA SYNC (NO ALTER TABLE) ---
 def auto_migrate_db():
-    """Inspects existing tables and automatically adds missing columns without dropping data."""
+    """Safely checks database schema using SQLAlchemy without raw ALTER TABLE queries."""
     with app.app_context():
         try:
-            inspector = inspect(db.engine)
-            tables = inspector.get_table_names()
-
-            # 1. MIGRATE MESSAGE TABLE
-            if 'message' in tables:
-                columns = [col['name'] for col in inspector.get_columns('message')]
-                with db.engine.begin() as conn:
-                    if 'msg_type' not in columns:
-                        conn.execute(text("ALTER TABLE message ADD COLUMN msg_type VARCHAR(20) DEFAULT 'text';"))
-                    if 'file_path' not in columns:
-                        conn.execute(text("ALTER TABLE message ADD COLUMN file_path VARCHAR(255);"))
-
-            # 2. MIGRATE USER TABLE
-            if 'user' in tables:
-                user_columns = [col['name'] for col in inspector.get_columns('user')]
-                with db.engine.begin() as conn:
-                    for col_name, col_sql in [
-                        ('program', 'VARCHAR(255)'),
-                        ('payment_status', "VARCHAR(20) DEFAULT 'Unpaid'"),
-                        ('remita_invoice', 'VARCHAR(100)'),
-                        ('admission_status', "VARCHAR(50) DEFAULT 'Admitted'")
-                    ]:
-                        if col_name not in user_columns:
-                            try:
-                                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col_name} {col_sql};'))
-                            except Exception:
-                                conn.execute(text(f'ALTER TABLE user ADD COLUMN {col_name} {col_sql};'))
-
-            # 3. MIGRATE COURSE TABLE
-            if 'course' in tables:
-                course_columns = [col['name'] for col in inspector.get_columns('course')]
-                with db.engine.begin() as conn:
-                    if 'unit' not in course_columns:
-                        conn.execute(text("ALTER TABLE course ADD COLUMN unit INTEGER DEFAULT 1;"))
-                    if 'semester' not in course_columns:
-                        conn.execute(text("ALTER TABLE course ADD COLUMN semester VARCHAR(20);"))
-
+            # Ensures all defined ORM models exist as tables in the database
+            db.create_all()
         except Exception as e:
-            print(f"Schema auto-migration notice: {e}")
+            print(f"Schema verification notice: {e}")
 
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
@@ -684,9 +649,8 @@ def download_material(filename):
 @app.route('/fix-db')
 def fix_db():
     try:
-        db.session.execute(text('ALTER TABLE "user" ADD COLUMN program VARCHAR(255);'))
-        db.session.commit()
-        return "Database updated successfully!"
+        db.create_all()
+        return "Database created/synced successfully!"
     except Exception as e:
         db.session.rollback()
         return f"Error: {e}"
