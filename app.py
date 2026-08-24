@@ -303,22 +303,33 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # Fetch both student-assigned courses AND general courses added by Admin
+        # Fetch student courses (assigned directly or added globally by Admin)
         courses = Course.query.filter(
             or_(Course.student_id == current_user.id, Course.student_id == None)
         ).all()
         
-        # Fetch results linked to student ID or username/email
+        # Fetch results safely without column mismatch
         results = Result.query.filter(
             or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username)
         ).all()
         
-        # If no specific results match student_id directly, load published overall results
         if not results:
             results = Result.query.all()
 
-        total_units = sum(r.unit for r in results if getattr(r, 'unit', None))
-        total_points = sum((r.unit * getattr(r, 'grade_point', 0)) for r in results if getattr(r, 'unit', None))
+        # Grade Point Map for CGPA calculation
+        grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.25, 'BC': 3.0, 'C': 2.75, 'CD': 2.5, 'D': 2.25, 'E': 2.0, 'F': 0.0}
+
+        total_units = 0
+        total_points = 0.0
+
+        for r in results:
+            unit_val = getattr(r, 'unit', 1) or 1
+            g_str = str(getattr(r, 'grade', '')).strip().upper()
+            gp = grade_points.get(g_str, getattr(r, 'grade_point', 0.0) or 0.0)
+            
+            total_units += unit_val
+            total_points += (unit_val * gp)
+
         cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
 
         payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
@@ -330,7 +341,7 @@ def student_dashboard():
     except Exception as e:
         db.session.rollback()
         courses, results, materials, messages, cgpa = [], [], [], [], 0.00
-        flash(f"Dashboard data notice: {str(e)}", "warning")
+        flash(f"Dashboard data notice: {str(e)}", "danger")
 
     return render_template(
         'student_dashboard.html',
