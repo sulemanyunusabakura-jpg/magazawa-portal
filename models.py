@@ -77,26 +77,17 @@ class Result(db.Model):
     __tablename__ = 'result'
 
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    course_code = db.Column(db.String(20), nullable=False)
-    title = db.Column(db.String(150), nullable=False)
+    student_id = db.Column(db.String(100), nullable=False)
+    course_name = db.Column(db.String(100), nullable=True)  # Matches existing PostgreSQL column
+    title = db.Column(db.String(200), nullable=True)
     unit = db.Column(db.Integer, default=1)
-    semester = db.Column(db.String(20), default='1')
-    grade = db.Column(db.String(5), nullable=False)
-    level = db.Column(db.String(20), default='HND1')
-    session = db.Column(db.String(20), default='2023/2024')
+    semester = db.Column(db.String(50), default='1')
+    grade = db.Column(db.String(10), nullable=False)
+    grade_point = db.Column(db.Float, default=0.0)
+    level = db.Column(db.String(50), default='HND1')
+    session = db.Column(db.String(50), default='2023/2024')
 
     @property
-    def grade_point(self):
-        grade_map = {
-            'A': 4.0, 
-            'AB': 3.5, 
-            'B': 3.25, 
-            'BC': 3.0, 
-            'C': 2.75, 
-            'CD': 2.5, 
-            'D': 2.25, 
-            'E': 2.0, 
-            'F': 0.0
-        }
-        return grade_map.get(str(self.grade).upper(), 0.0)
+    def course_code(self):
+        """Fallback property so HTML templates using res.course_code won't crash."""
+        return self.course_name or "N/A"
