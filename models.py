@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     is_approved = db.Column(db.Boolean, default=False)
 
-    # Student fields managed by auto_migrate_db()
+    # Student fields
     dob = db.Column(db.String(20))
     primary_school = db.Column(db.String(255))
     primary_cert = db.Column(db.String(255))
@@ -33,7 +33,6 @@ class User(UserMixin, db.Model):
     # Relationships
     materials = db.relationship('Material', backref='lecturer', lazy=True)
     courses = db.relationship('Course', backref='student', lazy=True)
-    results = db.relationship('Result', backref='student', lazy=True)
 
 
 class Material(db.Model):
@@ -78,7 +77,8 @@ class Result(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(100), nullable=False)
-    course_name = db.Column(db.String(100), nullable=True)  # Matches existing PostgreSQL column
+    course_name = db.Column(db.String(100), nullable=True)  # Legacy PostgreSQL column
+    course_code_val = db.Column('course_code', db.String(100), nullable=True)
     title = db.Column(db.String(200), nullable=True)
     unit = db.Column(db.Integer, default=1)
     semester = db.Column(db.String(50), default='1')
@@ -89,5 +89,10 @@ class Result(db.Model):
 
     @property
     def course_code(self):
-        """Fallback property so HTML templates using res.course_code won't crash."""
-        return self.course_name or "N/A"
+        """Fallback property to prevent rendering crashes regardless of database column name."""
+        return self.course_code_val or self.course_name or "N/A"
+
+    @course_code.setter
+    def course_code(self, value):
+        self.course_code_val = value
+        self.course_name = value
