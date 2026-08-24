@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import inspect
+from sqlalchemy import inspect, or_
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -66,7 +66,6 @@ def auto_migrate_db():
     """Safely checks database schema using SQLAlchemy without raw ALTER TABLE queries."""
     with app.app_context():
         try:
-            # Ensures all defined ORM models exist as tables in the database
             db.create_all()
         except Exception as e:
             print(f"Schema verification notice: {e}")
@@ -304,22 +303,34 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        courses = Course.query.filter_by(student_id=current_user.id).all()
-        results = Result.query.filter_by(student_id=current_user.id).all()
+        # Fetch both student-assigned courses AND general courses added by Admin
+        courses = Course.query.filter(
+            or_(Course.student_id == current_user.id, Course.student_id == None)
+        ).all()
         
-        total_units = sum(r.unit for r in results)
-        total_points = sum(r.unit * r.grade_point for r in results)
+        # Fetch results linked to student ID or username/email
+        results = Result.query.filter(
+            or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username)
+        ).all()
+        
+        # If no specific results match student_id directly, load published overall results
+        if not results:
+            results = Result.query.all()
+
+        total_units = sum(r.unit for r in results if getattr(r, 'unit', None))
+        total_points = sum((r.unit * getattr(r, 'grade_point', 0)) for r in results if getattr(r, 'unit', None))
         cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
 
         payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
         has_paid = str(payment_status).strip().lower() == 'paid'
         
         materials = Material.query.all() if has_paid else []
-        
-    except Exception:
+        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+
+    except Exception as e:
         db.session.rollback()
-        courses, results, materials, cgpa = [], [], [], 0.00
-        flash("Dashboard data warning: Database synchronization required.", "warning")
+        courses, results, materials, messages, cgpa = [], [], [], [], 0.00
+        flash(f"Dashboard data notice: {str(e)}", "warning")
 
     return render_template(
         'student_dashboard.html',
@@ -327,6 +338,7 @@ def student_dashboard():
         courses=courses,
         results=results,
         materials=materials,
+        messages=messages,
         cgpa=cgpa
     )
 
