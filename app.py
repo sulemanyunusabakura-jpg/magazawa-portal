@@ -61,9 +61,9 @@ def payment_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- SAFE DB SCHEMA SYNC (NO ALTER TABLE) ---
+# --- SAFE DB SCHEMA SYNC ---
 def auto_migrate_db():
-    """Safely checks database schema using SQLAlchemy without raw ALTER TABLE queries."""
+    """Safely checks database schema using SQLAlchemy without throwing unhandled exceptions."""
     with app.app_context():
         try:
             db.create_all()
@@ -308,15 +308,12 @@ def student_dashboard():
             or_(Course.student_id == current_user.id, Course.student_id == None)
         ).all()
         
-        # Fetch results safely without column mismatch
+        # Fetch results safely without schema failures
         results = Result.query.filter(
-            or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username)
+            or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username, Result.student_id == current_user.email)
         ).all()
-        
-        if not results:
-            results = Result.query.all()
 
-        # Grade Point Map for CGPA calculation
+        # Fallback Grade Point Map for CGPA calculation
         grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.25, 'BC': 3.0, 'C': 2.75, 'CD': 2.5, 'D': 2.25, 'E': 2.0, 'F': 0.0}
 
         total_units = 0
@@ -669,14 +666,17 @@ def send_message():
 def download_material(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
+# --- DATABASE FIX ROUTE ---
 @app.route('/fix-db')
 def fix_db():
     try:
-        db.create_all()
-        return "Database created/synced successfully!"
+        with db.engine.connect() as conn:
+            conn.execute(db.text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+            conn.commit()
+        return "Database table 'result' synchronized with 'course_code' column successfully!"
     except Exception as e:
         db.session.rollback()
-        return f"Error: {e}"
+        return f"Database sync notice: {str(e)}"
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
