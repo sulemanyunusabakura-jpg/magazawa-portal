@@ -572,8 +572,8 @@
                     <tr>
                         <td><strong>{{ course.course_code }}</strong></td>
                         <td>{{ course.course_name }}</td>
-                        <td>{{ course.unit or 3 }}</td>
-                        <td>{{ course.semester or 1 }}</td>
+                        <td>{{ course.unit if course.unit else 3 }}</td>
+                        <td>{{ course.semester if course.semester else 1 }}</td>
                         <td>
                             <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this course?');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
@@ -602,7 +602,7 @@
             <select name="student_id" required>
                 <option value="">-- Choose Student --</option>
                 {% for student in students %}
-                    <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username }})</option>
+                    <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username if student.username else student.email }})</option>
                 {% endfor %}
             </select>
 
@@ -766,8 +766,7 @@
                         </div>
                     </div>
 
-                    <!-- Direct Form Action or AJAX Chat Trigger -->
-                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="handleChatSubmit(event)">
+                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleChatSubmit(event)">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
                         
@@ -813,8 +812,8 @@
                         {% for msg in messages %}
                         <tr>
                             <td style="white-space: nowrap;">
-                                <strong>{{ msg.sender.full_name }}</strong><br>
-                                <small style="color: var(--text-muted);">({{ msg.sender.role }})</small>
+                                <strong>{{ msg.sender.full_name if msg.sender else 'System' }}</strong><br>
+                                <small style="color: var(--text-muted);">({{ msg.sender.role if msg.sender else 'SYSTEM' }})</small>
                             </td>
                             <td style="white-space: pre-line; min-width: 250px;">{{ msg.content }}</td>
                             <td style="white-space: nowrap;">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else 'N/A' }}</td>
@@ -873,7 +872,6 @@
             const messageText = input.value.trim();
 
             if (!receiverId) {
-                e.preventDefault();
                 alert('Please select a user from the chat sidebar list first.');
                 return false;
             }
@@ -889,6 +887,7 @@
                 thread.appendChild(bubble);
                 thread.scrollTop = thread.scrollHeight;
             }
+            return true;
         }
 
         function filterChatUsers() {
