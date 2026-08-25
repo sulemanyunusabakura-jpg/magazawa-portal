@@ -74,17 +74,15 @@ class Course(db.Model):
 
 class Result(db.Model):
     __tablename__ = 'result'
-
+    
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(100), nullable=False)
-    
-    # Map Python's 'course_code' directly to PostgreSQL's existing 'course_name' column
-    course_code = db.Column('course_name', db.String(100), nullable=True)
-    
+    course_code = db.Column(db.String(100), nullable=True)
+    course_name = db.Column(db.String(200), nullable=True)
     title = db.Column(db.String(200), nullable=True)
     unit = db.Column(db.Integer, default=1)
     semester = db.Column(db.String(50), default='1')
-    grade = db.Column(db.String(10), nullable=False)
+    grade = db.Column(db.String(10), nullable=True)
     grade_point = db.Column(db.Float, default=0.0)
     level = db.Column(db.String(50), default='HND1')
     session = db.Column(db.String(50), default='2023/2024')
