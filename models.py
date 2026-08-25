@@ -77,8 +77,10 @@ class Result(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(100), nullable=False)
-    course_name = db.Column(db.String(100), nullable=True)  # Legacy PostgreSQL column
-    course_code_val = db.Column('course_code', db.String(100), nullable=True)
+    
+    # Map Python's 'course_code' directly to PostgreSQL's existing 'course_name' column
+    course_code = db.Column('course_name', db.String(100), nullable=True)
+    
     title = db.Column(db.String(200), nullable=True)
     unit = db.Column(db.Integer, default=1)
     semester = db.Column(db.String(50), default='1')
@@ -86,13 +88,3 @@ class Result(db.Model):
     grade_point = db.Column(db.Float, default=0.0)
     level = db.Column(db.String(50), default='HND1')
     session = db.Column(db.String(50), default='2023/2024')
-
-    @property
-    def course_code(self):
-        """Fallback property to prevent rendering crashes regardless of database column name."""
-        return self.course_code_val or self.course_name or "N/A"
-
-    @course_code.setter
-    def course_code(self, value):
-        self.course_code_val = value
-        self.course_name = value
