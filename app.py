@@ -1,8 +1,13 @@
 import os
 import uuid
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, jsonify
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask import (
+    Flask, render_template, request, redirect, url_for, flash, Response, 
+    send_from_directory, jsonify
+)
+from flask_login import (
+    LoginManager, login_user, logout_user, login_required, current_user
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy import inspect, or_
@@ -303,17 +308,14 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # Fetch student courses (assigned directly or added globally by Admin)
         courses = Course.query.filter(
             or_(Course.student_id == current_user.id, Course.student_id == None)
         ).all()
         
-        # Fetch results safely without schema failures
         results = Result.query.filter(
             or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username, Result.student_id == current_user.email)
         ).all()
 
-        # Fallback Grade Point Map for CGPA calculation
         grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.25, 'BC': 3.0, 'C': 2.75, 'CD': 2.5, 'D': 2.25, 'E': 2.0, 'F': 0.0}
 
         total_units = 0
