@@ -300,56 +300,40 @@ def lecturer_dashboard():
 
     return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
 
-@app.route('/dashboard/student')
+@app.route('/student_dashboard')
 @login_required
 def student_dashboard():
-    if current_user.role != 'student':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
+    # 1. Fetch courses assigned specifically to student or general curriculum
+    student_courses = Course.query.filter(
+        (Course.student_id == current_user.id) | (Course.student_id == None)
+    ).all()
 
-    try:
-        courses = Course.query.filter(
-            or_(Course.student_id == current_user.id, Course.student_id == None)
-        ).all()
-        
-        results = Result.query.filter(
-            or_(Result.student_id == str(current_user.id), Result.student_id == current_user.username, Result.student_id == current_user.email)
-        ).all()
+    # 2. Fetch results published for this student
+    student_results = Result.query.filter_by(student_id=current_user.id).all()
 
-        grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.25, 'BC': 3.0, 'C': 2.75, 'CD': 2.5, 'D': 2.25, 'E': 2.0, 'F': 0.0}
+    # 3. Calculate CGPA dynamically to prevent crashes
+    total_units = 0
+    total_points = 0
+    grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
 
-        total_units = 0
-        total_points = 0.0
+    for res in student_results:
+        u = res.unit or 0
+        g = grade_points.get(res.grade.upper(), 0.0) if res.grade else 0.0
+        total_units += u
+        total_points += (u * g)
 
-        for r in results:
-            unit_val = getattr(r, 'unit', 1) or 1
-            g_str = str(getattr(r, 'grade', '')).strip().upper()
-            gp = grade_points.get(g_str, getattr(r, 'grade_point', 0.0) or 0.0)
-            
-            total_units += unit_val
-            total_points += (unit_val * gp)
+    cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-        cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
-
-        payment_status = getattr(current_user, 'payment_status', 'Unpaid') or 'Unpaid'
-        has_paid = str(payment_status).strip().lower() == 'paid'
-        
-        materials = Material.query.all() if has_paid else []
-        messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-
-    except Exception as e:
-        db.session.rollback()
-        courses, results, materials, messages, cgpa = [], [], [], [], 0.00
-        flash(f"Dashboard data notice: {str(e)}", "danger")
+    # 4. Fetch private messages for student
+    messages = Message.query.filter_by(receiver_id=current_user.id).all()
 
     return render_template(
         'student_dashboard.html',
         student=current_user,
-        courses=courses,
-        results=results,
-        materials=materials,
-        messages=messages,
-        cgpa=cgpa
+        courses=student_courses,
+        results=student_results,
+        cgpa=cgpa,
+        messages=messages
     )
 
 # --- ADMIN ACTIONS ---
