@@ -77,7 +77,6 @@ def auto_migrate_db():
 
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
-    db.create_all()
     auto_migrate_db()
 
     try:
@@ -303,15 +302,12 @@ def lecturer_dashboard():
 @app.route('/student_dashboard')
 @login_required
 def student_dashboard():
-    # 1. Fetch courses assigned specifically to student or general curriculum
     student_courses = Course.query.filter(
         (Course.student_id == current_user.id) | (Course.student_id == None)
     ).all()
 
-    # 2. Fetch results published for this student
     student_results = Result.query.filter_by(student_id=current_user.id).all()
 
-    # 3. Calculate CGPA dynamically to prevent crashes
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
@@ -323,8 +319,6 @@ def student_dashboard():
         total_points += (u * g)
 
     cgpa = (total_points / total_units) if total_units > 0 else 0.0
-
-    # 4. Fetch private messages for student
     messages = Message.query.filter_by(receiver_id=current_user.id).all()
 
     return render_template(
@@ -445,28 +439,27 @@ def add_course():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
 
-    course_code = request.form.get('course_code')
-    course_name = request.form.get('course_name')
-    unit = request.form.get('unit')
-    semester = request.form.get('semester')
+    course_code = request.form.get('course_code', '').strip()
+    course_name = request.form.get('course_name', '').strip()
+    unit = request.form.get('unit', '1')
+    semester = request.form.get('semester', '1')
     student_id = request.form.get('student_id')
 
+    if not course_code or not course_name:
+        flash('Course Code and Course Name are required.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
     try:
-        unit_val = int(unit) if unit and str(unit).isdigit() else 1
+        unit_val = int(unit) if str(unit).isdigit() else 1
         student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
-        course_data = {
-            'course_code': course_code,
-            'course_name': course_name
-        }
-        if hasattr(Course, 'unit'):
-            course_data['unit'] = unit_val
-        if hasattr(Course, 'semester'):
-            course_data['semester'] = semester
-        if hasattr(Course, 'student_id') and student_id_val:
-            course_data['student_id'] = student_id_val
-
-        new_course = Course(**course_data)
+        new_course = Course(
+            course_code=course_code,
+            course_name=course_name,
+            unit=unit_val,
+            semester=semester,
+            student_id=student_id_val
+        )
         db.session.add(new_course)
         db.session.commit()
         flash('Course added successfully!', 'success')
@@ -508,24 +501,26 @@ def manage_result():
         student_id = request.form.get('student_id')
         course_code = request.form.get('course_code')
         title = request.form.get('title')
-        unit = int(request.form.get('unit', 3))
-        semester = int(request.form.get('semester', 1))
+        unit = request.form.get('unit', 1)
+        semester = request.form.get('semester', '1')
         grade = request.form.get('grade')
         level = request.form.get('level', 'HND1')
         session = request.form.get('session', '2023/2024')
 
-        # Check for missing values to avoid database integrity errors
         if not student_id or not course_code or not title or not grade:
             flash('Please fill in all required fields.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         try:
+            student_id_val = int(student_id)
+            unit_val = int(unit) if str(unit).isdigit() else 1
+
             new_result = Result(
-                student_id=student_id,
+                student_id=student_id_val,
                 course_code=course_code,
                 title=title,
-                unit=unit,
-                semester=semester,
+                unit=unit_val,
+                semester=str(semester),
                 grade=grade,
                 level=level,
                 session=session
@@ -535,16 +530,16 @@ def manage_result():
             flash('Result added successfully!', 'success')
         except Exception as e:
             db.session.rollback()
-            print(f"Error adding result: {e}")  # Check your server console for logs
-            flash('Error adding result to database.', 'danger')
+            flash(f'Error adding result: {str(e)}', 'danger')
 
     elif action == 'remove':
         result_id = request.form.get('result_id')
-        result_to_delete = Result.query.get(result_id)
-        if result_to_delete:
-            db.session.delete(result_to_delete)
-            db.session.commit()
-            flash('Result removed.', 'success')
+        if result_id and str(result_id).isdigit():
+            result_to_delete = db.session.get(Result, int(result_id))
+            if result_to_delete:
+                db.session.delete(result_to_delete)
+                db.session.commit()
+                flash('Result removed.', 'success')
 
     return redirect(url_for('admin_dashboard'))
 
@@ -670,8 +665,11 @@ def fix_db():
     try:
         with db.engine.connect() as conn:
             conn.execute(db.text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
             conn.commit()
-        return "Database table 'result' synchronized with 'course_code' column successfully!"
+        return "Database tables synchronized successfully!"
     except Exception as e:
         db.session.rollback()
         return f"Database sync notice: {str(e)}"
