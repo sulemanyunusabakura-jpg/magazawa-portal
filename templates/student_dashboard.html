@@ -209,22 +209,20 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% if courses %}
-                                        {% for course in courses %}
-                                        <tr>
-                                            <td class="fw-bold text-primary">{{ course.course_code }}</td>
-                                            <td>{{ course.course_name }}</td>
-                                            <td>{{ course.unit or 1 }}</td>
-                                            <td>{{ course.semester or '1' }}</td>
-                                        </tr>
-                                        {% endfor %}
+                                    {% for course in courses %}
+                                    <tr>
+                                        <td class="fw-bold text-primary">{{ course.course_code }}</td>
+                                        <td>{{ course.course_name }}</td>
+                                        <td>{{ course.unit or 3 }}</td>
+                                        <td>{{ course.semester or 1 }}</td>
+                                    </tr>
                                     {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">
-                                                <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Admin has not added courses to your account.
-                                            </td>
-                                        </tr>
-                                    {% endif %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Please contact the administrator.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -263,7 +261,7 @@
                                 </table>
                             </div>
                         {% else %}
-                            <div class="alert alert-warning mb-0"><i class="fas fa-info-circle me-1"></i> No lecture materials uploaded by lecturers yet.</div>
+                            <div class="alert alert-warning mb-0">No lecture materials uploaded yet.</div>
                         {% endif %}
                     {% else %}
                         <div class="alert alert-danger mb-0"><i class="fas fa-lock me-2"></i>Please complete your school fees payment to unlock course downloads.</div>
@@ -277,12 +275,12 @@
                             <div class="col-md-9">
                                 <div class="row">
                                     <div class="col-sm-6 mb-2">
-                                        <strong>Admission No / Reg No:</strong> {{ student.username or 'N/A' }}<br>
-                                        <strong>Program:</strong> {{ student.program or 'Computer Engineering' }}<br>
+                                        <strong>Admission No:</strong> {{ student.username or 'N/A' }}<br>
+                                        <strong>Program:</strong> {{ student.program or 'HND CME' }}<br>
                                         <strong>Phone Number:</strong> {{ student.phone or 'N/A' }}
                                     </div>
                                     <div class="col-sm-6 mb-2">
-                                        <strong>Level:</strong> {{ student.level or 'ND/HND' }}<br>
+                                        <strong>Level:</strong> {{ student.level or 'HND2' }}<br>
                                         <strong>Full Name:</strong> {{ student.full_name }}<br>
                                         <strong>My CGPA:</strong> <span class="badge bg-primary fs-6">{{ "%.2f"|format(cgpa if cgpa else 0.0) }}</span>
                                     </div>
@@ -311,25 +309,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% if results %}
-                                        {% for res in results %}
-                                        <tr>
-                                            <td><strong class="text-primary">{{ res.course_code }}</strong></td>
-                                            <td>{{ res.title }}</td>
-                                            <td>{{ res.unit }}</td>
-                                            <td>{{ res.semester }}</td>
-                                            <td><span class="badge bg-success fs-6">{{ res.grade }}</span></td>
-                                            <td>{{ res.level }}</td>
-                                            <td>{{ res.session }}</td>
-                                        </tr>
-                                        {% endfor %}
+                                    {% for res in results %}
+                                    <tr>
+                                        <td><strong class="text-primary">{{ res.course_code }}</strong></td>
+                                        <td>{{ res.title }}</td>
+                                        <td>{{ res.unit }}</td>
+                                        <td>{{ res.semester }}</td>
+                                        <td><span class="badge bg-success fs-6">{{ res.grade }}</span></td>
+                                        <td>{{ res.level }}</td>
+                                        <td>{{ res.session }}</td>
+                                    </tr>
                                     {% else %}
-                                        <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                <i class="fas fa-graduation-cap me-1"></i> No results published yet. Admin has not added any results for your account.
-                                            </td>
-                                        </tr>
-                                    {% endif %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="fas fa-graduation-cap me-1"></i> No results published yet for your account.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -545,10 +541,6 @@
             if (tabBtn) {
                 var tab = bootstrap.Tab.getOrCreateInstance(tabBtn);
                 tab.show();
-                var card = document.getElementById('portalContentCard');
-                if (card) {
-                    card.scrollIntoView({ behavior: 'smooth' });
-                }
             }
         }
     </script>
