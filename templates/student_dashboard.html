@@ -275,14 +275,14 @@
                             <div class="col-md-9">
                                 <div class="row">
                                     <div class="col-sm-6 mb-2">
-                                        <strong>Admission No:</strong> {{ student.username }}<br>
+                                        <strong>Admission No:</strong> {{ student.username or 'N/A' }}<br>
                                         <strong>Program:</strong> {{ student.program or 'HND CME' }}<br>
-                                        <strong>Phone Number:</strong> {{ student.phone }}
+                                        <strong>Phone Number:</strong> {{ student.phone or 'N/A' }}
                                     </div>
                                     <div class="col-sm-6 mb-2">
                                         <strong>Level:</strong> {{ student.level or 'HND2' }}<br>
                                         <strong>Full Name:</strong> {{ student.full_name }}<br>
-                                        <strong>My CGPA:</strong> <span class="badge bg-primary fs-6">{{ "%.2f"|format(cgpa) }}</span>
+                                        <strong>My CGPA:</strong> <span class="badge bg-primary fs-6">{{ "%.2f"|format(cgpa if cgpa else 0.0) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -339,6 +339,7 @@
                             <div class="card bg-light border-0 p-3 mb-3">
                                 <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-paper-plane me-1"></i> Send Private Message</h6>
                                 <form action="{{ url_for('send_message') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">Recipient User ID</label>
                                         <input type="number" class="form-control" name="receiver_id" placeholder="Enter Receiver User ID (e.g., Admin ID: 1)" required>
@@ -359,7 +360,7 @@
                                     {% for msg in messages %}
                                         <div class="list-group-item mb-2 rounded shadow-sm border-start border-4 border-primary bg-white">
                                             <p class="mb-1 text-dark">{{ msg.content }}</p>
-                                            <small class="text-muted"><i class="far fa-clock me-1"></i>{{ msg.timestamp }}</small>
+                                            <small class="text-muted"><i class="far fa-clock me-1"></i>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp and msg.timestamp.strftime else msg.timestamp }}</small>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -398,7 +399,7 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <i class="fas fa-broadcast-tower fa-4x text-primary mb-2 animate-pulse"></i>
+                        <i class="fas fa-broadcast-tower fa-4x text-primary mb-2"></i>
                         <h5 class="fw-bold">Virtual Classroom Session</h5>
                         <p class="text-muted small">Connect directly to live lecture discussions and voice calls broadcasted by your lecturers.</p>
                     </div>
