@@ -78,6 +78,26 @@
             border-color: #ff6b6b;
         }
 
+        /* FLASH MESSAGES */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-success { background: rgba(25, 135, 84, 0.2); border: 1px solid var(--success); color: #75b798; }
+        .alert-danger { background: rgba(220, 53, 69, 0.2); border: 1px solid var(--danger); color: #ea868f; }
+        .alert-warning { background: rgba(255, 193, 7, 0.2); border: 1px solid var(--warning); color: #ffda6a; }
+        .alert-info { background: rgba(13, 110, 253, 0.2); border: 1px solid var(--primary); color: #6ea8fe; }
+
         .card {
             background: var(--bg-card);
             padding: 24px;
@@ -103,12 +123,7 @@
 
         .search-box {
             max-width: 280px;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
+            margin-bottom: 0 !important;
         }
 
         .table-responsive {
@@ -210,6 +225,25 @@
 
         .action-card {
             border-left: 4px solid var(--success);
+        }
+
+        /* GEMINI AI ASSISTANT STYLING */
+        .ai-assistant-card {
+            border-left: 4px solid #8e44ad;
+            background: linear-gradient(135deg, var(--bg-card) 0%, #17162e 100%);
+        }
+
+        .ai-response-box {
+            background: var(--chat-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px;
+            margin-top: 12px;
+            min-height: 60px;
+            font-size: 0.875rem;
+            color: #d1d5db;
+            white-space: pre-line;
+            display: none;
         }
 
         /* TABS STYLING */
@@ -411,6 +445,35 @@
         <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
     </header>
 
+    <!-- FLASH MESSAGES ALERT CONTAINER -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+              <span>{{ message }}</span>
+              <button onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; cursor:pointer; font-weight:bold;">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- GEMINI AI ASSISTANT CARD -->
+    <section class="card ai-assistant-card">
+        <h3 class="card-title" style="margin-bottom: 8px;">✨ Portal AI Copilot (Gemini)</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 14px;">
+            Ask questions about real-time enrollment statistics, generate announcements, or request administrative insights.
+        </p>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="geminiPrompt" placeholder="e.g. Summarize current portal enrollment or draft an approval notice..." style="margin-bottom: 0;">
+            <button type="button" class="btn btn-primary" onclick="askGemini()" id="geminiBtn" style="white-space: nowrap; background: #8e44ad;">
+                Ask AI
+            </button>
+        </div>
+        <div id="geminiResponse" class="ai-response-box"></div>
+    </section>
+
     <!-- 1. LECTURER APPLICATIONS -->
     <section class="card">
         <div class="card-header">
@@ -521,29 +584,28 @@
     <section class="card">
         <h3 class="card-title" style="margin-bottom: 16px;">Manage Curriculum & Student Courses</h3>
         <form action="{{ url_for('add_course') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-            <label>Select Student (Optional)</label>
-            <select name="student_id">
+            <label for="student_id">Select Student (Optional)</label>
+            <select name="student_id" id="student_id">
                 <option value="">-- General Course --</option>
                 {% for std in students %}
                     <option value="{{ std.id }}">{{ std.full_name }} ({{ std.email }})</option>
                 {% endfor %}
             </select>
 
-            <label>Course Code</label>
-            <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
+            <label for="course_code">Course Code</label>
+            <input type="text" id="course_code" name="course_code" placeholder="e.g. CTE 311" required>
 
-            <label>Course Title</label>
-            <input type="text" name="course_name" placeholder="e.g. Engineers in Society" required>
+            <label for="course_name">Course Title</label>
+            <input type="text" id="course_name" name="course_name" placeholder="e.g. Engineers in Society" required>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <label>Credit Unit</label>
-                    <input type="number" name="unit" min="1" max="6" value="2" required>
+                    <label for="unit">Credit Unit</label>
+                    <input type="number" id="unit" name="unit" min="1" max="6" value="2" required>
                 </div>
                 <div>
-                    <label>Semester</label>
-                    <select name="semester" required>
+                    <label for="semester">Semester</label>
+                    <select id="semester" name="semester" required>
                         <option value="1">1st Semester</option>
                         <option value="2">2nd Semester</option>
                     </select>
@@ -576,7 +638,6 @@
                         <td>{{ course.semester if course.semester else 1 }}</td>
                         <td>
                             <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this course?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                 <button type="submit" class="btn btn-danger">Remove</button>
                             </form>
                         </td>
@@ -595,31 +656,30 @@
     <section class="card">
         <h3 class="card-title" style="margin-bottom: 16px;">Manage Student Results</h3>
         <form action="{{ url_for('manage_result') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <input type="hidden" name="action" value="add">
             
-            <label>Select Student</label>
-            <select name="student_id" required>
+            <label for="res_student_id">Select Student</label>
+            <select name="student_id" id="res_student_id" required>
                 <option value="">-- Choose Student --</option>
                 {% for student in students %}
                     <option value="{{ student.id }}">{{ student.full_name }} ({{ student.username if student.username else student.email }})</option>
                 {% endfor %}
             </select>
 
-            <label>Course Code</label>
-            <input type="text" name="course_code" placeholder="e.g. CTE 311" required>
+            <label for="res_course_code">Course Code</label>
+            <input type="text" id="res_course_code" name="course_code" placeholder="e.g. CTE 311" required>
 
-            <label>Title</label>
-            <input type="text" name="title" placeholder="e.g. Engineers in Society" required>
+            <label for="res_title">Title</label>
+            <input type="text" id="res_title" name="title" placeholder="e.g. Engineers in Society" required>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <label>Unit</label>
-                    <input type="number" name="unit" min="1" max="6" value="2" required>
+                    <label for="res_unit">Unit</label>
+                    <input type="number" id="res_unit" name="unit" min="1" max="6" value="2" required>
                 </div>
                 <div>
-                    <label>Semester</label>
-                    <select name="semester">
+                    <label for="res_semester">Semester</label>
+                    <select id="res_semester" name="semester">
                         <option value="1">1</option>
                         <option value="2">2</option>
                     </select>
@@ -628,8 +688,8 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                 <div>
-                    <label>Grade</label>
-                    <select name="grade" required>
+                    <label for="res_grade">Grade</label>
+                    <select id="res_grade" name="grade" required>
                         <option value="A">A</option>
                         <option value="AB">AB</option>
                         <option value="B">B</option>
@@ -641,58 +701,17 @@
                     </select>
                 </div>
                 <div>
-                    <label>Level</label>
-                    <input type="text" name="level" value="HND1" required>
+                    <label for="res_level">Level</label>
+                    <input type="text" id="res_level" name="level" value="HND1" required>
                 </div>
                 <div>
-                    <label>Session</label>
-                    <input type="text" name="session" value="2023/2024" required>
+                    <label for="res_session">Session</label>
+                    <input type="text" id="res_session" name="session" value="2023/2024" required>
                 </div>
             </div>
 
             <button type="submit" class="btn btn-success" style="width: 100%;">+ Add Result</button>
         </form>
-
-        <hr style="border-color: var(--border-color); margin: 20px 0;">
-
-        <h4 style="margin-bottom: 12px; font-size: 0.9375rem;">Existing Results</h4>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Course Code</th>
-                        <th>Title</th>
-                        <th>Unit</th>
-                        <th>Grade</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in all_results %}
-                    <tr>
-                        <td>{{ result.student.full_name if result.student else 'N/A' }}</td>
-                        <td>{{ result.course_code }}</td>
-                        <td>{{ result.title }}</td>
-                        <td>{{ result.unit }}</td>
-                        <td><strong>{{ result.grade }}</strong></td>
-                        <td>
-                            <form action="{{ url_for('manage_result') }}" method="POST" onsubmit="return confirm('Remove this result?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <input type="hidden" name="action" value="remove">
-                                <input type="hidden" name="result_id" value="{{ result.id }}">
-                                <button type="submit" class="btn btn-danger">Remove</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted);">No result entries found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </section>
 
     <!-- TRANSMISSION -->
@@ -702,7 +721,6 @@
             Execute this synchronization once admissions, assigned courses, and grade updates are complete.
         </p>
         <form action="{{ url_for('send_to_registrar') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <button type="submit" class="btn btn-success">
                 Send All School Data to Registrar
             </button>
@@ -723,7 +741,7 @@
             <div class="webchat-widget" id="chatWidget">
                 <div class="chat-sidebar">
                     <div class="chat-sidebar-header">
-                        <input type="text" id="chatUserFilter" placeholder="Search user..." onkeyup="filterChatUsers()" style="margin-bottom: 0;">
+                        <input type="text" id="chatUserFilter" placeholder="Search user..." onkeyup="filterChatUsers()">
                     </div>
                     <div class="chat-user-list" id="chatUserList">
                         {% for u in all_users %}
@@ -757,17 +775,12 @@
 
                     <div class="chat-messages-container" id="chatThread">
                         <div class="chat-bubble in">
-                            Hello Admin! I need help with my assigned course registration.
-                            <div class="chat-time">10:14 AM</div>
-                        </div>
-                        <div class="chat-bubble out">
-                            Hello! Which course code is missing on your dashboard?
-                            <div class="chat-time">10:15 AM</div>
+                            Hello Admin! Welcome to the communication dashboard.
+                            <div class="chat-time">Live</div>
                         </div>
                     </div>
 
                     <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleChatSubmit(event)">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
                         
                         <div class="chat-input-bar">
@@ -782,8 +795,6 @@
         <!-- TAB 2: SYSTEM FORM BROADCAST MESSAGING -->
         <div id="system-msg-tab" class="tab-content">
             <form action="{{ url_for('send_message') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-
                 <label for="receiver_id">Recipient</label>
                 <select name="receiver_id" id="receiver_id" required>
                     <option value="">-- Select Recipient --</option>
@@ -840,6 +851,44 @@
     </div>
 
     <script>
+        function askGemini() {
+            const promptInput = document.getElementById('geminiPrompt');
+            const responseBox = document.getElementById('geminiResponse');
+            const btn = document.getElementById('geminiBtn');
+            const prompt = promptInput.value.trim();
+
+            if (!prompt) {
+                alert('Please enter a query or task for Gemini AI.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Analyzing...';
+            responseBox.style.display = 'block';
+            responseBox.innerText = 'Consulting Gemini AI Assistant...';
+
+            fetch("{{ url_for('ask_gemini') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerText = 'Ask AI';
+                if (data.response) {
+                    responseBox.innerText = data.response;
+                } else if (data.error) {
+                    responseBox.innerText = 'Error: ' + data.error;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerText = 'Ask AI';
+                responseBox.innerText = 'Network error contacting Gemini AI service.';
+            });
+        }
+
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
