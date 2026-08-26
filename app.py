@@ -74,9 +74,9 @@ def auto_migrate_db():
     with app.app_context():
         try:
             db.create_all()
-            # Ensure missing schema columns exist in PostgreSQL/SQLite directly
             with db.engine.connect() as conn:
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
@@ -312,24 +312,18 @@ def lecturer_dashboard():
 @login_required
 def student_dashboard():
     try:
-        # Fetch only results explicitly added for this specific student
         student_results = Result.query.filter_by(student_id=current_user.id).all()
-
-        # Fetch courses explicitly assigned to this student
-        # Note: If no course is assigned directly, this list remains empty until admin registers/assigns courses
         student_courses = Course.query.filter_by(student_id=current_user.id).all()
-
     except Exception:
         db.session.rollback()
         student_courses, student_results = [], []
 
-    # Calculate CGPA dynamically only if results have been logged by Admin
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
 
     for res in student_results:
-        u = res.unit or 0
+        u = getattr(res, 'unit', 1) or 1
         g = grade_points.get(res.grade.upper(), 0.0) if res.grade else 0.0
         total_units += u
         total_points += (u * g)
@@ -447,7 +441,7 @@ def approve_payment(id):
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-# --- COURSE MANAGEMENT ROUTES ---
+# --- UPDATED COURSE MANAGEMENT ROUTES ---
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
 def add_course():
@@ -455,30 +449,30 @@ def add_course():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
 
-    course_code = request.form.get('course_code', '').strip()
+    student_id = request.form.get('student_id')
     course_name = request.form.get('course_name', '').strip()
+    course_code = request.form.get('course_code', '').strip()
     unit = request.form.get('unit', '1')
     semester = request.form.get('semester', '1')
-    student_id = request.form.get('student_id')
 
-    if not course_code or not course_name:
-        flash('Course Code and Course Name are required.', 'danger')
+    if not student_id or not course_name or not course_code:
+        flash('Student selection, Course Name, and Course Code are required.', 'danger')
         return redirect(url_for('admin_dashboard'))
 
     try:
         unit_val = int(unit) if str(unit).isdigit() else 1
-        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+        student_id_val = int(student_id) if str(student_id).isdigit() else None
 
         new_course = Course(
-            course_code=course_code,
+            student_id=student_id_val,
             course_name=course_name,
+            course_code=course_code,
             unit=unit_val,
-            semester=semester,
-            student_id=student_id_val
+            semester=semester
         )
         db.session.add(new_course)
         db.session.commit()
-        flash('Course added successfully!', 'success')
+        flash('Course assigned to student successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
@@ -505,7 +499,7 @@ def delete_course(course_id):
 
     return redirect(url_for('admin_dashboard'))
 
-# --- MANAGE RESULT ROUTE ---
+# --- UPDATED MANAGE RESULT ROUTE ---
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
@@ -517,17 +511,23 @@ def manage_result():
     
     if action == 'add':
         student_id = request.form.get('student_id')
-        course_code = request.form.get('course_code')
-        title = request.form.get('title')
-        unit = request.form.get('unit', 1)
+        title = request.form.get('title', '').strip()
+        course_code = request.form.get('course_code', '').strip()
+        score = request.form.get('score', '').strip()
+        grade = request.form.get('grade', '').strip()
+        unit = request.form.get('unit', '1')
         semester = request.form.get('semester', '1')
-        grade = request.form.get('grade')
         level = request.form.get('level', 'HND1')
         session = request.form.get('session', '2023/2024')
 
-        if not student_id or not course_code or not title or not grade:
-            flash('Please fill in all required fields.', 'danger')
+        if not student_id or not title or not grade:
+            flash('Please select a student and provide the Course Details & Grade.', 'danger')
             return redirect(url_for('admin_dashboard'))
+
+        # Fallback handling for missing code input
+        if not course_code:
+            parts = title.split()
+            course_code = parts[-1] if len(parts) > 1 else title
 
         try:
             student_id_val = int(student_id)
@@ -535,20 +535,23 @@ def manage_result():
 
             new_result = Result(
                 student_id=student_id_val,
-                course_code=course_code,
                 title=title,
+                course_code=course_code,
+                grade=grade,
                 unit=unit_val,
                 semester=str(semester),
-                grade=grade,
                 level=level,
                 session=session
             )
+            
+            if hasattr(Result, 'score'):
+                new_result.score = score
+
             db.session.add(new_result)
             db.session.commit()
-            flash('Result added successfully!', 'success')
+            flash('Grade posted to student profile successfully!', 'success')
         except Exception as e:
             db.session.rollback()
-            # Strips out sqlalche.me links and SQL parameter output
             clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
             flash(f'Error adding result: {clean_error}', 'danger')
 
@@ -559,7 +562,9 @@ def manage_result():
             if result_to_delete:
                 db.session.delete(result_to_delete)
                 db.session.commit()
-                flash('Result removed.', 'success')
+                flash('Result record deleted successfully.', 'info')
+            else:
+                flash('Result Record ID not found.', 'warning')
 
     return redirect(url_for('admin_dashboard'))
 
@@ -685,6 +690,7 @@ def fix_db():
     try:
         with db.engine.connect() as conn:
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
