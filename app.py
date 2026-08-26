@@ -19,8 +19,8 @@ from google.genai import types
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
 
-# DATABASE URI CONFIGURATION FOR RENDER & LOCAL DEVS
-db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
+# DATABASE URI CONFIGURATION FOR RENDER, VERCEL & LOCAL DEVS
+db_url = os.environ.get('DATABASE_URL', 'sqlite:////tmp/magazawa_portal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
@@ -35,8 +35,12 @@ if 'postgresql' in db_url:
         'hide_parameters': True
     }
 
-# ABSOLUTE PATH FOR UPLOAD DIRECTORY
-app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
+# ABSOLUTE PATH FOR UPLOAD DIRECTORY (Use /tmp for serverless Vercel environment)
+if os.environ.get('VERCEL'):
+    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+else:
+    app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(app.root_path, 'static', 'uploads'))
+
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp3', 'wav', 'mp4', 'webm'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -68,10 +72,13 @@ def payment_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- SAFE DB SCHEMA SYNC AND AUTO MIGRATION ---
-def auto_migrate_db():
-    """Safely checks and synchronizes database schema without throwing unhandled exceptions."""
-    with app.app_context():
+# --- LAZY DATABASE & ACCOUNT INITIALIZATION ---
+_db_initialized = False
+
+@app.before_request
+def init_db_on_first_request():
+    global _db_initialized
+    if not _db_initialized:
         try:
             db.create_all()
             with db.engine.connect() as conn:
@@ -81,40 +88,34 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
                 conn.commit()
+
+            default_accounts = [
+                ('admin', 'admin123', 'admin', 'MST System Administrator', 'admin@magazawa.edu.ng', '08000000000'),
+                ('creator', 'creator123', 'creator', 'System Creator', 'creator@magazawa.edu.ng', '08000000001'),
+                ('registrar', 'registrar123', 'registrar', 'MST Registrar Office', 'registrar@magazawa.edu.ng', '08000000002'),
+            ]
+
+            for username, pwd, role, full_name, email, phone in default_accounts:
+                user = User.query.filter_by(role=role).first()
+                if not user:
+                    user = User(
+                        username=username,
+                        password=generate_password_hash(pwd),
+                        role=role,
+                        full_name=full_name,
+                        email=email,
+                        phone=phone,
+                        is_approved=True
+                    )
+                    db.session.add(user)
+                else:
+                    user.is_approved = True
+
+            db.session.commit()
+            _db_initialized = True
         except Exception as e:
-            print(f"Schema verification notice: {e}")
-
-# INITIALIZE DATABASE & ACCOUNTS ON STARTUP
-with app.app_context():
-    auto_migrate_db()
-
-    try:
-        default_accounts = [
-            ('admin', 'admin123', 'admin', 'MST System Administrator', 'admin@magazawa.edu.ng', '08000000000'),
-            ('creator', 'creator123', 'creator', 'System Creator', 'creator@magazawa.edu.ng', '08000000001'),
-            ('registrar', 'registrar123', 'registrar', 'MST Registrar Office', 'registrar@magazawa.edu.ng', '08000000002'),
-        ]
-
-        for username, pwd, role, full_name, email, phone in default_accounts:
-            user = User.query.filter_by(role=role).first()
-            if not user:
-                user = User(
-                    username=username,
-                    password=generate_password_hash(pwd),
-                    role=role,
-                    full_name=full_name,
-                    email=email,
-                    phone=phone,
-                    is_approved=True
-                )
-                db.session.add(user)
-            else:
-                user.is_approved = True
-
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Startup initialization error: {e}")
+            db.session.rollback()
+            print(f"Startup initialization notice: {e}")
 
 # --- BASE ROUTES ---
 @app.route('/')
