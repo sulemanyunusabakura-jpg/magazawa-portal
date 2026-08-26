@@ -131,7 +131,7 @@
                 </div>
             </div>
 
-            <!-- 4. Virtual Classroom (Voice/Video Call) -->
+            <!-- 4. Virtual Classroom -->
             <div class="col-sm-6 col-md-4 col-lg">
                 <div class="card h-100 shadow-sm border-0 text-center p-3">
                     <div class="card-body d-flex flex-column justify-content-between p-0">
@@ -170,22 +170,22 @@
             <div class="card-header bg-white">
                 <ul class="nav nav-tabs card-header-tabs" id="portalTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab">
+                        <button class="nav-link active" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab" aria-controls="courses" aria-selected="true">
                             <i class="fas fa-book me-1"></i> Registered Courses
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab" aria-controls="materials" aria-selected="false">
                             <i class="fas fa-file-download me-1"></i> Lecture Materials
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab">
+                        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab" aria-controls="results" aria-selected="false">
                             <i class="fas fa-poll-h me-1"></i> Results
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">
+                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab" aria-controls="messages" aria-selected="false">
                             <i class="fas fa-comments me-1"></i> Messages & Campus Chat
                         </button>
                     </li>
@@ -195,7 +195,7 @@
             <div class="card-body tab-content">
                 
                 <!-- 1. Registered Courses Tab -->
-                <div class="tab-pane fade show active" id="courses" role="tabpanel">
+                <div class="tab-pane fade show active" id="courses" role="tabpanel" aria-labelledby="courses-tab">
                     <div class="p-3 bg-white rounded border">
                         <h5 class="fw-bold mb-3 text-primary"><i class="fas fa-book me-2"></i>My Registered Courses</h5>
                         <div class="table-responsive">
@@ -230,7 +230,7 @@
                 </div>
 
                 <!-- 2. Lecture Materials Tab -->
-                <div class="tab-pane fade" id="materials" role="tabpanel">
+                <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
                     <h5 class="card-title mb-3">Course Lecture Materials</h5>
                     {% if is_paid %}
                         {% if materials %}
@@ -269,7 +269,7 @@
                 </div>
 
                 <!-- 3. Results Tab -->
-                <div class="tab-pane fade" id="results" role="tabpanel">
+                <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
                     <div class="p-3 bg-white border rounded">
                         <div class="row mb-4 align-items-center">
                             <div class="col-md-9">
@@ -333,7 +333,7 @@
                 </div>
 
                 <!-- 4. Messages & Campus Chat Tab -->
-                <div class="tab-pane fade" id="messages" role="tabpanel">
+                <div class="tab-pane fade" id="messages" role="tabpanel" aria-labelledby="messages-tab">
                     <div class="row">
                         <div class="col-md-5 mb-4 mb-md-0">
                             <div class="card bg-light border-0 p-3 mb-3">
@@ -341,12 +341,12 @@
                                 <form action="{{ url_for('send_message') }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Recipient User ID</label>
-                                        <input type="number" class="form-control" name="receiver_id" placeholder="Enter Receiver User ID (e.g., Admin ID: 1)" required>
+                                        <label for="receiver_id" class="form-label small fw-bold">Recipient User ID</label>
+                                        <input type="number" id="receiver_id" class="form-control" name="receiver_id" placeholder="Enter Receiver User ID (e.g., Admin ID: 1)" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Message Text</label>
-                                        <textarea class="form-control" name="content" rows="3" placeholder="Type your message..." required></textarea>
+                                        <label for="content" class="form-label small fw-bold">Message Text</label>
+                                        <textarea id="content" class="form-control" name="content" rows="3" placeholder="Type your message..." required></textarea>
                                     </div>
                                     <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-1"></i> Send Private Message</button>
                                 </form>
@@ -389,7 +389,7 @@
         </div>
     </div>
 
-    <!-- VIRTUAL CLASSROOM VOICE/VIDEO CALL MODAL -->
+    <!-- Modals (Live Call, Payment, Receipt, Admission) -->
     <div class="modal fade no-print" id="voiceCallModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content text-center">
@@ -411,7 +411,7 @@
                         </div>
                     </div>
 
-                    <a href="https://meet.jit.si/MST_VirtualClassroom_Lectures" target="_blank" class="btn btn-success btn-lg w-100 shadow-sm">
+                    <a href="https://meet.jit.si/MST_VirtualClassroom_Lectures" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-lg w-100 shadow-sm">
                         <i class="fas fa-microphone me-2"></i> Join Live Audio/Video Call
                     </a>
                 </div>
@@ -419,7 +419,6 @@
         </div>
     </div>
 
-    <!-- MODAL 1: Payment Details & Bank Transfer Information -->
     <div class="modal fade no-print" id="paymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -429,7 +428,6 @@
                 </div>
                 <div class="modal-body p-4 text-center">
                     <p class="text-muted mb-3">Please transfer your school fees to the official bank account below:</p>
-                    
                     <div class="bg-light border rounded p-3 mb-3 text-start">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Bank Name:</span>
@@ -444,7 +442,6 @@
                             <strong class="text-dark">SULEMAN YUNUSA</strong>
                         </div>
                     </div>
-
                     <div class="alert alert-info small text-start mb-0">
                         <i class="fas fa-info-circle me-1"></i> After payment, keep your transaction proof/receipt. The administrator will verify your payment and activate your receipt & downloads.
                     </div>
@@ -453,7 +450,6 @@
         </div>
     </div>
 
-    <!-- MODAL 2: Printable Payment Receipt -->
     <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -478,14 +474,16 @@
                     </div>
                     <div class="table-responsive mb-3">
                         <table class="table table-bordered small">
-                            <tr>
-                                <th>Account Paid To</th>
-                                <td>OPAY BANK - 8086258570 (SULEMAN YUNUSA)</td>
-                            </tr>
-                            <tr>
-                                <th>Verification Status</th>
-                                <td>Approved by Administrator</td>
-                            </tr>
+                            <tbody>
+                                <tr>
+                                    <th>Account Paid To</th>
+                                    <td>OPAY BANK - 8086258570 (SULEMAN YUNUSA)</td>
+                                </tr>
+                                <tr>
+                                    <th>Verification Status</th>
+                                    <td>Approved by Administrator</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                     <div class="text-center pt-2">
@@ -500,7 +498,6 @@
         </div>
     </div>
 
-    <!-- MODAL 3: Printable Admission Letter -->
     <div class="modal fade" id="admissionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -542,7 +539,7 @@
         function activateTab(tabId) {
             var tabBtn = document.getElementById(tabId);
             if (tabBtn) {
-                var tab = new bootstrap.Tab(tabBtn);
+                var tab = bootstrap.Tab.getOrCreateInstance(tabBtn);
                 tab.show();
             }
         }
