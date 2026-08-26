@@ -515,41 +515,53 @@ def delete_course(course_id):
 @login_required
 def manage_result():
     if current_user.role != 'admin':
-        flash('Unauthorized action.', 'danger')
-        return redirect(url_for('login'))
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('admin_dashboard'))
 
     action = request.form.get('action')
-    student_id = request.form.get('student_id')
-
+    
     if action == 'add':
+        student_id = request.form.get('student_id')
         course_code = request.form.get('course_code')
         title = request.form.get('title')
-        unit = int(request.form.get('unit', 1))
-        semester = request.form.get('semester', '1')
+        unit = int(request.form.get('unit', 3))
+        semester = int(request.form.get('semester', 1))
         grade = request.form.get('grade')
         level = request.form.get('level', 'HND1')
-        session_val = request.form.get('session', '2023/2024')
+        session = request.form.get('session', '2023/2024')
 
-        new_result = Result(
-            student_id=student_id,
-            course_code=course_code,
-            title=title,
-            unit=unit,
-            semester=semester,
-            grade=grade,
-            level=level,
-            session=session_val
-        )
-        db.session.add(new_result)
-        flash('Result added successfully!', 'success')
+        # Check for missing values to avoid database integrity errors
+        if not student_id or not course_code or not title or not grade:
+            flash('Please fill in all required fields.', 'danger')
+            return redirect(url_for('admin_dashboard'))
+
+        try:
+            new_result = Result(
+                student_id=student_id,
+                course_code=course_code,
+                title=title,
+                unit=unit,
+                semester=semester,
+                grade=grade,
+                level=level,
+                session=session
+            )
+            db.session.add(new_result)
+            db.session.commit()
+            flash('Result added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error adding result: {e}")  # Check your server console for logs
+            flash('Error adding result to database.', 'danger')
 
     elif action == 'remove':
         result_id = request.form.get('result_id')
-        res = db.get_or_404(Result, result_id)
-        db.session.delete(res)
-        flash('Result entry removed.', 'info')
+        result_to_delete = Result.query.get(result_id)
+        if result_to_delete:
+            db.session.delete(result_to_delete)
+            db.session.commit()
+            flash('Result removed.', 'success')
 
-    db.session.commit()
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/send_to_registrar', methods=['POST'])
