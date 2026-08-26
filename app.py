@@ -10,7 +10,8 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import inspect, or_
+from sqlalchemy import inspect, or_, text
+from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
@@ -26,11 +27,12 @@ if db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Optimize PostgreSQL pooled connections
+# Optimize PostgreSQL pooled connections & hide diagnostic parameters globally
 if 'postgresql' in db_url:
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
+        'hide_parameters': True
     }
 
 # ABSOLUTE PATH FOR UPLOAD DIRECTORY
@@ -66,12 +68,19 @@ def payment_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- SAFE DB SCHEMA SYNC ---
+# --- SAFE DB SCHEMA SYNC AND AUTO MIGRATION ---
 def auto_migrate_db():
-    """Safely checks database schema using SQLAlchemy without throwing unhandled exceptions."""
+    """Safely checks and synchronizes database schema without throwing unhandled exceptions."""
     with app.app_context():
         try:
             db.create_all()
+            # Ensure missing schema columns exist in PostgreSQL/SQLite directly
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
+                conn.commit()
         except Exception as e:
             print(f"Schema verification notice: {e}")
 
@@ -226,7 +235,7 @@ def admin_dashboard():
         courses = Course.query.all()
     except Exception as e:
         db.session.rollback()
-        flash(f"Database sync warning: {str(e)}", "warning")
+        flash(f"Database query notice: {str(e).split('[SQL:')[0].strip()}", "warning")
         students, lecturers, all_users, messages, courses = [], [], [], [], []
 
     return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
@@ -302,11 +311,14 @@ def lecturer_dashboard():
 @app.route('/student_dashboard')
 @login_required
 def student_dashboard():
-    student_courses = Course.query.filter(
-        (Course.student_id == current_user.id) | (Course.student_id == None)
-    ).all()
-
-    student_results = Result.query.filter_by(student_id=current_user.id).all()
+    try:
+        student_courses = Course.query.filter(
+            (Course.student_id == current_user.id) | (Course.student_id == None)
+        ).all()
+        student_results = Result.query.filter_by(student_id=current_user.id).all()
+    except Exception:
+        db.session.rollback()
+        student_courses, student_results = [], []
 
     total_units = 0
     total_points = 0
@@ -465,7 +477,8 @@ def add_course():
         flash('Course added successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error adding course: {str(e)}', 'danger')
+        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
+        flash(f'Error adding course: {clean_error}', 'danger')
 
     return redirect(url_for('admin_dashboard'))
 
@@ -483,7 +496,8 @@ def delete_course(course_id):
         flash('Course removed successfully!', 'info')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error removing course: {str(e)}', 'danger')
+        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
+        flash(f'Error removing course: {clean_error}', 'danger')
 
     return redirect(url_for('admin_dashboard'))
 
@@ -530,7 +544,9 @@ def manage_result():
             flash('Result added successfully!', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error adding result: {str(e)}', 'danger')
+            # Strips out sqlalche.me links and SQL parameter output
+            clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
+            flash(f'Error adding result: {clean_error}', 'danger')
 
     elif action == 'remove':
         result_id = request.form.get('result_id')
@@ -664,10 +680,10 @@ def download_material(filename):
 def fix_db():
     try:
         with db.engine.connect() as conn:
-            conn.execute(db.text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
-            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
-            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
-            conn.execute(db.text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
             conn.commit()
         return "Database tables synchronized successfully!"
     except Exception as e:
