@@ -312,14 +312,18 @@ def lecturer_dashboard():
 @login_required
 def student_dashboard():
     try:
-        student_courses = Course.query.filter(
-            (Course.student_id == current_user.id) | (Course.student_id == None)
-        ).all()
+        # Fetch only results explicitly added for this specific student
         student_results = Result.query.filter_by(student_id=current_user.id).all()
+
+        # Fetch courses explicitly assigned to this student
+        # Note: If no course is assigned directly, this list remains empty until admin registers/assigns courses
+        student_courses = Course.query.filter_by(student_id=current_user.id).all()
+
     except Exception:
         db.session.rollback()
         student_courses, student_results = [], []
 
+    # Calculate CGPA dynamically only if results have been logged by Admin
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
