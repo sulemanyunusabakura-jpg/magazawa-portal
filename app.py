@@ -689,17 +689,26 @@ def download_material(filename):
 def fix_db():
     try:
         with db.engine.connect() as conn:
+            # Sync Result Table Columns
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
+            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
+            
+            # Sync Course Table Columns
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
             conn.commit()
-        return "Database tables synchronized successfully!"
+        return "Database schema updated successfully!"
     except Exception as e:
         db.session.rollback()
-        return f"Database sync notice: {str(e)}"
-
+        return f"Database sync error: {str(e)}"
+        
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
