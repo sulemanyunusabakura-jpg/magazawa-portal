@@ -268,94 +268,94 @@
                     {% endif %}
                 </div>
 
-                <!-- RESULTS TAB PANEL -->
-<div class="tab-pane fade show active" id="results-tab" role="tabpanel">
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body p-4">
-            
-            <!-- Student Header Profile Info -->
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom">
-                <div class="d-flex align-items-center mb-3 mb-md-0">
-                    <img src="{{ url_for('static', filename='uploads/' + student.profile_picture) if student.profile_picture else 'https://via.placeholder.com/80' }}" 
-                         alt="Profile" class="rounded-circle img-thumbnail me-3" style="width: 75px; height: 75px; object-fit: cover;">
-                    <div>
-                        <h4 class="fw-bold mb-1 text-dark">{{ student.full_name }}</h4>
-                        <span class="badge bg-primary me-2">{{ student.program }}</span>
-                        <span class="badge bg-secondary">{{ student.level }}</span>
+                <!-- 3. Results Tab -->
+                <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-body p-4">
+                            
+                            <!-- Student Header Profile Info -->
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom">
+                                <div class="d-flex align-items-center mb-3 mb-md-0">
+                                    <img src="{{ url_for('static', filename='uploads/' + student.profile_picture) if student.profile_picture else 'https://via.placeholder.com/80' }}" 
+                                         alt="Profile" class="rounded-circle img-thumbnail me-3" style="width: 75px; height: 75px; object-fit: cover;">
+                                    <div>
+                                        <h4 class="fw-bold mb-1 text-dark">{{ student.full_name }}</h4>
+                                        <span class="badge bg-primary me-2">{{ student.program }}</span>
+                                        <span class="badge bg-secondary">{{ student.level }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Highlights & CGPA Card -->
+                                <div class="bg-primary text-white p-3 rounded-3 text-center shadow-sm" style="min-width: 160px;">
+                                    <div class="text-uppercase small fw-bold opacity-75">Cumulative GPA</div>
+                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa) }}</div>
+                                    <span class="badge bg-light text-primary fw-bold">4.0 Max Scale</span>
+                                </div>
+                            </div>
+
+                            <!-- Profile Details Grid -->
+                            <div class="row g-3 mb-4 text-muted small">
+                                <div class="col-6 col-md-4">
+                                    <strong class="d-block text-dark">Admission / Email:</strong> {{ student.username }}
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <strong class="d-block text-dark">Phone Number:</strong> {{ student.phone or 'N/A' }}
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <strong class="d-block text-dark">Payment Clearance:</strong> 
+                                    <span class="badge bg-{{ 'success' if student.payment_status == 'paid' else 'warning' }}">
+                                        {{ student.payment_status|upper if student.payment_status else 'PENDING' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Published Results Table -->
+                            <div class="table-responsive rounded-3 border">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="text-uppercase small fw-bold text-secondary">
+                                            <th scope="col" class="py-3">Course Code</th>
+                                            <th scope="col" class="py-3">Title</th>
+                                            <th scope="col" class="py-3 text-center">Unit</th>
+                                            <th scope="col" class="py-3 text-center">Semester</th>
+                                            <th scope="col" class="py-3 text-center">Grade</th>
+                                            <th scope="col" class="py-3 text-center">Level</th>
+                                            <th scope="col" class="py-3 text-center">Session</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if results %}
+                                            {% for row in results %}
+                                            <tr>
+                                                <td class="fw-bold text-primary">{{ row.course_code }}</td>
+                                                <td>{{ row.title }}</td>
+                                                <td class="text-center"><span class="badge bg-light text-dark border">{{ row.unit }}</span></td>
+                                                <td class="text-center">Sem {{ row.semester }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-{{ 'success' if row.grade in ['A','AB','B'] else ('warning' if row.grade in ['BC','C','CD'] else 'danger') }} fs-6">
+                                                        {{ row.grade }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">{{ row.level }}</td>
+                                                <td class="text-center text-muted small">{{ row.session }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="7" class="text-center py-5 text-muted">
+                                                    <i class="fas fa-graduation-cap fa-3x mb-3 text-black-50 d-block"></i>
+                                                    <h6 class="fw-bold">No results published yet for your account.</h6>
+                                                    <p class="small mb-0">Please check back after your department uploads grades.</p>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Highlights & CGPA Card -->
-                <div class="bg-primary text-white p-3 rounded-3 text-center shadow-sm" style="min-width: 160px;">
-                    <div class="text-uppercase small fw-bold opacity-75">Cumulative GPA</div>
-                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa) }}</div>
-                    <span class="badge bg-light text-primary fw-bold">4.0 Max Scale</span>
-                </div>
-            </div>
-
-            <!-- Profile Details Grid -->
-            <div class="row g-3 mb-4 text-muted small">
-                <div class="col-6 col-md-4">
-                    <strong class="d-block text-dark">Admission / Email:</strong> {{ student.username }}
-                </div>
-                <div class="col-6 col-md-4">
-                    <strong class="d-block text-dark">Phone Number:</strong> {{ student.phone or 'N/A' }}
-                </div>
-                <div class="col-6 col-md-4">
-                    <strong class="d-block text-dark">Payment Clearance:</strong> 
-                    <span class="badge bg-{{ 'success' if student.payment_status == 'paid' else 'warning' }}">
-                        {{ student.payment_status|upper }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Published Results Table -->
-            <div class="table-responsive rounded-3 border">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr class="text-uppercase small fw-bold text-secondary">
-                            <th scope="col" class="py-3">Course Code</th>
-                            <th scope="col" class="py-3">Title</th>
-                            <th scope="col" class="py-3 text-center">Unit</th>
-                            <th scope="col" class="py-3 text-center">Semester</th>
-                            <th scope="col" class="py-3 text-center">Grade</th>
-                            <th scope="col" class="py-3 text-center">Level</th>
-                            <th scope="col" class="py-3 text-center">Session</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if results %}
-                            {% for row in results %}
-                            <tr>
-                                <td class="fw-bold text-primary">{{ row.course_code }}</td>
-                                <td>{{ row.title }}</td>
-                                <td class="text-center"><span class="badge bg-light text-dark border">{{ row.unit }}</span></td>
-                                <td class="text-center">Sem {{ row.semester }}</td>
-                                <td class="text-center">
-                                    <span class="badge bg-{{ 'success' if row.grade in ['A','AB','B'] else ('warning' if row.grade in ['BC','C','CD'] else 'danger') }} fs-6">
-                                        {{ row.grade }}
-                                    </span>
-                                </td>
-                                <td class="text-center">{{ row.level }}</td>
-                                <td class="text-center text-muted small">{{ row.session }}</td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="fas fa-graduation-cap fa-3x mb-3 text-black-50 d-block"></i>
-                                    <h6 class="fw-bold">No results published yet for your account.</h6>
-                                    <p class="small mb-0">Please check back after your department uploads grades.</p>
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
-    </div>
-</div>
 
                 <!-- 4. Messages & Campus Chat Tab -->
                 <div class="tab-pane fade" id="messages" role="tabpanel" aria-labelledby="messages-tab">
