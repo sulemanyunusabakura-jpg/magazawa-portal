@@ -336,6 +336,7 @@ def student_dashboard():
 
         student_results = Result.query.filter(or_(*filters)).all()
         
+        # Fetch general courses or student-specific courses
         student_courses = Course.query.filter(
             or_(Course.student_id == current_user.id, Course.student_id == None)
         ).all()
