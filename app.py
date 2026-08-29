@@ -328,7 +328,7 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # 1. Fetch results matching ID, reg_number, username, or email
+        # Match by integer User ID OR string reg_number/username/email
         student_results = Result.query.filter(
             or_(
                 Result.student_id == current_user.id,
@@ -337,7 +337,7 @@ def student_dashboard():
             )
         ).all()
         
-        # 2. Fetch courses assigned specifically to this student OR general courses
+        # Match courses assigned to this student ID or general courses (NULL)
         student_courses = Course.query.filter(
             or_(
                 Course.student_id == current_user.id,
@@ -350,7 +350,7 @@ def student_dashboard():
         db.session.rollback()
         student_courses, student_results, materials = [], [], []
 
-    # Calculate CGPA automatically
+    # Calculate CGPA
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
@@ -373,7 +373,7 @@ def student_dashboard():
         cgpa=cgpa,
         messages=messages
     )
-
+    
 # --- ADMIN ACTIONS ---
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
