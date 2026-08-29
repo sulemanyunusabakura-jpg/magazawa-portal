@@ -35,7 +35,7 @@
         <div class="container">
             <a class="navbar-brand fw-bold" href="#">MST Student Portal</a>
             <div class="d-flex align-items-center">
-                <span class="text-white me-3"><i class="fas fa-user-circle me-1"></i> {{ student.full_name }}</span>
+                <span class="text-white me-3"><i class="fas fa-user-circle me-1"></i> {{ student.full_name or student.username }}</span>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
             </div>
         </div>
@@ -209,20 +209,22 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for course in courses %}
-                                    <tr>
-                                        <td class="fw-bold text-primary">{{ course.course_code }}</td>
-                                        <td>{{ course.course_name }}</td>
-                                        <td>{{ course.unit or 3 }}</td>
-                                        <td>{{ course.semester or 1 }}</td>
-                                    </tr>
+                                    {% if courses %}
+                                        {% for course in courses %}
+                                        <tr>
+                                            <td class="fw-bold text-primary">{{ course.course_code }}</td>
+                                            <td>{{ course.course_name or course.title or 'N/A' }}</td>
+                                            <td>{{ course.unit or 2 }}</td>
+                                            <td>{{ course.semester or 1 }}</td>
+                                        </tr>
+                                        {% endfor %}
                                     {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">
-                                            <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Please contact the administrator.
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Please contact the administrator.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
                                 </tbody>
                             </table>
                         </div>
@@ -279,16 +281,16 @@
                                     <img src="{{ url_for('static', filename='uploads/' + student.profile_picture) if student.profile_picture else 'https://via.placeholder.com/80' }}" 
                                          alt="Profile" class="rounded-circle img-thumbnail me-3" style="width: 75px; height: 75px; object-fit: cover;">
                                     <div>
-                                        <h4 class="fw-bold mb-1 text-dark">{{ student.full_name }}</h4>
-                                        <span class="badge bg-primary me-2">{{ student.program }}</span>
-                                        <span class="badge bg-secondary">{{ student.level }}</span>
+                                        <h4 class="fw-bold mb-1 text-dark">{{ student.full_name or student.username }}</h4>
+                                        <span class="badge bg-primary me-2">{{ student.program or 'Computer Engineering' }}</span>
+                                        <span class="badge bg-secondary">{{ student.level or 'ND1' }}</span>
                                     </div>
                                 </div>
                                 
                                 <!-- Highlights & CGPA Card -->
                                 <div class="bg-primary text-white p-3 rounded-3 text-center shadow-sm" style="min-width: 160px;">
                                     <div class="text-uppercase small fw-bold opacity-75">Cumulative GPA</div>
-                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa) }}</div>
+                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa or 0.0) }}</div>
                                     <span class="badge bg-light text-primary fw-bold">4.0 Max Scale</span>
                                 </div>
                             </div>
@@ -303,7 +305,7 @@
                                 </div>
                                 <div class="col-6 col-md-4">
                                     <strong class="d-block text-dark">Payment Clearance:</strong> 
-                                    <span class="badge bg-{{ 'success' if student.payment_status == 'paid' else 'warning' }}">
+                                    <span class="badge bg-{{ 'success' if is_paid else 'warning' }}">
                                         {{ student.payment_status|upper if student.payment_status else 'PENDING' }}
                                     </span>
                                 </div>
@@ -327,17 +329,17 @@
                                         {% if results %}
                                             {% for row in results %}
                                             <tr>
-                                                <td class="fw-bold text-primary">{{ row.course_code }}</td>
-                                                <td>{{ row.title }}</td>
-                                                <td class="text-center"><span class="badge bg-light text-dark border">{{ row.unit }}</span></td>
-                                                <td class="text-center">Sem {{ row.semester }}</td>
+                                                <td class="fw-bold text-primary">{{ row.course_code or 'N/A' }}</td>
+                                                <td>{{ row.title or row.course_name or 'N/A' }}</td>
+                                                <td class="text-center"><span class="badge bg-light text-dark border">{{ row.unit or 1 }}</span></td>
+                                                <td class="text-center">Sem {{ row.semester or 1 }}</td>
                                                 <td class="text-center">
                                                     <span class="badge bg-{{ 'success' if row.grade in ['A','AB','B'] else ('warning' if row.grade in ['BC','C','CD'] else 'danger') }} fs-6">
-                                                        {{ row.grade }}
+                                                        {{ row.grade or 'F' }}
                                                     </span>
                                                 </td>
-                                                <td class="text-center">{{ row.level }}</td>
-                                                <td class="text-center text-muted small">{{ row.session }}</td>
+                                                <td class="text-center">{{ row.level or 'ND1' }}</td>
+                                                <td class="text-center text-muted small">{{ row.session or '2025/2026' }}</td>
                                             </tr>
                                             {% endfor %}
                                         {% else %}
@@ -490,7 +492,7 @@
                     <div class="row mb-3">
                         <div class="col-6">
                             <small class="text-muted">Student Name:</small><br>
-                            <strong>{{ student.full_name }}</strong>
+                            <strong>{{ student.full_name or student.username }}</strong>
                         </div>
                         <div class="col-6 text-end">
                             <small class="text-muted">Status:</small><br>
@@ -536,7 +538,7 @@
                         <p class="text-muted mb-0">Office of the Registrar / Admissions Board</p>
                     </div>
                     <p class="text-end"><strong>Date:</strong> August 2026</p>
-                    <p><strong>Dear {{ student.full_name }},</strong></p>
+                    <p><strong>Dear {{ student.full_name or student.username }},</strong></p>
                     <h5 class="fw-bold text-center my-4">OFFER OF PROVISIONAL ADMISSION</h5>
                     <p>We are pleased to inform you that you have been granted provisional admission into <strong>Magazawa Skills & Technology</strong> for the current academic session.</p>
                     <p>This offer is subject to the validation of your credentials and compliance with institutional rules, including the prompt payment of prescribed school fees to the designated institutional bank account.</p>
@@ -566,6 +568,7 @@
             if (tabBtn) {
                 var tab = bootstrap.Tab.getOrCreateInstance(tabBtn);
                 tab.show();
+                document.getElementById('portalContentCard').scrollIntoView({ behavior: 'smooth' });
             }
         }
     </script>
