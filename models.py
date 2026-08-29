@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     phone = db.Column(db.String(20))
     is_approved = db.Column(db.Boolean, default=False)
+    profile_picture = db.Column(db.String(255), nullable=True)
 
     # Student-specific fields
     dob = db.Column(db.String(20))
@@ -32,7 +33,7 @@ class User(UserMixin, db.Model):
 
     # Relationships
     materials = db.relationship('Material', backref='lecturer', lazy=True, cascade="all, delete-orphan")
-    courses = db.relationship('Course', backref='student', lazy=True)
+    courses = db.relationship('Course', backref='enrolled_student', lazy=True)
     results = db.relationship('Result', backref='student', lazy=True, cascade="all, delete-orphan")
 
 
@@ -81,6 +82,7 @@ class Result(db.Model):
     course_code = db.Column(db.String(100), nullable=True)
     course_name = db.Column(db.String(200), nullable=True)
     title = db.Column(db.String(200), nullable=True)
+    score = db.Column(db.String(50), nullable=True)
     unit = db.Column(db.Integer, default=1)
     semester = db.Column(db.String(50), default='1')
     grade = db.Column(db.String(10), nullable=True)
