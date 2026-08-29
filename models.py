@@ -78,9 +78,10 @@ class Result(db.Model):
     __tablename__ = 'result'
     
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Integer ID
-    reg_number = db.Column(db.String(100), nullable=True)                      # Email or Username string
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reg_number = db.Column(db.String(100), nullable=True)
     title = db.Column(db.String(200), nullable=True)
+    course_name = db.Column(db.String(200), nullable=True) # Matches PostgreSQL column
     course_code = db.Column(db.String(100), nullable=True)
     score = db.Column(db.String(50), nullable=True)
     grade = db.Column(db.String(10), nullable=False)
