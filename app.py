@@ -75,8 +75,17 @@ def auto_migrate_db():
         try:
             db.create_all()
             with db.engine.connect() as conn:
+                # Synchronize Result table
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
+                
+                # Synchronize Course table
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
@@ -311,9 +320,15 @@ def lecturer_dashboard():
 @app.route('/student_dashboard')
 @login_required
 def student_dashboard():
+    if current_user.role != 'student':
+        return redirect(url_for('login'))
+
     try:
+        # Fetch results and courses assigned to the logged-in student
         student_results = Result.query.filter_by(student_id=current_user.id).all()
-        student_courses = Course.query.filter_by(student_id=current_user.id).all()
+        student_courses = Course.query.filter(
+            or_(Course.student_id == current_user.id, Course.student_id == None)
+        ).all()
     except Exception:
         db.session.rollback()
         student_courses, student_results = [], []
@@ -328,8 +343,8 @@ def student_dashboard():
         total_units += u
         total_points += (u * g)
 
-    cgpa = (total_points / total_units) if total_units > 0 else 0.0
-    messages = Message.query.filter_by(receiver_id=current_user.id).all()
+    cgpa = round((total_points / total_units), 2) if total_units > 0 else 0.0
+    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
 
     return render_template(
         'student_dashboard.html',
@@ -441,7 +456,7 @@ def approve_payment(id):
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-# --- UPDATED COURSE MANAGEMENT ROUTES ---
+# --- COURSE MANAGEMENT ROUTES ---
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
 def add_course():
@@ -455,13 +470,13 @@ def add_course():
     unit = request.form.get('unit', '1')
     semester = request.form.get('semester', '1')
 
-    if not student_id or not course_name or not course_code:
-        flash('Student selection, Course Name, and Course Code are required.', 'danger')
+    if not course_name or not course_code:
+        flash('Course Name and Course Code are required.', 'danger')
         return redirect(url_for('admin_dashboard'))
 
     try:
         unit_val = int(unit) if str(unit).isdigit() else 1
-        student_id_val = int(student_id) if str(student_id).isdigit() else None
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
         new_course = Course(
             student_id=student_id_val,
@@ -472,7 +487,7 @@ def add_course():
         )
         db.session.add(new_course)
         db.session.commit()
-        flash('Course assigned to student successfully!', 'success')
+        flash('Course assigned successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
@@ -499,7 +514,7 @@ def delete_course(course_id):
 
     return redirect(url_for('admin_dashboard'))
 
-# --- UPDATED MANAGE RESULT ROUTE ---
+# --- MANAGE RESULT ROUTE ---
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
@@ -511,7 +526,7 @@ def manage_result():
     
     if action == 'add':
         student_id = request.form.get('student_id')
-        title = request.form.get('title', '').strip()
+        title = request.form.get('title', '').strip() or request.form.get('course_name', '').strip()
         course_code = request.form.get('course_code', '').strip()
         score = request.form.get('score', '').strip()
         grade = request.form.get('grade', '').strip()
@@ -524,7 +539,6 @@ def manage_result():
             flash('Please select a student and provide the Course Details & Grade.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
-        # Fallback handling for missing code input
         if not course_code:
             parts = title.split()
             course_code = parts[-1] if len(parts) > 1 else title
@@ -544,6 +558,8 @@ def manage_result():
                 session=session
             )
             
+            if hasattr(Result, 'course_name'):
+                new_result.course_name = title
             if hasattr(Result, 'score'):
                 new_result.score = score
 
@@ -684,12 +700,11 @@ def send_message():
 def download_material(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
-# --- DATABASE FIX ROUTE ---
+# --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix-db')
 def fix_db():
     try:
         with db.engine.connect() as conn:
-            # Sync Result Table Columns
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
@@ -699,12 +714,11 @@ def fix_db():
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
             
-            # Sync Course Table Columns
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
             conn.commit()
-        return "Database schema updated successfully!"
+        return "Database schema updated successfully! You can now upload results without errors."
     except Exception as e:
         db.session.rollback()
         return f"Database sync error: {str(e)}"
