@@ -328,23 +328,29 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # Fetch results matching current_user ID, username, or email
-        filters = [Result.student_id == current_user.id]
-        if hasattr(Result, 'reg_number'):
-            filters.append(Result.reg_number == current_user.username)
-            filters.append(Result.reg_number == current_user.email)
-
-        student_results = Result.query.filter(or_(*filters)).all()
-        
-        # Fetch general courses or student-specific courses
-        student_courses = Course.query.filter(
-            or_(Course.student_id == current_user.id, Course.student_id == None)
+        # 1. Fetch results matching ID, reg_number, username, or email
+        student_results = Result.query.filter(
+            or_(
+                Result.student_id == current_user.id,
+                Result.reg_number == current_user.username,
+                Result.reg_number == current_user.email
+            )
         ).all()
+        
+        # 2. Fetch courses assigned specifically to this student OR general courses
+        student_courses = Course.query.filter(
+            or_(
+                Course.student_id == current_user.id,
+                Course.student_id == None
+            )
+        ).all()
+
         materials = Material.query.all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         student_courses, student_results, materials = [], [], []
 
+    # Calculate CGPA automatically
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
