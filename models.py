@@ -76,10 +76,12 @@ class Course(db.Model):
 
 class Result(db.Model):
     __tablename__ = 'result'
+    
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    reg_number = db.Column(db.String(100), nullable=True)  # Add this column
+    reg_number = db.Column(db.String(100), nullable=True)  # <-- ADD THIS LINE
     title = db.Column(db.String(200), nullable=True)
+    course_name = db.Column(db.String(200), nullable=True)
     course_code = db.Column(db.String(100), nullable=True)
     score = db.Column(db.String(50), nullable=True)
     grade = db.Column(db.String(10), nullable=False)
