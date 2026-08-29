@@ -563,9 +563,9 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
+            # Create object without passing reg_number to constructor directly
             new_result = Result(
                 student_id=student_id_val,
-                reg_number=reg_num,
                 title=title,
                 course_code=course_code,
                 score=score,
@@ -576,6 +576,8 @@ def manage_result():
                 session=session
             )
             
+            if hasattr(Result, 'reg_number'):
+                new_result.reg_number = reg_num
             if hasattr(Result, 'course_name'):
                 new_result.course_name = title
 
@@ -599,7 +601,6 @@ def manage_result():
                 flash('Result Record ID not found.', 'warning')
 
     return redirect(url_for('admin_dashboard'))
-
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
