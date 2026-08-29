@@ -563,7 +563,7 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
-            # Create object without passing reg_number to constructor directly
+            # Instantiate standard parameters
             new_result = Result(
                 student_id=student_id_val,
                 title=title,
@@ -576,10 +576,11 @@ def manage_result():
                 session=session
             )
             
-            if hasattr(Result, 'reg_number'):
-                new_result.reg_number = reg_num
-            if hasattr(Result, 'course_name'):
-                new_result.course_name = title
+            # Dynamically set optional fields if defined on the model
+            if hasattr(new_result, 'reg_number'):
+                setattr(new_result, 'reg_number', reg_num)
+            if hasattr(new_result, 'course_name'):
+                setattr(new_result, 'course_name', title)
 
             db.session.add(new_result)
             db.session.commit()
@@ -601,6 +602,7 @@ def manage_result():
                 flash('Result Record ID not found.', 'warning')
 
     return redirect(url_for('admin_dashboard'))
+    
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
