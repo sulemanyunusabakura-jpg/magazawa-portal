@@ -545,7 +545,8 @@ def manage_result():
     
     if action == 'add':
         student_id = request.form.get('student_id')
-        title = request.form.get('title', '').strip() or request.form.get('course_name', '').strip()
+        # Check both form field possibilities so title/course_name is never empty
+        raw_title = request.form.get('title', '').strip() or request.form.get('course_name', '').strip()
         course_code = request.form.get('course_code', '').strip()
         score = request.form.get('score', '').strip()
         grade = request.form.get('grade', '').strip()
@@ -554,13 +555,13 @@ def manage_result():
         level = request.form.get('level', 'HND1')
         session = request.form.get('session', '2023/2024')
 
-        if not student_id or not title or not grade:
-            flash('Please select a student and provide the Course Details & Grade.', 'danger')
+        if not student_id or not raw_title or not grade:
+            flash('Please select a student and provide the Course Title & Grade.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         if not course_code:
-            parts = title.split()
-            course_code = parts[-1] if len(parts) > 1 else title
+            parts = raw_title.split()
+            course_code = parts[-1] if len(parts) > 1 else raw_title
 
         try:
             student_id_val = int(student_id)
@@ -569,10 +570,12 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
-            # Instantiate standard parameters
+            # Explicitly pass both title and course_name to avoid NOT NULL violations in PostgreSQL
             new_result = Result(
                 student_id=student_id_val,
-                title=title,
+                reg_number=reg_num,
+                title=raw_title,
+                course_name=raw_title,  # <-- GUARANTEES NOT NULL
                 course_code=course_code,
                 score=score,
                 grade=grade,
@@ -581,12 +584,6 @@ def manage_result():
                 level=level,
                 session=session
             )
-            
-            # Dynamically set optional fields if defined on the model
-            if hasattr(new_result, 'reg_number'):
-                setattr(new_result, 'reg_number', reg_num)
-            if hasattr(new_result, 'course_name'):
-                setattr(new_result, 'course_name', title)
 
             db.session.add(new_result)
             db.session.commit()
