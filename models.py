@@ -76,16 +76,14 @@ class Course(db.Model):
 
 class Result(db.Model):
     __tablename__ = 'result'
-    
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    course_code = db.Column(db.String(100), nullable=True)
-    course_name = db.Column(db.String(200), nullable=True)
+    reg_number = db.Column(db.String(100), nullable=True)  # Add this column
     title = db.Column(db.String(200), nullable=True)
+    course_code = db.Column(db.String(100), nullable=True)
     score = db.Column(db.String(50), nullable=True)
+    grade = db.Column(db.String(10), nullable=False)
     unit = db.Column(db.Integer, default=1)
-    semester = db.Column(db.String(50), default='1')
-    grade = db.Column(db.String(10), nullable=True)
-    grade_point = db.Column(db.Float, default=0.0)
-    level = db.Column(db.String(50), default='HND1')
-    session = db.Column(db.String(50), default='2023/2024')
+    semester = db.Column(db.String(20), nullable=True)
+    level = db.Column(db.String(20), nullable=True)
+    session = db.Column(db.String(20), nullable=True)
