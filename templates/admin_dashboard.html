@@ -688,6 +688,10 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                 <div>
+                    <label for="res_score">Score (%)</label>
+                    <input type="text" id="res_score" name="score" placeholder="e.g. 75" required>
+                </div>
+                <div>
                     <label for="res_grade">Grade</label>
                     <select id="res_grade" name="grade" required>
                         <option value="A">A</option>
@@ -704,10 +708,11 @@
                     <label for="res_level">Level</label>
                     <input type="text" id="res_level" name="level" value="HND1" required>
                 </div>
-                <div>
-                    <label for="res_session">Session</label>
-                    <input type="text" id="res_session" name="session" value="2023/2024" required>
-                </div>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <label for="res_session">Session</label>
+                <input type="text" id="res_session" name="session" value="2023/2024" required>
             </div>
 
             <button type="submit" class="btn btn-success" style="width: 100%;">+ Add Result</button>
