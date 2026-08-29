@@ -321,43 +321,31 @@ def lecturer_dashboard():
     return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
 
 @app.route('/student_dashboard')
-@login_required
 def student_dashboard():
-    if current_user.role != 'student':
+    if 'user_id' not in session or session.get('role') != 'student':
         return redirect(url_for('login'))
 
-    try:
-        # Fetch results, courses, and uploaded materials
-        student_results = Result.query.filter_by(student_id=current_user.id).all()
-        student_courses = Course.query.filter(
-            or_(Course.student_id == current_user.id, Course.student_id == None)
-        ).all()
-        materials = Material.query.all()
-    except Exception:
-        db.session.rollback()
-        student_courses, student_results, materials = [], [], []
+    student_id = session['user_id']
+    
+    # 1. Fetch current student profile
+    student = Student.query.get(student_id)  # Or User.query.get(student_id)
 
-    total_units = 0
-    total_points = 0
-    grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+    # 2. Fetch results matching the student
+    # Make sure you query using student_id or registration/username
+    student_results = Result.query.filter(
+        (Result.student_id == student_id) | (Result.reg_number == student.username)
+    ).all()
 
-    for res in student_results:
-        u = getattr(res, 'unit', 1) or 1
-        g = grade_points.get(res.grade.upper(), 0.0) if res.grade else 0.0
-        total_units += u
-        total_points += (u * g)
-
-    cgpa = round((total_points / total_units), 2) if total_units > 0 else 0.0
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
+    # 3. Calculate CGPA (Optional example)
+    total_units = sum([r.unit for r in student_results if r.unit])
+    total_points = sum([r.unit * r.grade_point for r in student_results if r.unit and r.grade_point])
+    cgpa = (total_points / total_units) if total_units > 0 else 0.00
 
     return render_template(
         'student_dashboard.html',
-        student=current_user,
-        courses=student_courses,
-        materials=materials,
+        student=student,
         results=student_results,
-        cgpa=cgpa,
-        messages=messages
+        cgpa=cgpa
     )
 
 # --- ADMIN ACTIONS ---
