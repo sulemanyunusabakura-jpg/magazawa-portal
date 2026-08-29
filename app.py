@@ -85,6 +85,9 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
                 
+                # Synchronize User table
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
+
                 # Synchronize Course table
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
@@ -324,14 +327,15 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     try:
-        # Fetch results and courses assigned to the logged-in student
+        # Fetch results, courses, and uploaded materials
         student_results = Result.query.filter_by(student_id=current_user.id).all()
         student_courses = Course.query.filter(
             or_(Course.student_id == current_user.id, Course.student_id == None)
         ).all()
+        materials = Material.query.all()
     except Exception:
         db.session.rollback()
-        student_courses, student_results = [], []
+        student_courses, student_results, materials = [], [], []
 
     total_units = 0
     total_points = 0
@@ -350,6 +354,7 @@ def student_dashboard():
         'student_dashboard.html',
         student=current_user,
         courses=student_courses,
+        materials=materials,
         results=student_results,
         cgpa=cgpa,
         messages=messages
@@ -551,6 +556,7 @@ def manage_result():
                 student_id=student_id_val,
                 title=title,
                 course_code=course_code,
+                score=score,
                 grade=grade,
                 unit=unit_val,
                 semester=str(semester),
@@ -560,8 +566,6 @@ def manage_result():
             
             if hasattr(Result, 'course_name'):
                 new_result.course_name = title
-            if hasattr(Result, 'score'):
-                new_result.score = score
 
             db.session.add(new_result)
             db.session.commit()
@@ -714,6 +718,8 @@ def fix_db():
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
             conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
             
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
+
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
