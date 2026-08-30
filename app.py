@@ -723,30 +723,27 @@ def download_material(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
-@app.route('/fix-db')
-def fix_db():
+@app.route('/fix_results_db')
+def fix_results_db():
     try:
-        with db.engine.connect() as conn:
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
-            conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
-            
-            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
+        # 1. Find your student account
+        student = User.query.filter(User.username.ilike('%sulemanexpert2000@gmail.com%')).first()
+        if not student:
+            return "Student account not found in database."
 
-            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
-            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
-            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
-            conn.commit()
-        return "Database schema updated successfully! You can now upload results without errors."
+        # 2. Link all unlinked results matching your email/username to your student ID
+        updated_count = Result.query.filter(
+            or_(
+                Result.reg_number.ilike(student.username),
+                Result.reg_number.ilike(student.email)
+            )
+        ).update({Result.student_id: student.id}, synchronize_session=False)
+
+        db.session.commit()
+        return f"SUCCESS! Linked {updated_count} result record(s) to Student ID: {student.id} ({student.username})."
     except Exception as e:
         db.session.rollback()
-        return f"Database sync error: {str(e)}"
+        return f"Database Error: {str(e)}"
         
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
