@@ -322,49 +322,53 @@ def lecturer_dashboard():
     return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
 
 @app.route('/student_dashboard')
-@login_required
 def student_dashboard():
-    if current_user.role != 'student':
+    # Check if user is logged in
+    if 'user_id' not in session:
+        flash("Please log in to access your dashboard.", "danger")
         return redirect(url_for('login'))
 
-    user_id = current_user.id
-    user_email = (current_user.email or '').strip().lower()
+    user_id = session['user_id']
+    
+    # 1. Fetch Student Details
+    # (Adjust table/column names if using SQLAlchemy vs SQLite cursor)
+    student = Student.query.get(user_id)  # OR db execute query for dict/object
+    
+    # 2. Fetch Registered Courses
+    # Ensure this returns a list of dictionaries or objects matching fields: course_code, course_name, unit
+    courses = Course.query.filter_by(student_id=user_id).all() if hasattr(db, 'Course') else []
 
-    # Retrieve results matching student ID or email
-    student_results = Result.query.filter(
-        or_(
-            Result.student_id == user_id,
-            func.lower(func.trim(Result.reg_number)) == user_email
-        )
-    ).all()
-
-    # Retrieve registered courses
-    student_courses = Course.query.filter(
-        or_(
-            Course.student_id == user_id,
-            Course.student_id == None
-        )
-    ).all()
-
-    # Calculate CGPA
+    # 3. Fetch Student Results & Calculate CGPA
+    results = Result.query.filter_by(student_id=user_id).all() if hasattr(db, 'Result') else []
+    
+    # Basic NBTE CGPA Calculation (4.0 scale default fallback)
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+    
+    for row in results:
+        unit = getattr(row, 'unit', 1) or 1
+        grade = getattr(row, 'grade', 'F').upper()
+        point = grade_points.get(grade, 0.0)
+        total_units += unit
+        total_points += (unit * point)
+        
+    cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-    for res in student_results:
-        u = getattr(res, 'unit', 1) or 1
-        g = grade_points.get(res.grade.upper(), 0.0) if res.grade else 0.0
-        total_units += u
-        total_points += (u * g)
+    # 4. Fetch Lecture Materials
+    materials = Material.query.all() if hasattr(db, 'Material') else []
 
-    cgpa = round((total_points / total_units), 2) if total_units > 0 else 0.0
+    # 5. Fetch Messages
+    messages = Message.query.filter_by(receiver_id=user_id).all() if hasattr(db, 'Message') else []
 
     return render_template(
         'student_dashboard.html',
-        student=current_user,
-        courses=student_courses,
-        results=student_results,
-        cgpa=cgpa
+        student=student,
+        courses=courses,
+        results=results,
+        cgpa=cgpa,
+        materials=materials,
+        messages=messages
     )
     
 # --- ADMIN ACTIONS ---
