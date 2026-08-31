@@ -332,36 +332,62 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     user_id = current_user.id
-    
-    # 1. Registered Courses for this student (or general courses fallback)
-    courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
 
-    # 2. Results for this student (matches by student_id or email/username reg_number)
-    results = Result.query.filter(
-        or_(
-            Result.student_id == user_id,
-            Result.reg_number.ilike(current_user.username),
-            Result.reg_number.ilike(current_user.email or '')
-        )
-    ).all()
-    
+    # 1. Registered Courses for this student
+    try:
+        courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
+    except Exception:
+        db.session.rollback()
+        courses = []
+
+    # 2. Results for this student
+    try:
+        results = Result.query.filter(
+            or_(
+                Result.student_id == user_id,
+                Result.reg_number.ilike(current_user.username),
+                Result.reg_number.ilike(current_user.email or '')
+            )
+        ).all()
+    except Exception:
+        db.session.rollback()
+        results = []
+
     # 3. NBTE 4.0 Scale CGPA Calculation
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
-    
+
     for row in results:
         unit = getattr(row, 'unit', 1) or 1
         grade = (getattr(row, 'grade', 'F') or 'F').upper().strip()
         point = grade_points.get(grade, 0.0)
         total_units += unit
         total_points += (unit * point)
-        
+
     cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-    # 4. Lecture Materials & Messages
-    materials = Material.query.all()
-    messages = Message.query.filter_by(receiver_id=user_id).order_by(Message.timestamp.desc()).all()
+    # 4. Lecture Materials
+    try:
+        materials = Material.query.all()
+    except Exception:
+        db.session.rollback()
+        materials = []
+
+    # 5. Messages & All Users for Campus Chat Sidebar
+    try:
+        messages = Message.query.filter(
+            or_(Message.receiver_id == user_id, Message.sender_id == user_id)
+        ).order_by(Message.timestamp.desc()).all()
+    except Exception:
+        db.session.rollback()
+        messages = []
+
+    try:
+        all_users = User.query.filter(User.id != user_id).all()
+    except Exception:
+        db.session.rollback()
+        all_users = []
 
     return render_template(
         'student_dashboard.html',
@@ -370,7 +396,8 @@ def student_dashboard():
         results=results,
         cgpa=cgpa,
         materials=materials,
-        messages=messages
+        messages=messages,
+        all_users=all_users
     )
 
 # --- ADMIN ACTIONS ---
