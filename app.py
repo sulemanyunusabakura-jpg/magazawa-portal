@@ -3,7 +3,7 @@ import uuid
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, Response, 
-    send_from_directory, jsonify
+    send_from_directory, jsonify, session
 )
 from flask_login import (
     LoginManager, login_user, logout_user, login_required, current_user
@@ -322,55 +322,54 @@ def lecturer_dashboard():
     return render_template('lecturer_dashboard.html', lecturer=current_user, materials=materials, users=users, messages=messages)
 
 @app.route('/student_dashboard')
+@login_required
 def student_dashboard():
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash("Please log in to access your dashboard.", "danger")
+    if current_user.role != 'student' and current_user.role not in ['admin', 'creator']:
+        flash("Access restricted to student accounts.", "warning")
         return redirect(url_for('login'))
 
-    user_id = session['user_id']
+    user_id = current_user.id
     
-    # 1. Fetch Student Details
-    # (Adjust table/column names if using SQLAlchemy vs SQLite cursor)
-    student = Student.query.get(user_id)  # OR db execute query for dict/object
-    
-    # 2. Fetch Registered Courses
-    # Ensure this returns a list of dictionaries or objects matching fields: course_code, course_name, unit
-    courses = Course.query.filter_by(student_id=user_id).all() if hasattr(db, 'Course') else []
+    # 1. Registered Courses for this student (or general courses fallback)
+    courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
 
-    # 3. Fetch Student Results & Calculate CGPA
-    results = Result.query.filter_by(student_id=user_id).all() if hasattr(db, 'Result') else []
+    # 2. Results for this student (matches by student_id or email/username reg_number)
+    results = Result.query.filter(
+        or_(
+            Result.student_id == user_id,
+            Result.reg_number.ilike(current_user.username),
+            Result.reg_number.ilike(current_user.email or '')
+        )
+    ).all()
     
-    # Basic NBTE CGPA Calculation (4.0 scale default fallback)
+    # 3. NBTE 4.0 Scale CGPA Calculation
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
     
     for row in results:
         unit = getattr(row, 'unit', 1) or 1
-        grade = getattr(row, 'grade', 'F').upper()
+        grade = (getattr(row, 'grade', 'F') or 'F').upper().strip()
         point = grade_points.get(grade, 0.0)
         total_units += unit
         total_points += (unit * point)
         
     cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-    # 4. Fetch Lecture Materials
-    materials = Material.query.all() if hasattr(db, 'Material') else []
-
-    # 5. Fetch Messages
-    messages = Message.query.filter_by(receiver_id=user_id).all() if hasattr(db, 'Message') else []
+    # 4. Lecture Materials & Messages
+    materials = Material.query.all()
+    messages = Message.query.filter_by(receiver_id=user_id).order_by(Message.timestamp.desc()).all()
 
     return render_template(
         'student_dashboard.html',
-        student=student,
+        student=current_user,
         courses=courses,
         results=results,
         cgpa=cgpa,
         materials=materials,
         messages=messages
     )
-    
+
 # --- ADMIN ACTIONS ---
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
@@ -542,7 +541,6 @@ def manage_result():
     
     if action == 'add':
         student_id = request.form.get('student_id')
-        # Check both form field possibilities so title/course_name is never empty
         raw_title = request.form.get('title', '').strip() or request.form.get('course_name', '').strip()
         course_code = request.form.get('course_code', '').strip()
         score = request.form.get('score', '').strip()
@@ -550,7 +548,7 @@ def manage_result():
         unit = request.form.get('unit', '1')
         semester = request.form.get('semester', '1')
         level = request.form.get('level', 'HND1')
-        session = request.form.get('session', '2023/2024')
+        session_val = request.form.get('session', '2023/2024')
 
         if not student_id or not raw_title or not grade:
             flash('Please select a student and provide the Course Title & Grade.', 'danger')
@@ -567,19 +565,18 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
-            # Explicitly pass both title and course_name to avoid NOT NULL violations in PostgreSQL
             new_result = Result(
                 student_id=student_id_val,
                 reg_number=reg_num,
                 title=raw_title,
-                course_name=raw_title,  # <-- GUARANTEES NOT NULL
+                course_name=raw_title,
                 course_code=course_code,
                 score=score,
                 grade=grade,
                 unit=unit_val,
                 semester=str(semester),
                 level=level,
-                session=session
+                session=session_val
             )
 
             db.session.add(new_result)
@@ -723,12 +720,10 @@ def download_material(filename):
 @app.route('/fix_results_db')
 def fix_results_db():
     try:
-        # 1. Find your student account
         student = User.query.filter(User.username.ilike('%sulemanexpert2000@gmail.com%')).first()
         if not student:
             return "Student account not found in database."
 
-        # 2. Link all unlinked results matching your email/username to your student ID
         updated_count = Result.query.filter(
             or_(
                 Result.reg_number.ilike(student.username),
