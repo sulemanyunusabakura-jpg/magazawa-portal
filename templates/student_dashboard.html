@@ -165,6 +165,19 @@
 
         </div>
 
+        <!-- NEW: Dedicated Quick Access Buttons for Courses & Results -->
+        <div class="card shadow-sm border-0 mb-4 p-3 bg-white no-print">
+            <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-list-check me-2"></i>Academic View Controls</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-lg shadow-sm" onclick="activateTab('courses-tab')">
+                    <i class="fas fa-book-open me-2"></i>1: Courses Code
+                </button>
+                <button type="button" class="btn btn-success btn-lg shadow-sm" onclick="activateTab('results-tab')">
+                    <i class="fas fa-poll-h me-2"></i>2: Results
+                </button>
+            </div>
+        </div>
+
         <!-- Tabbed Sections Container -->
         <div class="card shadow-sm border-0 no-print" id="portalContentCard">
             <div class="card-header bg-white">
@@ -202,29 +215,31 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light border-bottom border-dark">
                                     <tr>
-                                        <th style="width: 20%;">Course Code</th>
-                                        <th style="width: 55%;">Title</th>
-                                        <th style="width: 12.5%;">Unit</th>
-                                        <th style="width: 12.5%;">Semester</th>
+                                        <th>Student Name</th>
+                                        <th>Phone Number</th>
+                                        <th>Email</th>
+                                        <th>Course Code</th>
+                                        <th>Course Title</th>
+                                        <th class="text-center">Unit</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% if courses %}
-                                        {% for course in courses %}
-                                        <tr>
-                                            <td class="fw-bold text-primary">{{ course.course_code }}</td>
-                                            <td>{{ course.course_name or course.title or 'N/A' }}</td>
-                                            <td>{{ course.unit or 2 }}</td>
-                                            <td>{{ course.semester or 1 }}</td>
-                                        </tr>
-                                        {% endfor %}
+                                    {% for course in courses %}
+                                    <tr>
+                                        <td class="fw-bold">{{ student.full_name or student.username }}</td>
+                                        <td>{{ student.phone or 'N/A' }}</td>
+                                        <td>{{ student.email or student.username }}</td>
+                                        <td class="fw-bold text-primary">{{ course.course_code or course.code }}</td>
+                                        <td>{{ course.course_name or course.title }}</td>
+                                        <td class="text-center"><span class="badge bg-light text-dark border">{{ course.unit or 1 }}</span></td>
+                                    </tr>
                                     {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">
-                                                <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Please contact the administrator.
-                                            </td>
-                                        </tr>
-                                    {% endif %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-info-circle me-1"></i> No registered courses assigned yet. Please contact the administrator.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -282,32 +297,16 @@
                                          alt="Profile" class="rounded-circle img-thumbnail me-3" style="width: 75px; height: 75px; object-fit: cover;">
                                     <div>
                                         <h4 class="fw-bold mb-1 text-dark">{{ student.full_name or student.username }}</h4>
-                                        <span class="badge bg-primary me-2">{{ student.program or 'Computer Engineering' }}</span>
-                                        <span class="badge bg-secondary">{{ student.level or 'ND1' }}</span>
+                                        <span class="badge bg-primary me-2">{{ student.program or 'Student' }}</span>
+                                        <span class="badge bg-secondary">{{ student.level or 'HND1' }}</span>
                                     </div>
                                 </div>
                                 
                                 <!-- Highlights & CGPA Card -->
                                 <div class="bg-primary text-white p-3 rounded-3 text-center shadow-sm" style="min-width: 160px;">
                                     <div class="text-uppercase small fw-bold opacity-75">Cumulative GPA</div>
-                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa or 0.0) }}</div>
+                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa) }}</div>
                                     <span class="badge bg-light text-primary fw-bold">4.0 Max Scale</span>
-                                </div>
-                            </div>
-
-                            <!-- Profile Details Grid -->
-                            <div class="row g-3 mb-4 text-muted small">
-                                <div class="col-6 col-md-4">
-                                    <strong class="d-block text-dark">Admission / Email:</strong> {{ student.username }}
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <strong class="d-block text-dark">Phone Number:</strong> {{ student.phone or 'N/A' }}
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <strong class="d-block text-dark">Payment Clearance:</strong> 
-                                    <span class="badge bg-{{ 'success' if is_paid else 'warning' }}">
-                                        {{ student.payment_status|upper if student.payment_status else 'PENDING' }}
-                                    </span>
                                 </div>
                             </div>
 
@@ -316,35 +315,39 @@
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr class="text-uppercase small fw-bold text-secondary">
+                                            <th scope="col" class="py-3">Student Name</th>
+                                            <th scope="col" class="py-3">Phone Number</th>
+                                            <th scope="col" class="py-3">Email</th>
                                             <th scope="col" class="py-3">Course Code</th>
-                                            <th scope="col" class="py-3">Title</th>
+                                            <th scope="col" class="py-3">Course Title</th>
                                             <th scope="col" class="py-3 text-center">Unit</th>
-                                            <th scope="col" class="py-3 text-center">Semester</th>
+                                            <th scope="col" class="py-3 text-center">Score</th>
                                             <th scope="col" class="py-3 text-center">Grade</th>
-                                            <th scope="col" class="py-3 text-center">Level</th>
-                                            <th scope="col" class="py-3 text-center">Session</th>
+                                            <th scope="col" class="py-3 text-center">CGPA</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% if results %}
                                             {% for row in results %}
                                             <tr>
-                                                <td class="fw-bold text-primary">{{ row.course_code or 'N/A' }}</td>
-                                                <td>{{ row.title or row.course_name or 'N/A' }}</td>
+                                                <td class="fw-bold">{{ student.full_name or student.username }}</td>
+                                                <td>{{ student.phone or 'N/A' }}</td>
+                                                <td>{{ student.email or student.username }}</td>
+                                                <td class="fw-bold text-primary">{{ row.course_code }}</td>
+                                                <td>{{ row.title or row.course_name }}</td>
                                                 <td class="text-center"><span class="badge bg-light text-dark border">{{ row.unit or 1 }}</span></td>
-                                                <td class="text-center">Sem {{ row.semester or 1 }}</td>
+                                                <td class="text-center fw-bold">{{ row.score or 'N/A' }}</td>
                                                 <td class="text-center">
                                                     <span class="badge bg-{{ 'success' if row.grade in ['A','AB','B'] else ('warning' if row.grade in ['BC','C','CD'] else 'danger') }} fs-6">
-                                                        {{ row.grade or 'F' }}
+                                                        {{ row.grade }}
                                                     </span>
                                                 </td>
-                                                <td class="text-center">{{ row.level or 'ND1' }}</td>
-                                                <td class="text-center text-muted small">{{ row.session or '2025/2026' }}</td>
+                                                <td class="text-center fw-bold text-success">{{ "%.2f"|format(cgpa) }}</td>
                                             </tr>
                                             {% endfor %}
                                         {% else %}
                                             <tr>
-                                                <td colspan="7" class="text-center py-5 text-muted">
+                                                <td colspan="9" class="text-center py-5 text-muted">
                                                     <i class="fas fa-graduation-cap fa-3x mb-3 text-black-50 d-block"></i>
                                                     <h6 class="fw-bold">No results published yet for your account.</h6>
                                                     <p class="small mb-0">Please check back after your department uploads grades.</p>
@@ -568,6 +571,8 @@
             if (tabBtn) {
                 var tab = bootstrap.Tab.getOrCreateInstance(tabBtn);
                 tab.show();
+                
+                // Smooth scroll to the tab content section
                 document.getElementById('portalContentCard').scrollIntoView({ behavior: 'smooth' });
             }
         }
