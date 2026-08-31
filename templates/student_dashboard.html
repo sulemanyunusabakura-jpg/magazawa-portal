@@ -8,6 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        :root {
+            --wa-bg: #0b141a;
+            --wa-header: #202c33;
+            --wa-sidebar: #111b21;
+            --wa-bubble-in: #202c33;
+            --wa-bubble-out: #005c4b;
+            --wa-accent: #00a884;
+            --wa-text: #e9edef;
+            --wa-muted: #8696a0;
+            --border-color: #23345c;
+        }
+
         /* Print Stylesheet for Admission Letter and Payment Receipt */
         @media print {
             body * {
@@ -26,6 +38,263 @@
                 display: none !important;
             }
         }
+
+        /* WHATSAPP CAMPUS MESSENGER STYLING */
+        .wa-chat-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: var(--wa-bg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 850px) {
+            .wa-chat-container { grid-template-columns: 1fr; height: 550px; }
+            .wa-chat-main { display: none; }
+            .wa-chat-container.chat-active .wa-sidebar { display: none; }
+            .wa-chat-container.chat-active .wa-chat-main { display: flex; }
+        }
+
+        .wa-sidebar {
+            background: var(--wa-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wa-sidebar-header {
+            background: var(--wa-header);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .wa-role-tabs {
+            display: flex;
+            background: #182229;
+            padding: 6px;
+            gap: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .wa-tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--wa-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 6px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .wa-tab-btn.active {
+            background: var(--wa-header);
+            color: var(--wa-accent);
+        }
+
+        .wa-search-bar { padding: 8px 12px; background: var(--wa-sidebar); }
+        .wa-search-bar input {
+            background: #111b21;
+            border: 1px solid #222d34;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--wa-text);
+            font-size: 0.85rem;
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .wa-user-list { flex: 1; overflow-y: auto; }
+        .wa-user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(134, 150, 160, 0.08);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .wa-user-item:hover, .wa-user-item.active { background: #2a3942; }
+
+        .wa-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #6b7c85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0;
+            font-size: 0.95rem;
+        }
+
+        .wa-user-info { flex: 1; min-width: 0; }
+        .wa-user-info h4 { font-size: 0.9rem; color: var(--wa-text); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wa-user-info p { font-size: 0.75rem; color: var(--wa-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .wa-chat-main { display: flex; flex-direction: column; background: #0b141a; height: 100%; }
+        
+        .wa-chat-header {
+            background: var(--wa-header);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .wa-chat-header-info { display: flex; align-items: center; gap: 12px; }
+
+        .wa-message-area {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 16px 16px;
+        }
+
+        .wa-bubble {
+            max-width: 65%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--wa-text);
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            word-wrap: break-word;
+        }
+
+        .wa-bubble.in { background: var(--wa-bubble-in); align-self: flex-start; border-top-left-radius: 0; }
+        .wa-bubble.out { background: var(--wa-bubble-out); align-self: flex-end; border-top-right-radius: 0; }
+
+        .wa-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            font-size: 0.65rem;
+            color: var(--wa-muted);
+            margin-top: 4px;
+        }
+
+        .wa-ticks { color: #53bdeb; font-weight: bold; }
+
+        .wa-media-img {
+            max-width: 100%;
+            border-radius: 6px;
+            margin-top: 4px;
+            display: block;
+            max-height: 200px;
+            object-fit: cover;
+        }
+
+        .wa-doc-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 4px;
+            border-left: 3px solid var(--wa-accent);
+        }
+
+        .wa-audio-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            margin-top: 4px;
+            width: 230px;
+        }
+
+        .wa-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--wa-accent);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .wa-wave {
+            flex: 1;
+            height: 12px;
+            background: repeating-linear-gradient(90deg, var(--wa-accent), var(--wa-accent) 2px, transparent 2px, transparent 4px);
+            border-radius: 2px;
+        }
+
+        .wa-input-bar {
+            background: var(--wa-header);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wa-icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .wa-icon-btn:hover { color: var(--wa-text); }
+
+        .wa-input-field {
+            flex: 1;
+            background: #2a3942;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--wa-text);
+            font-size: 0.9rem;
+            margin-bottom: 0 !important;
+            outline: none;
+        }
+
+        .wa-send-btn {
+            background: var(--wa-accent);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        #studentImgInput, #studentDocInput { display: none; }
     </style>
 </head>
 <body class="bg-light">
@@ -154,7 +423,7 @@
                         <div>
                             <i class="fas fa-comments fa-3x mb-3" style="color: #00a884;"></i>
                             <h5 class="card-title fs-6 fw-bold">Campus Chat</h5>
-                            <p class="text-muted small">Live student group & messages.</p>
+                            <p class="text-muted small">Live campus WhatsApp portal.</p>
                         </div>
                         <button class="btn text-white w-100 btn-sm mt-2" style="background-color: #00a884; border: none;" onclick="activateTab('messages-tab')">
                             💬 Open Chat
@@ -165,7 +434,7 @@
 
         </div>
 
-        <!-- NEW: Dedicated Quick Access Buttons for Courses & Results -->
+        <!-- Dedicated Quick Access Buttons for Courses & Results -->
         <div class="card shadow-sm border-0 mb-4 p-3 bg-white no-print">
             <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-list-check me-2"></i>Academic View Controls</h5>
             <div class="d-flex flex-wrap gap-2">
@@ -362,55 +631,123 @@
                     </div>
                 </div>
 
-                <!-- 4. Messages & Campus Chat Tab -->
+                <!-- 4. Messages & Campus WhatsApp Chat Tab -->
                 <div class="tab-pane fade" id="messages" role="tabpanel" aria-labelledby="messages-tab">
-                    <div class="row">
-                        <div class="col-md-5 mb-4 mb-md-0">
-                            <div class="card bg-light border-0 p-3 mb-3">
-                                <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-paper-plane me-1"></i> Send Private Message</h6>
-                                <form action="{{ url_for('send_message') }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                    <div class="mb-3">
-                                        <label for="receiver_id" class="form-label small fw-bold">Recipient User ID</label>
-                                        <input type="number" id="receiver_id" class="form-control" name="receiver_id" placeholder="Enter Receiver User ID (e.g., Admin ID: 1)" required>
+                    <div class="wa-chat-container" id="studentWaWidget">
+                        <!-- SIDEBAR -->
+                        <div class="wa-sidebar">
+                            <div class="wa-sidebar-header">
+                                <span style="font-weight: bold; color: var(--wa-text); font-size: 0.95rem;">Campus Chats</span>
+                                <span style="color: var(--wa-accent); font-weight: bold; font-size: 0.8rem;">● Live</span>
+                            </div>
+
+                            <!-- ROLE CATEGORY TABS -->
+                            <div class="wa-role-tabs">
+                                <button class="wa-tab-btn active" onclick="filterStudentWaRole('all', this)">All</button>
+                                <button class="wa-tab-btn" onclick="filterStudentWaRole('admin', this)">Admin</button>
+                                <button class="wa-tab-btn" onclick="filterStudentWaRole('lecturer', this)">Lecturers</button>
+                                <button class="wa-tab-btn" onclick="filterStudentWaRole('student', this)">Students</button>
+                            </div>
+
+                            <div class="wa-search-bar">
+                                <input type="text" id="studentWaUserFilter" placeholder="Search contact or chat..." onkeyup="filterStudentWaUsers()">
+                            </div>
+
+                            <div class="wa-user-list" id="studentWaUserList">
+                                <!-- ADMIN DEFAULT CONTACT -->
+                                <div class="wa-user-item active" data-role="admin" onclick="openStudentWaChat('1', 'Admin Desk', 'ADMIN', 'AD', this)">
+                                    <div class="wa-avatar" style="background: #0d6efd;">AD</div>
+                                    <div class="wa-user-info">
+                                        <h4>Admin Desk</h4>
+                                        <p>Portal Administration</p>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="content" class="form-label small fw-bold">Message Text</label>
-                                        <textarea id="content" class="form-control" name="content" rows="3" placeholder="Type your message..." required></textarea>
+                                </div>
+
+                                <!-- LECTURER DEFAULT CONTACT -->
+                                <div class="wa-user-item" data-role="lecturer" onclick="openStudentWaChat('0', 'Dr. Engr. Suleman', 'LECTURER', 'DS', this)">
+                                    <div class="wa-avatar" style="background: #8e44ad;">DS</div>
+                                    <div class="wa-user-info">
+                                        <h4>Dr. Engr. Suleman</h4>
+                                        <p>Computer Engineering Dept</p>
                                     </div>
-                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-1"></i> Send Private Message</button>
-                                </form>
+                                </div>
+
+                                <!-- DYNAMIC USERS FROM DATABASE -->
+                                {% if all_users %}
+                                    {% for u in all_users %}
+                                        {% if u.id != student.id %}
+                                        <div class="wa-user-item" data-role="{{ u.role | lower if u.role else 'student' }}" onclick="openStudentWaChat('{{ u.id }}', '{{ u.full_name }}', '{{ u.role | upper if u.role else \'STUDENT\' }}', '{{ u.full_name[:2] | upper }}', this)">
+                                            <div class="wa-avatar">{{ u.full_name[:2] | upper }}</div>
+                                            <div class="wa-user-info">
+                                                <h4>{{ u.full_name }}</h4>
+                                                <p>{{ u.role | upper if u.role else 'STUDENT' }}</p>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
                             </div>
                         </div>
 
-                        <div class="col-md-7">
-                            <h6 class="fw-bold mb-3"><i class="fas fa-inbox text-secondary me-1"></i> Private Inbox</h6>
-                            {% if messages %}
-                                <div class="list-group pe-1 mb-4" style="max-height: 300px; overflow-y: auto;">
-                                    {% for msg in messages %}
-                                        <div class="list-group-item mb-2 rounded shadow-sm border-start border-4 border-primary bg-white">
-                                            <p class="mb-1 text-dark">{{ msg.content }}</p>
-                                            <small class="text-muted"><i class="far fa-clock me-1"></i>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp and msg.timestamp.strftime else msg.timestamp }}</small>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="alert alert-secondary mb-4">No private messages in your inbox.</div>
-                            {% endif %}
-
-                            <!-- Campus Group Chat -->
-                            <div class="card border-0 shadow-sm" style="background-color: #e5ddd5;">
-                                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #075e54;">
-                                    <span class="fw-bold"><i class="fas fa-users me-2"></i>MST Open Campus Chat Group</span>
-                                    <span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 8px;"></i>Online</span>
-                                </div>
-                                <div class="card-body p-3" style="max-height: 250px; overflow-y: auto;">
-                                    <div class="p-2 mb-2 bg-white rounded shadow-sm">
-                                        <strong class="text-success small">Lecturer Room Mod</strong>
-                                        <p class="mb-0 small">Welcome all students to the online portal discussion!</p>
+                        <!-- MAIN CHAT PANEL -->
+                        <div class="wa-chat-main">
+                            <!-- HEADER -->
+                            <div class="wa-chat-header">
+                                <div class="wa-chat-header-info">
+                                    <div class="wa-avatar" id="studentActiveWaAvatar" style="background: #0d6efd;">AD</div>
+                                    <div>
+                                        <h4 id="studentActiveWaName" style="font-size: 0.95rem; color: var(--wa-text);">Admin Desk</h4>
+                                        <p id="studentActiveWaRole" style="font-size: 0.75rem; color: var(--wa-accent);">Online • ADMIN</p>
                                     </div>
                                 </div>
+                                <div>
+                                    <button class="btn btn-sm btn-primary" id="studentWaBackBtn" onclick="closeStudentMobileWa()" style="display: none;">Back</button>
+                                </div>
                             </div>
+
+                            <!-- THREAD MESSAGES AREA -->
+                            <div class="wa-message-area" id="studentWaThread">
+                                {% if messages %}
+                                    {% for msg in messages %}
+                                        <div class="wa-bubble in">
+                                            {{ msg.content }}
+                                            <div class="wa-meta">{{ msg.timestamp.strftime('%H:%M') if msg.timestamp and msg.timestamp.strftime else '10:42 AM' }}</div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="wa-bubble in">
+                                        Welcome to MST Open Campus Chat! Select a contact to send messages, notes, or voice recordings directly.
+                                        <div class="wa-meta">System</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- INPUT FORM & MULTIMEDIA CONTROLS -->
+                            <form id="studentWaChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleStudentWaSubmit(event)">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <input type="hidden" id="student_wa_receiver_id" name="receiver_id" value="1">
+                                
+                                <!-- HIDDEN FILE INPUTS FOR IMAGES AND DOCUMENTS -->
+                                <input type="file" id="studentImgInput" accept="image/*" onchange="handleStudentImageUpload(event)">
+                                <input type="file" id="studentDocInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" onchange="handleStudentDocUpload(event)">
+
+                                <div class="wa-input-bar">
+                                    <!-- UPLOAD DOCUMENTS -->
+                                    <button type="button" class="wa-icon-btn" title="Upload Document" onclick="document.getElementById('studentDocInput').click()">📄</button>
+                                    
+                                    <!-- UPLOAD IMAGES -->
+                                    <button type="button" class="wa-icon-btn" title="Send Photo / Image" onclick="document.getElementById('studentImgInput').click()">📷</button>
+
+                                    <!-- RECORD REAL VOICE NOTE -->
+                                    <button type="button" class="wa-icon-btn" id="studentMicBtn" title="Record Voice Note" onclick="toggleStudentVoiceRecording()">🎙</button>
+
+                                    <!-- TEXT INPUT FIELD -->
+                                    <input type="text" id="studentWaMessageInput" name="content" class="wa-input-field" placeholder="Type a message or record audio..." required>
+
+                                    <!-- SEND BUTTON -->
+                                    <button type="submit" class="wa-send-btn">➔</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -575,6 +912,203 @@
                 // Smooth scroll to the tab content section
                 document.getElementById('portalContentCard').scrollIntoView({ behavior: 'smooth' });
             }
+        }
+
+        /* STUDENT WHATSAPP CAMPUS MESSENGER LOGIC */
+        function filterStudentWaRole(role, btn) {
+            document.querySelectorAll('.wa-role-tabs .wa-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const items = document.querySelectorAll('#studentWaUserList .wa-user-item');
+            items.forEach(item => {
+                const itemRole = item.getAttribute('data-role');
+                if (role === 'all' || itemRole === role) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function filterStudentWaUsers() {
+            const filter = document.getElementById('studentWaUserFilter').value.toLowerCase();
+            const items = document.querySelectorAll('#studentWaUserList .wa-user-item');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(filter) ? 'flex' : 'none';
+            });
+        }
+
+        function openStudentWaChat(userId, userName, userRole, avatarText, element) {
+            document.querySelectorAll('#studentWaUserList .wa-user-item').forEach(item => item.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            document.getElementById('student_wa_receiver_id').value = userId;
+            document.getElementById('studentActiveWaName').innerText = userName;
+            document.getElementById('studentActiveWaRole').innerText = 'Online • ' + userRole;
+            document.getElementById('studentActiveWaAvatar').innerText = avatarText;
+
+            if (window.innerWidth <= 850) {
+                document.getElementById('studentWaWidget').classList.add('chat-active');
+                document.getElementById('studentWaBackBtn').style.display = 'block';
+            }
+        }
+
+        function closeStudentMobileWa() {
+            document.getElementById('studentWaWidget').classList.remove('chat-active');
+            document.getElementById('studentWaBackBtn').style.display = 'none';
+        }
+
+        function handleStudentWaSubmit(e) {
+            const input = document.getElementById('studentWaMessageInput');
+            const messageText = input.value.trim();
+
+            if (messageText) {
+                const thread = document.getElementById('studentWaThread');
+                const bubble = document.createElement('div');
+                bubble.className = 'wa-bubble out';
+                
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                bubble.innerHTML = `${messageText}<div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                
+                thread.appendChild(bubble);
+                thread.scrollTop = thread.scrollHeight;
+            }
+            return true;
+        }
+
+        function handleStudentImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const thread = document.getElementById('studentWaThread');
+                    const bubble = document.createElement('div');
+                    bubble.className = 'wa-bubble out';
+                    
+                    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    bubble.innerHTML = `🖼 Image Attachment:
+                        <img src="${e.target.result}" class="wa-media-img">
+                        <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                    
+                    thread.appendChild(bubble);
+                    thread.scrollTop = thread.scrollHeight;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleStudentDocUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const thread = document.getElementById('studentWaThread');
+                const bubble = document.createElement('div');
+                bubble.className = 'wa-bubble out';
+                
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                
+                bubble.innerHTML = `📄 Uploaded Document:
+                    <div class="wa-doc-attachment">
+                        <span style="font-size: 1.4rem;">📘</span>
+                        <div>
+                            <strong style="display:block; font-size: 0.8rem;">${file.name}</strong>
+                            <span style="font-size: 0.68rem; color: var(--wa-muted);">${fileSize} MB • Document</span>
+                        </div>
+                    </div>
+                    <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                
+                thread.appendChild(bubble);
+                thread.scrollTop = thread.scrollHeight;
+            }
+        }
+
+        /* REAL-TIME VOICE RECORDING LOGIC */
+        let studentMediaRecorder;
+        let studentAudioChunks = [];
+        let isStudentRecording = false;
+
+        async function toggleStudentVoiceRecording() {
+            const micBtn = document.getElementById('studentMicBtn');
+            const inputField = document.getElementById('studentWaMessageInput');
+
+            if (!isStudentRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    studentMediaRecorder = new MediaRecorder(stream);
+                    studentAudioChunks = [];
+
+                    studentMediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) {
+                            studentAudioChunks.push(event.data);
+                        }
+                    };
+
+                    studentMediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(studentAudioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        sendStudentVoiceBubble(audioUrl);
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    studentMediaRecorder.start();
+                    isStudentRecording = true;
+                    micBtn.style.color = '#dc3545';
+                    micBtn.title = "Click to Stop Recording";
+                    inputField.placeholder = "🔴 Recording audio... Click microphone to finish & send";
+                } catch (err) {
+                    alert("Microphone access denied or not supported by your browser.");
+                }
+            } else {
+                studentMediaRecorder.stop();
+                isStudentRecording = false;
+                micBtn.style.color = 'var(--wa-muted)';
+                micBtn.title = "Record Voice Note";
+                inputField.placeholder = "Type a message or record audio...";
+            }
+        }
+
+        function sendStudentVoiceBubble(audioUrl) {
+            const thread = document.getElementById('studentWaThread');
+            const bubble = document.createElement('div');
+            bubble.className = 'wa-bubble out';
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            bubble.innerHTML = `
+                🎙 Voice Note
+                <div class="wa-audio-player">
+                    <button class="wa-play-btn" type="button" onclick="toggleStudentAudio(this)">▶</button>
+                    <div class="wa-wave"></div>
+                    <audio src="${audioUrl}" style="display:none;" onended="resetStudentAudioBtn(this)"></audio>
+                </div>
+                <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>
+            `;
+            
+            thread.appendChild(bubble);
+            thread.scrollTop = thread.scrollHeight;
+        }
+
+        function toggleStudentAudio(btn) {
+            const player = btn.parentElement.querySelector('audio');
+            if (!player) return;
+
+            if (player.paused) {
+                document.querySelectorAll('audio').forEach(a => a.pause());
+                document.querySelectorAll('.wa-play-btn').forEach(b => b.innerText = '▶');
+                
+                player.play();
+                btn.innerText = '❚❚';
+            } else {
+                player.pause();
+                btn.innerText = '▶';
+            }
+        }
+
+        function resetStudentAudioBtn(audioElement) {
+            const btn = audioElement.parentElement.querySelector('.wa-play-btn');
+            if (btn) btn.innerText = '▶';
         }
     </script>
 </body>
