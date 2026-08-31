@@ -327,28 +327,24 @@ def student_dashboard():
     if current_user.role != 'student':
         return redirect(url_for('login'))
 
-    try:
-        # Match by integer User ID OR string reg_number/username/email
-        student_results = Result.query.filter(
-            or_(
-                Result.student_id == current_user.id,
-                Result.reg_number == current_user.username,
-                Result.reg_number == current_user.email
-            )
-        ).all()
-        
-        # Match courses assigned to this student ID or general courses (NULL)
-        student_courses = Course.query.filter(
-            or_(
-                Course.student_id == current_user.id,
-                Course.student_id == None
-            )
-        ).all()
+    user_id = current_user.id
+    user_email = (current_user.email or '').strip().lower()
 
-        materials = Material.query.all()
-    except Exception as e:
-        db.session.rollback()
-        student_courses, student_results, materials = [], [], []
+    # Retrieve results matching student ID or email
+    student_results = Result.query.filter(
+        or_(
+            Result.student_id == user_id,
+            func.lower(func.trim(Result.reg_number)) == user_email
+        )
+    ).all()
+
+    # Retrieve registered courses
+    student_courses = Course.query.filter(
+        or_(
+            Course.student_id == user_id,
+            Course.student_id == None
+        )
+    ).all()
 
     # Calculate CGPA
     total_units = 0
@@ -362,16 +358,13 @@ def student_dashboard():
         total_points += (u * g)
 
     cgpa = round((total_points / total_units), 2) if total_units > 0 else 0.0
-    messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
 
     return render_template(
         'student_dashboard.html',
         student=current_user,
         courses=student_courses,
-        materials=materials,
         results=student_results,
-        cgpa=cgpa,
-        messages=messages
+        cgpa=cgpa
     )
     
 # --- ADMIN ACTIONS ---
