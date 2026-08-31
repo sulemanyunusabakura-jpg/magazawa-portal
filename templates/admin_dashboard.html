@@ -787,17 +787,6 @@
                             </div>
                             <div class="wa-meta">10:43 AM</div>
                         </div>
-
-                        <!-- VOICE MAIL / AUDIO NOTE DEMO -->
-                        <div class="wa-bubble out">
-                            🎙 Voice Note
-                            <div class="wa-audio-player">
-                                <button class="wa-play-btn" type="button" onclick="toggleAudio(this)">▶</button>
-                                <div class="wa-wave"></div>
-                                <span style="font-size: 0.7rem; color: var(--wa-muted);">0:14</span>
-                            </div>
-                            <div class="wa-meta">10:45 AM <span class="wa-ticks">✓✓</span></div>
-                        </div>
                     </div>
 
                     <!-- INPUT FORM & MULTIMEDIA CONTROLS -->
@@ -815,11 +804,11 @@
                             <!-- UPLOAD IMAGES -->
                             <button type="button" class="wa-icon-btn" title="Send Photo / Image" onclick="document.getElementById('imgFileInput').click()">📷</button>
 
-                            <!-- RECORD VOICE MAIL -->
-                            <button type="button" class="wa-icon-btn" title="Record Voice Mail" onclick="recordVoiceMail()">🎙</button>
+                            <!-- RECORD REAL VOICE NOTE -->
+                            <button type="button" class="wa-icon-btn" id="micBtn" title="Record Voice Note" onclick="toggleVoiceRecording()">🎙</button>
 
                             <!-- TEXT INPUT FIELD -->
-                            <input type="text" id="waMessageInput" name="content" class="wa-input-field" placeholder="Type a message or attach files..." required>
+                            <input type="text" id="waMessageInput" name="content" class="wa-input-field" placeholder="Type a message or record audio..." required>
 
                             <!-- SEND BUTTON -->
                             <button type="submit" class="wa-send-btn">➔</button>
@@ -1033,31 +1022,92 @@
             }
         }
 
-        function recordVoiceMail() {
+        /* REAL-TIME VOICE RECORDING LOGIC */
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function toggleVoiceRecording() {
+            const micBtn = document.getElementById('micBtn');
+            const inputField = document.getElementById('waMessageInput');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        sendVoiceBubble(audioUrl);
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.style.color = '#dc3545';
+                    micBtn.title = "Click to Stop Recording";
+                    inputField.placeholder = "🔴 Recording audio... Click microphone to finish & send";
+                } catch (err) {
+                    alert("Microphone access denied or not supported by your browser.");
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.style.color = 'var(--wa-muted)';
+                micBtn.title = "Record Voice Note";
+                inputField.placeholder = "Type a message or record audio...";
+            }
+        }
+
+        function sendVoiceBubble(audioUrl) {
             const thread = document.getElementById('waThread');
             const bubble = document.createElement('div');
             bubble.className = 'wa-bubble out';
             
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            bubble.innerHTML = `🎙 Voice Note (0:08)
+            bubble.innerHTML = `
+                🎙 Voice Note
                 <div class="wa-audio-player">
                     <button class="wa-play-btn" type="button" onclick="toggleAudio(this)">▶</button>
                     <div class="wa-wave"></div>
-                    <span style="font-size: 0.7rem; color: var(--wa-muted);">0:08</span>
+                    <audio src="${audioUrl}" style="display:none;" onended="resetAudioBtn(this)"></audio>
                 </div>
-                <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>
+            `;
             
             thread.appendChild(bubble);
             thread.scrollTop = thread.scrollHeight;
         }
 
         function toggleAudio(btn) {
-            if (btn.innerText === '▶') {
+            const player = btn.parentElement.querySelector('audio');
+            if (!player) return;
+
+            if (player.paused) {
+                document.querySelectorAll('audio').forEach(a => a.pause());
+                document.querySelectorAll('.wa-play-btn').forEach(b => b.innerText = '▶');
+                
+                player.play();
                 btn.innerText = '❚❚';
             } else {
+                player.pause();
                 btn.innerText = '▶';
             }
+        }
+
+        function resetAudioBtn(audioElement) {
+            const btn = audioElement.parentElement.querySelector('.wa-play-btn');
+            if (btn) btn.innerText = '▶';
         }
 
         function filterWaUsers() {
