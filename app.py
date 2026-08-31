@@ -75,6 +75,9 @@ def auto_migrate_db():
         try:
             db.create_all()
             with db.engine.connect() as conn:
+                # Synchronize Material table
+                conn.execute(text("ALTER TABLE material ADD COLUMN IF NOT EXISTS upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"))
+
                 # Synchronize Result table
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
