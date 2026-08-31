@@ -21,9 +21,16 @@
             --danger-hover: #bb2d3b;
             --warning: #ffc107;
             --warning-text: #000000;
-            --chat-bg: #070d1c;
-            --chat-bubble-in: #1c2b4d;
-            --chat-bubble-out: #0d6efd;
+            
+            /* WHATSAPP DARK THEME COLORS */
+            --wa-bg: #0b141a;
+            --wa-header: #202c33;
+            --wa-sidebar: #111b21;
+            --wa-bubble-in: #202c33;
+            --wa-bubble-out: #005c4b;
+            --wa-accent: #00a884;
+            --wa-text: #e9edef;
+            --wa-muted: #8696a0;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,7 +87,7 @@
 
         .action-card { border-left: 4px solid var(--success); }
         .ai-assistant-card { border-left: 4px solid #8e44ad; background: linear-gradient(135deg, var(--bg-card) 0%, #17162e 100%); }
-        .ai-response-box { background: var(--chat-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; margin-top: 12px; min-height: 60px; font-size: 0.875rem; color: #d1d5db; white-space: pre-line; display: none; }
+        .ai-response-box { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; margin-top: 12px; min-height: 60px; font-size: 0.875rem; color: #d1d5db; white-space: pre-line; display: none; }
 
         /* TABS STYLING */
         .tab-nav { display: flex; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
@@ -89,31 +96,260 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* IN-SITE LIVE CHAT STYLING */
-        .webchat-widget { display: grid; grid-template-columns: 280px 1fr; height: 520px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: var(--chat-bg); }
-        @media (max-width: 768px) {
-            .webchat-widget { grid-template-columns: 1fr; height: 580px; }
-            .chat-main-area { display: none; }
-            .webchat-widget.chat-open .chat-sidebar { display: none; }
-            .webchat-widget.chat-open .chat-main-area { display: flex; }
+        /* ================= WHATSAPP HUB COMPONENT ================= */
+        .wa-chat-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 620px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: var(--wa-bg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
-        .chat-sidebar { background: #091022; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
-        .chat-sidebar-header { padding: 12px; border-bottom: 1px solid var(--border-color); }
-        .chat-user-list { flex: 1; overflow-y: auto; }
-        .chat-user-item { padding: 12px; border-bottom: 1px solid rgba(35, 52, 92, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.2s ease; }
-        .chat-user-item:hover, .chat-user-item.active { background: var(--bg-card); }
-        .user-details h4 { font-size: 0.875rem; color: var(--text-main); }
-        .user-details p { font-size: 0.75rem; color: var(--text-muted); }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6c757d; display: inline-block; }
-        .status-dot.online { background: #28a745; }
-        .chat-main-area { display: flex; flex-direction: column; background: var(--bg-table); }
-        .chat-header { padding: 14px 16px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .chat-messages-container { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .chat-bubble { max-width: 75%; padding: 10px 14px; border-radius: 10px; font-size: 0.875rem; position: relative; line-height: 1.4; }
-        .chat-bubble.in { background: var(--chat-bubble-in); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .chat-bubble.out { background: var(--chat-bubble-out); align-self: flex-end; border-bottom-right-radius: 2px; color: #fff; }
-        .chat-time { font-size: 0.65rem; color: rgba(255, 255, 255, 0.6); margin-top: 4px; text-align: right; }
-        .chat-input-bar { padding: 12px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+
+        @media (max-width: 850px) {
+            .wa-chat-container { grid-template-columns: 1fr; height: 580px; }
+            .wa-chat-main { display: none; }
+            .wa-chat-container.chat-active .wa-sidebar { display: none; }
+            .wa-chat-container.chat-active .wa-chat-main { display: flex; }
+        }
+
+        .wa-sidebar {
+            background: var(--wa-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wa-sidebar-header {
+            background: var(--wa-header);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .wa-role-tabs {
+            display: flex;
+            background: #182229;
+            padding: 6px;
+            gap: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .wa-tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--wa-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 6px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .wa-tab-btn.active {
+            background: var(--wa-header);
+            color: var(--wa-accent);
+        }
+
+        .wa-search-bar { padding: 8px 12px; background: var(--wa-sidebar); }
+        .wa-search-bar input {
+            background: #111b21;
+            border: 1px solid #222d34;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--wa-text);
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+
+        .wa-user-list { flex: 1; overflow-y: auto; }
+        .wa-user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(134, 150, 160, 0.08);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .wa-user-item:hover, .wa-user-item.active { background: #2a3942; }
+
+        .wa-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #6b7c85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0;
+            font-size: 0.95rem;
+        }
+
+        .wa-user-info { flex: 1; min-width: 0; }
+        .wa-user-info h4 { font-size: 0.9rem; color: var(--wa-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wa-user-info p { font-size: 0.75rem; color: var(--wa-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .wa-chat-main { display: flex; flex-direction: column; background: #0b141a; }
+        
+        .wa-chat-header {
+            background: var(--wa-header);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .wa-chat-header-info { display: flex; align-items: center; gap: 12px; }
+
+        .wa-message-area {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 16px 16px;
+        }
+
+        .wa-bubble {
+            max-width: 65%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--wa-text);
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            word-wrap: break-word;
+        }
+
+        .wa-bubble.in { background: var(--wa-bubble-in); align-self: flex-start; border-top-left-radius: 0; }
+        .wa-bubble.out { background: var(--wa-bubble-out); align-self: flex-end; border-top-right-radius: 0; }
+
+        .wa-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            font-size: 0.65rem;
+            color: var(--wa-muted);
+            margin-top: 4px;
+        }
+
+        .wa-ticks { color: #53bdeb; font-weight: bold; }
+
+        .wa-media-img {
+            max-width: 100%;
+            border-radius: 6px;
+            margin-top: 4px;
+            display: block;
+            max-height: 200px;
+            object-fit: cover;
+        }
+
+        .wa-doc-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 4px;
+            border-left: 3px solid var(--wa-accent);
+        }
+
+        .wa-audio-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            margin-top: 4px;
+            width: 230px;
+        }
+
+        .wa-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--wa-accent);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .wa-wave {
+            flex: 1;
+            height: 12px;
+            background: repeating-linear-gradient(90deg, var(--wa-accent), var(--wa-accent) 2px, transparent 2px, transparent 4px);
+            border-radius: 2px;
+        }
+
+        .wa-input-bar {
+            background: var(--wa-header);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wa-icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .wa-icon-btn:hover { color: var(--wa-text); }
+
+        .wa-input-field {
+            flex: 1;
+            background: #2a3942;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--wa-text);
+            font-size: 0.9rem;
+            margin-bottom: 0 !important;
+        }
+
+        .wa-send-btn {
+            background: var(--wa-accent);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        #imgFileInput, #docFileInput { display: none; }
 
         /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
@@ -128,7 +364,7 @@
     <header class="header">
         <div class="header-title">
             <h1>MAGAZAWA SKILLS AND TECHNOLOGY</h1>
-            <h2>Admin Control Panel & Course Portal</h2>
+            <h2>Admin Control Panel & Campus WhatsApp Portal</h2>
         </div>
         <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
     </header>
@@ -445,70 +681,155 @@
         </form>
     </section>
 
-    <!-- COMMUNICATION HUB -->
+    <!-- COMMUNICATION HUB (WHATSAPP CAMPUS MESSENGER INTEGRATED) -->
     <section class="card" id="chat-sec">
         <h3 class="card-title" style="margin-bottom: 16px;">💬 Communication Hub</h3>
 
         <div class="tab-nav">
-            <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">Portal Live Messenger</button>
+            <button class="tab-btn active" onclick="switchTab('live-chat-tab', this)">WhatsApp Campus Messenger</button>
             <button class="tab-btn" onclick="switchTab('system-msg-tab', this)">Internal System Broadcast</button>
         </div>
 
+        <!-- WHATSAPP CAMPUS MESSENGER TAB -->
         <div id="live-chat-tab" class="tab-content active">
-            <div class="webchat-widget" id="chatWidget">
-                <div class="chat-sidebar">
-                    <div class="chat-sidebar-header">
-                        <input type="text" id="chatUserFilter" placeholder="Search user..." onkeyup="filterChatUsers()">
+            <div class="wa-chat-container" id="waWidget">
+                <!-- SIDEBAR -->
+                <div class="wa-sidebar">
+                    <div class="wa-sidebar-header">
+                        <span style="font-weight: bold; color: var(--wa-text); font-size: 0.95rem;">Campus Chats</span>
+                        <span style="color: var(--wa-accent); font-weight: bold; font-size: 0.8rem;">● Live</span>
                     </div>
-                    <div class="chat-user-list" id="chatUserList">
+
+                    <!-- ROLE CATEGORY TABS -->
+                    <div class="wa-role-tabs">
+                        <button class="wa-tab-btn active" onclick="filterWaRole('all', this)">All</button>
+                        <button class="wa-tab-btn" onclick="filterWaRole('student', this)">Students</button>
+                        <button class="wa-tab-btn" onclick="filterWaRole('lecturer', this)">Lecturers</button>
+                        <button class="wa-tab-btn" onclick="filterWaRole('registrar', this)">Registrar</button>
+                    </div>
+
+                    <div class="wa-search-bar">
+                        <input type="text" id="waUserFilter" placeholder="Search contact or chat..." onkeyup="filterWaUsers()">
+                    </div>
+
+                    <div class="wa-user-list" id="waUserList">
+                        <!-- REGISTRAR DEFAULT CONTACT -->
+                        <div class="wa-user-item" data-role="registrar" onclick="openWaChat('0', 'Registrar Office', 'REGISTRAR', 'RO', this)">
+                            <div class="wa-avatar" style="background: #e67e22;">RO</div>
+                            <div class="wa-user-info">
+                                <h4>Registrar Office</h4>
+                                <p>Official Academic Transmission</p>
+                            </div>
+                        </div>
+
+                        <!-- LECTURER DEFAULT CONTACT -->
+                        <div class="wa-user-item" data-role="lecturer" onclick="openWaChat('0', 'Dr. Engr. Suleman', 'LECTURER', 'DS', this)">
+                            <div class="wa-avatar" style="background: #8e44ad;">DS</div>
+                            <div class="wa-user-info">
+                                <h4>Dr. Engr. Suleman</h4>
+                                <p>Computer Engineering Dept</p>
+                            </div>
+                        </div>
+
+                        <!-- DYNAMIC USERS FROM DATABASE -->
                         {% for u in all_users %}
-                        <div class="chat-user-item" onclick="openChatSession('{{ u.id }}', '{{ u.full_name }}', '{{ u.role | upper }}', this)">
-                            <div class="user-details">
+                        <div class="wa-user-item" data-role="{{ u.role | lower }}" onclick="openWaChat('{{ u.id }}', '{{ u.full_name }}', '{{ u.role | upper }}', '{{ u.full_name[:2] | upper }}', this)">
+                            <div class="wa-avatar">{{ u.full_name[:2] | upper }}</div>
+                            <div class="wa-user-info">
                                 <h4>{{ u.full_name }}</h4>
                                 <p>{{ u.role | upper }}</p>
                             </div>
-                            <span class="status-dot online"></span>
                         </div>
                         {% else %}
-                        <div class="chat-user-item active" onclick="openChatSession('0', 'Demo Student', 'STUDENT', this)">
-                            <div class="user-details">
-                                <h4>Demo Student</h4>
-                                <p>STUDENT</p>
+                        <div class="wa-user-item active" data-role="student" onclick="openWaChat('0', 'Marmash Student', 'STUDENT', 'MS', this)">
+                            <div class="wa-avatar" style="background: #00a884;">MS</div>
+                            <div class="wa-user-info">
+                                <h4>Marmash Student</h4>
+                                <p>STUDENT • Computer Eng.</p>
                             </div>
-                            <span class="status-dot online"></span>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
 
-                <div class="chat-main-area">
-                    <div class="chat-header">
+                <!-- MAIN CHAT PANEL -->
+                <div class="wa-chat-main">
+                    <!-- HEADER -->
+                    <div class="wa-chat-header">
+                        <div class="wa-chat-header-info">
+                            <div class="wa-avatar" id="activeWaAvatar" style="background: #00a884;">MS</div>
+                            <div>
+                                <h4 id="activeWaName" style="font-size: 0.95rem; color: var(--wa-text);">Marmash Student</h4>
+                                <p id="activeWaRole" style="font-size: 0.75rem; color: var(--wa-accent);">Online • STUDENT</p>
+                            </div>
+                        </div>
                         <div>
-                            <h4 id="activeChatUser" style="font-size: 0.9375rem;">Select User</h4>
-                            <p id="activeChatRole" style="font-size: 0.75rem; color: var(--text-muted);">In-Site Live Support</p>
-                        </div>
-                        <button class="btn btn-primary" id="chatBackBtn" onclick="closeMobileChat()" style="display: none;">Back</button>
-                    </div>
-
-                    <div class="chat-messages-container" id="chatThread">
-                        <div class="chat-bubble in">
-                            Select a user on the left to initiate administrative assistance.
-                            <div class="chat-time">Live</div>
+                            <button class="btn btn-primary" id="waBackBtn" onclick="closeMobileWa()" style="display: none;">Back</button>
                         </div>
                     </div>
 
-                    <form id="liveChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleChatSubmit(event)">
-                        <input type="hidden" id="chat_receiver_id" name="receiver_id" value="">
+                    <!-- THREAD MESSAGES AREA -->
+                    <div class="wa-message-area" id="waThread">
+                        <div class="wa-bubble in">
+                            Hello Admin! Please check my uploaded lecture notes and course registration status.
+                            <div class="wa-meta">10:42 AM</div>
+                        </div>
+
+                        <!-- LECTURE NOTE PDF ATTACHMENT DEMO -->
+                        <div class="wa-bubble in">
+                            📄 Uploaded Lecture Note:
+                            <div class="wa-doc-attachment">
+                                <span style="font-size: 1.4rem;">📘</span>
+                                <div>
+                                    <strong style="display:block; font-size: 0.8rem;">CTE311_Lecture_Note.pdf</strong>
+                                    <span style="font-size: 0.68rem; color: var(--wa-muted);">2.4 MB • PDF Document</span>
+                                </div>
+                            </div>
+                            <div class="wa-meta">10:43 AM</div>
+                        </div>
+
+                        <!-- VOICE MAIL / AUDIO NOTE DEMO -->
+                        <div class="wa-bubble out">
+                            🎙 Voice Note
+                            <div class="wa-audio-player">
+                                <button class="wa-play-btn" type="button" onclick="toggleAudio(this)">▶</button>
+                                <div class="wa-wave"></div>
+                                <span style="font-size: 0.7rem; color: var(--wa-muted);">0:14</span>
+                            </div>
+                            <div class="wa-meta">10:45 AM <span class="wa-ticks">✓✓</span></div>
+                        </div>
+                    </div>
+
+                    <!-- INPUT FORM & MULTIMEDIA CONTROLS -->
+                    <form id="waChatForm" action="{{ url_for('send_message') }}" method="POST" onsubmit="return handleWaSubmit(event)">
+                        <input type="hidden" id="wa_receiver_id" name="receiver_id" value="">
                         
-                        <div class="chat-input-bar">
-                            <input type="text" id="chatMessageInput" name="content" placeholder="Type message..." required style="margin-bottom: 0;">
-                            <button type="submit" class="btn btn-primary" style="white-space: nowrap;">Send</button>
+                        <!-- HIDDEN FILE INPUTS FOR IMAGES AND LECTURE NOTES -->
+                        <input type="file" id="imgFileInput" accept="image/*" onchange="handleImageUpload(event)">
+                        <input type="file" id="docFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" onchange="handleDocUpload(event)">
+
+                        <div class="wa-input-bar">
+                            <!-- UPLOAD LECTURE NOTES (DOCS) -->
+                            <button type="button" class="wa-icon-btn" title="Upload Lecture Note / Document" onclick="document.getElementById('docFileInput').click()">📄</button>
+                            
+                            <!-- UPLOAD IMAGES -->
+                            <button type="button" class="wa-icon-btn" title="Send Photo / Image" onclick="document.getElementById('imgFileInput').click()">📷</button>
+
+                            <!-- RECORD VOICE MAIL -->
+                            <button type="button" class="wa-icon-btn" title="Record Voice Mail" onclick="recordVoiceMail()">🎙</button>
+
+                            <!-- TEXT INPUT FIELD -->
+                            <input type="text" id="waMessageInput" name="content" class="wa-input-field" placeholder="Type a message or attach files..." required>
+
+                            <!-- SEND BUTTON -->
+                            <button type="submit" class="wa-send-btn">➔</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
 
+        <!-- BROADCAST TAB -->
         <div id="system-msg-tab" class="tab-content">
             <form action="{{ url_for('send_message') }}" method="POST">
                 <label for="receiver_id">Select Recipient</label>
@@ -612,42 +933,53 @@
             btn.classList.add('active');
         }
 
-        function openChatSession(userId, userName, userRole, element) {
-            document.querySelectorAll('.chat-user-item').forEach(item => item.classList.remove('active'));
+        /* WHATSAPP CAMPUS MESSENGER SCRIPTS */
+        function filterWaRole(role, btn) {
+            document.querySelectorAll('.wa-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const items = document.querySelectorAll('.wa-user-item');
+            items.forEach(item => {
+                const itemRole = item.getAttribute('data-role');
+                if (role === 'all' || itemRole === role) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function openWaChat(userId, userName, userRole, avatarText, element) {
+            document.querySelectorAll('.wa-user-item').forEach(item => item.classList.remove('active'));
             if (element) element.classList.add('active');
 
-            document.getElementById('chat_receiver_id').value = userId;
-            document.getElementById('activeChatUser').innerText = userName;
-            document.getElementById('activeChatRole').innerText = userRole + ' • Active';
+            document.getElementById('wa_receiver_id').value = userId;
+            document.getElementById('activeWaName').innerText = userName;
+            document.getElementById('activeWaRole').innerText = 'Online • ' + userRole;
+            document.getElementById('activeWaAvatar').innerText = avatarText;
 
-            if (window.innerWidth <= 768) {
-                document.getElementById('chatWidget').classList.add('chat-open');
-                document.getElementById('chatBackBtn').style.display = 'block';
+            if (window.innerWidth <= 850) {
+                document.getElementById('waWidget').classList.add('chat-active');
+                document.getElementById('waBackBtn').style.display = 'block';
             }
         }
 
-        function closeMobileChat() {
-            document.getElementById('chatWidget').classList.remove('chat-open');
-            document.getElementById('chatBackBtn').style.display = 'none';
+        function closeMobileWa() {
+            document.getElementById('waWidget').classList.remove('chat-active');
+            document.getElementById('waBackBtn').style.display = 'none';
         }
 
-        function handleChatSubmit(e) {
-            const receiverId = document.getElementById('chat_receiver_id').value;
-            const input = document.getElementById('chatMessageInput');
+        function handleWaSubmit(e) {
+            const input = document.getElementById('waMessageInput');
             const messageText = input.value.trim();
 
-            if (!receiverId) {
-                alert('Please select a recipient user from the sidebar list.');
-                return false;
-            }
-
             if (messageText) {
-                const thread = document.getElementById('chatThread');
+                const thread = document.getElementById('waThread');
                 const bubble = document.createElement('div');
-                bubble.className = 'chat-bubble out';
+                bubble.className = 'wa-bubble out';
                 
                 const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                bubble.innerHTML = `${messageText}<div class="chat-time">${time}</div>`;
+                bubble.innerHTML = `${messageText}<div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
                 
                 thread.appendChild(bubble);
                 thread.scrollTop = thread.scrollHeight;
@@ -655,9 +987,82 @@
             return true;
         }
 
-        function filterChatUsers() {
-            const filter = document.getElementById('chatUserFilter').value.toLowerCase();
-            const items = document.querySelectorAll('.chat-user-item');
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const thread = document.getElementById('waThread');
+                    const bubble = document.createElement('div');
+                    bubble.className = 'wa-bubble out';
+                    
+                    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    bubble.innerHTML = `🖼 Image Attachment:
+                        <img src="${e.target.result}" class="wa-media-img">
+                        <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                    
+                    thread.appendChild(bubble);
+                    thread.scrollTop = thread.scrollHeight;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleDocUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const thread = document.getElementById('waThread');
+                const bubble = document.createElement('div');
+                bubble.className = 'wa-bubble out';
+                
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                
+                bubble.innerHTML = `📄 Uploaded Lecture Note:
+                    <div class="wa-doc-attachment">
+                        <span style="font-size: 1.4rem;">📚</span>
+                        <div>
+                            <strong style="display:block; font-size: 0.8rem;">${file.name}</strong>
+                            <span style="font-size: 0.68rem; color: var(--wa-muted);">${fileSize} MB • Document</span>
+                        </div>
+                    </div>
+                    <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+                
+                thread.appendChild(bubble);
+                thread.scrollTop = thread.scrollHeight;
+            }
+        }
+
+        function recordVoiceMail() {
+            const thread = document.getElementById('waThread');
+            const bubble = document.createElement('div');
+            bubble.className = 'wa-bubble out';
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            bubble.innerHTML = `🎙 Voice Note (0:08)
+                <div class="wa-audio-player">
+                    <button class="wa-play-btn" type="button" onclick="toggleAudio(this)">▶</button>
+                    <div class="wa-wave"></div>
+                    <span style="font-size: 0.7rem; color: var(--wa-muted);">0:08</span>
+                </div>
+                <div class="wa-meta">${time} <span class="wa-ticks">✓✓</span></div>`;
+            
+            thread.appendChild(bubble);
+            thread.scrollTop = thread.scrollHeight;
+        }
+
+        function toggleAudio(btn) {
+            if (btn.innerText === '▶') {
+                btn.innerText = '❚❚';
+            } else {
+                btn.innerText = '▶';
+            }
+        }
+
+        function filterWaUsers() {
+            const filter = document.getElementById('waUserFilter').value.toLowerCase();
+            const items = document.querySelectorAll('.wa-user-item');
             items.forEach(item => {
                 const text = item.innerText.toLowerCase();
                 item.style.display = text.includes(filter) ? 'flex' : 'none';
