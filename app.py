@@ -333,23 +333,23 @@ def student_dashboard():
 
     user_id = current_user.id
 
-    # 1. Registered Courses for this student
+    # 1. Fetch Courses safely
     try:
         courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         courses = []
 
-    # 2. Results for this student
+    # 2. Fetch Results safely
     try:
         results = Result.query.filter(
             or_(
                 Result.student_id == user_id,
                 Result.reg_number.ilike(current_user.username),
-                Result.reg_number.ilike(current_user.email or '')
+                Result.reg_number.ilike(getattr(current_user, 'email', '') or '')
             )
         ).all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         results = []
 
@@ -360,44 +360,48 @@ def student_dashboard():
 
     for row in results:
         unit = getattr(row, 'unit', 1) or 1
-        grade = (getattr(row, 'grade', 'F') or 'F').upper().strip()
+        grade = str(getattr(row, 'grade', 'F') or 'F').upper().strip()
         point = grade_points.get(grade, 0.0)
         total_units += unit
         total_points += (unit * point)
 
-    cgpa = (total_points / total_units) if total_units > 0 else 0.0
+    cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
 
-    # 4. Lecture Materials
+    # 4. Fetch Lecture Materials safely
     try:
         materials = Material.query.all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         materials = []
 
-    # 5. Messages & All Users for Campus Chat Sidebar
+    # 5. Fetch Messages safely
     try:
         messages = Message.query.filter(
             or_(Message.receiver_id == user_id, Message.sender_id == user_id)
         ).order_by(Message.timestamp.desc()).all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         messages = []
 
+    # 6. Fetch All Users for Campus Chat Sidebar
     try:
         all_users = User.query.filter(User.id != user_id).all()
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         all_users = []
 
+    # 7. Provide explicit defaults for all template variables
     return render_template(
         'student_dashboard.html',
         student=current_user,
-        courses=courses,
-        results=results,
+        user=current_user,
+        courses=courses or [],
+        results=results or [],
         cgpa=cgpa,
-        materials=materials,
-        messages=messages,
-        all_users=all_users
+        materials=materials or [],
+        messages=messages or [],
+        all_users=all_users or [],
+        users=all_users or []
     )
 
 # --- ADMIN ACTIONS ---
