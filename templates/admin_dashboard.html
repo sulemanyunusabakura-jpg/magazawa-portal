@@ -20,6 +20,7 @@
             --danger: #dc3545;
             --danger-hover: #bb2d3b;
             --warning: #ffc107;
+            --warning-hover: #e0a800;
             --warning-text: #000000;
             
             /* WHATSAPP DARK THEME COLORS */
@@ -73,6 +74,8 @@
         .btn-success:hover { background: var(--success-hover); }
         .btn-danger { background: var(--danger); }
         .btn-danger:hover { background: var(--danger-hover); }
+        .btn-warning { background: var(--warning); color: var(--warning-text); }
+        .btn-warning:hover { background: var(--warning-hover); color: var(--warning-text); }
         .btn-primary { background: var(--primary); }
         .btn-primary:hover { background: var(--primary-hover); }
 
@@ -80,6 +83,7 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-transform: uppercase; }
         .bg-warning { background: var(--warning); color: var(--warning-text); }
         .bg-success { background: var(--success); color: #fff; }
+        .bg-danger { background: var(--danger); color: #fff; }
 
         select, input, textarea { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; font-size: 0.875rem; outline: none; transition: border-color 0.2s ease; }
         select:focus, input:focus, textarea:focus { border-color: var(--primary); }
@@ -560,12 +564,54 @@
 
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">+ Upload Result Record</button>
         </form>
+
+        <hr style="border-color: var(--border-color); margin: 24px 0;">
+
+        <div class="card-header">
+            <h4 style="font-size: 1rem;">Uploaded Student Results</h4>
+            <input type="text" id="resultSearch" class="search-box" placeholder="Search results..." onkeyup="filterTable('resultSearch', 'resultTable')">
+        </div>
+
+        <div class="table-responsive">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course Code & Title</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                        <th>Level/Semester</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in results %}
+                    <tr>
+                        <td><strong>{{ res.student.full_name if res.student else 'Unknown' }}</strong><br><small style="color: var(--text-muted);">{{ res.reg_number or '' }}</small></td>
+                        <td><strong>{{ res.course_code }}</strong> - {{ res.course_name or res.title }}</td>
+                        <td>{{ res.score }}</td>
+                        <td><span class="badge bg-success">{{ res.grade }}</span></td>
+                        <td>{{ res.level or 'ND1' }} / Sem {{ res.semester or '1' }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_result', result_id=res.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this result entry?');" style="display:inline;">
+                                <button type="submit" class="btn btn-danger">Delete Result</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted);">No academic results uploaded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <!-- STUDENT ADMISSIONS & PAYMENTS -->
     <section class="card" id="students-sec">
         <div class="card-header">
-            <h3 class="card-title">🎓 Student Admissions & Payment Approvals</h3>
+            <h3 class="card-title">🎓 Student Admissions, Payments & Status</h3>
             <input type="text" id="studentSearch" class="search-box" placeholder="Filter students..." onkeyup="filterTable('studentSearch', 'studentTable')">
         </div>
         <div class="table-responsive">
@@ -576,6 +622,7 @@
                         <th>Email</th>
                         <th>Admission</th>
                         <th>Payment Status</th>
+                        <th>Account Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -599,6 +646,13 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if std.status == 'suspended' %}
+                                <span class="badge bg-danger">Suspended</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="btn-group">
                                 {% if not std.is_approved %}
                                     <button onclick="confirmAction('{{ url_for('approve_student', id=std.id) }}', 'Approve Admission', 'Approve admission for {{ std.full_name }}?')" class="btn btn-success">Approve</button>
@@ -608,11 +662,19 @@
                                 {% if std.payment_status != 'Paid' %}
                                     <button onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
                                 {% endif %}
+
+                                <form action="{{ url_for('toggle_user_status', user_id=std.id) }}" method="POST" style="display:inline;">
+                                    {% if std.status == 'suspended' %}
+                                        <button type="submit" class="btn btn-success">Unsuspend</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to suspend {{ std.full_name }}?');">Suspend</button>
+                                    {% endif %}
+                                </form>
                             </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No student records found.</td></tr>
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No student records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -622,7 +684,7 @@
     <!-- LECTURER MANAGEMENT -->
     <section class="card" id="lecturers-sec">
         <div class="card-header">
-            <h3 class="card-title">👨‍🏫 Lecturer Applications</h3>
+            <h3 class="card-title">👨‍🏫 Lecturer Applications & Account Status</h3>
             <input type="text" id="lecturerSearch" class="search-box" placeholder="Filter lecturers..." onkeyup="filterTable('lecturerSearch', 'lecturerTable')">
         </div>
         <div class="table-responsive">
@@ -632,8 +694,9 @@
                         <th>Full Name</th>
                         <th>Contact Email / Phone</th>
                         <th>Desired Courses</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <th>Approval</th>
+                        <th>Account Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -650,18 +713,31 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if not lec.is_approved %}
-                                <div class="btn-group">
+                            {% if lec.status == 'suspended' %}
+                                <span class="badge bg-danger">Suspended</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                {% if not lec.is_approved %}
                                     <button onclick="confirmAction('{{ url_for('approve_lecturer', id=lec.id) }}', 'Approve Lecturer', 'Approve lecturer application?')" class="btn btn-success">Approve</button>
                                     <button onclick="confirmAction('{{ url_for('reject_lecturer', id=lec.id) }}', 'Reject Lecturer', 'Reject lecturer application?')" class="btn btn-danger">Reject</button>
-                                </div>
-                            {% else %}
-                                <span style="color: var(--text-muted);">Active Staff</span>
-                            {% endif %}
+                                {% endif %}
+
+                                <form action="{{ url_for('toggle_user_status', user_id=lec.id) }}" method="POST" style="display:inline;">
+                                    {% if lec.status == 'suspended' %}
+                                        <button type="submit" class="btn btn-success">Unsuspend</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to suspend {{ lec.full_name }}?');">Suspend</button>
+                                    {% endif %}
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No lecturer applications pending.</td></tr>
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No lecturer records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
