@@ -91,6 +91,7 @@ def auto_migrate_db():
                 
                 # Synchronize User table
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;"))
 
                 # Synchronize Course table
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
@@ -156,8 +157,12 @@ def login():
             return render_template('login.html')
 
         if user and check_password_hash(user.password, password):
+            if getattr(user, 'is_suspended', False):
+                flash('Your account has been suspended by Administration. Contact support.', 'danger')
+                return redirect(url_for('login'))
+
             if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
-                flash('Your account is pending approval or currently suspended by Magazawa Admin.', 'warning')
+                flash('Your account is pending approval by Magazawa Admin.', 'warning')
                 return redirect(url_for('login'))
 
             login_user(user)
@@ -255,15 +260,7 @@ def admin_dashboard():
         flash(f"Database query notice: {str(e).split('[SQL:')[0].strip()}", "warning")
         students, lecturers, all_users, messages, courses, results = [], [], [], [], [], []
 
-    return render_template(
-        'admin_dashboard.html', 
-        students=students, 
-        lecturers=lecturers, 
-        all_users=all_users, 
-        messages=messages, 
-        courses=courses,
-        results=results
-    )
+    return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses, results=results)
 
 @app.route('/dashboard/creator')
 @login_required
@@ -341,119 +338,48 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     user_id = current_user.id
+    
+    # 1. Registered Courses for this student (or general courses fallback)
+    courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
 
-    # 1. Fetch Courses safely
-    try:
-        courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
-    except Exception as e:
-        db.session.rollback()
-        courses = []
-
-    # 2. Fetch Results safely
-    try:
-        results = Result.query.filter(
-            or_(
-                Result.student_id == user_id,
-                Result.reg_number.ilike(current_user.username),
-                Result.reg_number.ilike(getattr(current_user, 'email', '') or '')
-            )
-        ).all()
-    except Exception as e:
-        db.session.rollback()
-        results = []
-
+    # 2. Results for this student (matches by student_id or email/username reg_number)
+    results = Result.query.filter(
+        or_(
+            Result.student_id == user_id,
+            Result.reg_number.ilike(current_user.username),
+            Result.reg_number.ilike(current_user.email or '')
+        )
+    ).all()
+    
     # 3. NBTE 4.0 Scale CGPA Calculation
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
-
+    
     for row in results:
         unit = getattr(row, 'unit', 1) or 1
-        grade = str(getattr(row, 'grade', 'F') or 'F').upper().strip()
+        grade = (getattr(row, 'grade', 'F') or 'F').upper().strip()
         point = grade_points.get(grade, 0.0)
         total_units += unit
         total_points += (unit * point)
+        
+    cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-    cgpa = round(total_points / total_units, 2) if total_units > 0 else 0.00
+    # 4. Lecture Materials & Messages
+    materials = Material.query.all()
+    messages = Message.query.filter_by(receiver_id=user_id).order_by(Message.timestamp.desc()).all()
 
-    # 4. Fetch Lecture Materials safely
-    try:
-        materials = Material.query.all()
-    except Exception as e:
-        db.session.rollback()
-        materials = []
-
-    # 5. Fetch Messages safely
-    try:
-        messages = Message.query.filter(
-            or_(Message.receiver_id == user_id, Message.sender_id == user_id)
-        ).order_by(Message.timestamp.desc()).all()
-    except Exception as e:
-        db.session.rollback()
-        messages = []
-
-    # 6. Fetch All Users for Campus Chat Sidebar safely
-    try:
-        all_users = User.query.filter(User.id != user_id).all()
-    except Exception as e:
-        db.session.rollback()
-        all_users = []
-
-    # 7. Render Template with strict Variable Fallbacks
     return render_template(
         'student_dashboard.html',
         student=current_user,
-        user=current_user,
-        courses=courses or [],
-        results=results or [],
+        courses=courses,
+        results=results,
         cgpa=cgpa,
-        materials=materials or [],
-        messages=messages or [],
-        all_users=all_users or [],
-        users=all_users or []
+        materials=materials,
+        messages=messages
     )
 
 # --- ADMIN ACTIONS ---
-@app.route('/admin/toggle_suspend_student/<int:id>')
-@login_required
-def toggle_suspend_student(id):
-    if current_user.role != 'admin':
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('login'))
-
-    student = db.session.get(User, id)
-    if student and student.role == 'student':
-        student.is_approved = not student.is_approved
-        status_text = "reinstated" if student.is_approved else "suspended"
-        db.session.commit()
-        flash(f'Student {student.full_name} has been {status_text}.', 'warning' if not student.is_approved else 'success')
-    else:
-        flash('Student record not found.', 'danger')
-
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/delete_result/<int:result_id>', methods=['POST'])
-@login_required
-def delete_result(result_id):
-    if current_user.role != 'admin':
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('login'))
-
-    try:
-        result = db.session.get(Result, result_id)
-        if result:
-            db.session.delete(result)
-            db.session.commit()
-            flash('Student result deleted successfully.', 'info')
-        else:
-            flash('Result record not found.', 'warning')
-    except Exception as e:
-        db.session.rollback()
-        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
-        flash(f'Error deleting result: {clean_error}', 'danger')
-
-    return redirect(url_for('admin_dashboard'))
-
 @app.route('/admin/ask_gemini', methods=['POST'])
 @login_required
 def ask_gemini():
@@ -554,6 +480,30 @@ def approve_payment(id):
         flash(f'Payment confirmed for {student.full_name}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# --- STUDENT SUSPENSION TOGGLE ROUTE ---
+@app.route('/admin/toggle_suspension/<int:user_id>', methods=['POST'])
+@login_required
+def toggle_suspension(user_id):
+    if current_user.role != 'admin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('login'))
+
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("User not found.", "warning")
+        return redirect(url_for('admin_dashboard'))
+    
+    # Toggle suspension state regardless of admission/payment status
+    user.is_suspended = not getattr(user, 'is_suspended', False)
+    db.session.commit()
+
+    if user.is_suspended:
+        flash(f"Account for {user.full_name} has been suspended.", "warning")
+    else:
+        flash(f"Account for {user.full_name} has been reactivated.", "success")
+
+    return redirect(url_for('admin_dashboard'))
+
 # --- COURSE MANAGEMENT ROUTES ---
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
@@ -612,7 +562,7 @@ def delete_course(course_id):
 
     return redirect(url_for('admin_dashboard'))
 
-# --- MANAGE RESULT ROUTE ---
+# --- MANAGE & DELETE RESULT ROUTES ---
 @app.route('/manage_result', methods=['POST'])
 @login_required
 def manage_result():
@@ -682,7 +632,24 @@ def manage_result():
                 flash('Result Record ID not found.', 'warning')
 
     return redirect(url_for('admin_dashboard'))
-    
+
+@app.route('/admin/delete_result/<int:result_id>', methods=['POST'])
+@login_required
+def delete_result(result_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    result = db.session.get(Result, result_id)
+    if result:
+        db.session.delete(result)
+        db.session.commit()
+        flash('Student result record deleted successfully.', 'success')
+    else:
+        flash('Result record not found.', 'warning')
+
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
