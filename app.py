@@ -75,6 +75,17 @@ def auto_migrate_db():
         try:
             db.create_all()
             with db.engine.connect() as conn:
+                # Synchronize User table columns
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS status VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS program VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS department VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS remita_invoice VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS admission_status VARCHAR(50);"))
+
                 # Synchronize Material table
                 conn.execute(text("ALTER TABLE material ADD COLUMN IF NOT EXISTS upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"))
 
@@ -88,14 +99,12 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
-                
-                # Synchronize User table
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);"))
 
                 # Synchronize Course table
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
+                
                 conn.commit()
         except Exception as e:
             print(f"Schema verification notice: {e}")
