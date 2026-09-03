@@ -165,18 +165,25 @@ def robots():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
+        identifier = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
         try:
-            user = User.query.filter_by(username=username).first()
+            # Flexible user search across username, email, and registration number
+            user = User.query.filter(
+                or_(
+                    User.username.ilike(identifier),
+                    User.email.ilike(identifier),
+                    User.reg_number.ilike(identifier)
+                )
+            ).first()
         except Exception:
             db.session.rollback()
             flash('Database error encountered. Please try logging in again.', 'danger')
             return render_template('login.html')
 
         if user and check_password_hash(user.password, password):
-            if not user.is_approved and user.role not in ['admin', 'creator', 'registrar']:
+            if not getattr(user, 'is_approved', False) and user.role not in ['admin', 'creator', 'registrar']:
                 flash('Your account is pending approval by Magazawa Admin.', 'warning')
                 return redirect(url_for('login'))
 
@@ -191,7 +198,7 @@ def login():
             return redirect(url_for(role_routes.get(user.role, 'student_dashboard')))
         else:
             flash('Invalid login credentials.', 'danger')
-            
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -204,6 +211,17 @@ def logout():
 @app.route('/apply/student', methods=['GET', 'POST'])
 def apply_student():
     if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        full_name = request.form.get('full_name', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        # Check for existing account
+        existing = User.query.filter(or_(User.username.ilike(email), User.email.ilike(email))).first()
+        if existing:
+            flash('An account with this email already exists. Please log in.', 'info')
+            return redirect(url_for('login'))
+
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
 
@@ -220,21 +238,24 @@ def apply_student():
             s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
 
         new_student = User(
-            username=request.form['email'],
-            password=generate_password_hash(request.form['password']),
+            username=email,
+            password=generate_password_hash(password),
             role='student',
-            full_name=request.form['full_name'],
-            email=request.form['email'],
-            phone=request.form['phone'],
+            full_name=full_name,
+            email=email,
+            phone=phone,
             dob=request.form.get('dob', ''),
             primary_school=request.form.get('primary_school', ''),
             primary_cert=p_filename,
             sec_school=request.form.get('sec_school', ''),
-            sec_cert=s_filename
+            sec_cert=s_filename,
+            is_approved=True,
+            admission_status='Admitted',
+            payment_status='Pending'
         )
         db.session.add(new_student)
         db.session.commit()
-        flash('Application submitted to Magazawa Skills and Technology! Await admission approval.', 'success')
+        flash('Registration successful! You can now log in to your dashboard.', 'success')
         return redirect(url_for('login'))
     return render_template('apply_student.html')
 
@@ -278,7 +299,6 @@ def admin_dashboard():
 
     return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
 
-
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
 def add_course():
@@ -319,7 +339,6 @@ def add_course():
 
     return redirect(url_for('admin_dashboard'))
 
-
 @app.route('/admin/delete_course/<int:course_id>', methods=['GET', 'POST'])
 @login_required
 def delete_course(course_id):
@@ -341,6 +360,7 @@ def delete_course(course_id):
         flash(f'Error removing course: {clean_error}', 'danger')
 
     return redirect(url_for('admin_dashboard'))
+
 @app.route('/dashboard/creator')
 @login_required
 def creator_dashboard():
@@ -573,64 +593,6 @@ def toggle_user_status(user_id):
     else:
         flash('User account not found.', 'warning')
         
-    return redirect(url_for('admin_dashboard'))
-
-# --- COURSE MANAGEMENT ROUTES ---
-@app.route('/admin/add_course', methods=['POST'])
-@login_required
-def add_course():
-    if current_user.role != 'admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
-
-    student_id = request.form.get('student_id')
-    course_name = request.form.get('course_name', '').strip()
-    course_code = request.form.get('course_code', '').strip()
-    unit = request.form.get('unit', '1')
-    semester = request.form.get('semester', '1')
-
-    if not course_name or not course_code:
-        flash('Course Name and Course Code are required.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    try:
-        unit_val = int(unit) if str(unit).isdigit() else 1
-        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
-
-        new_course = Course(
-            student_id=student_id_val,
-            course_name=course_name,
-            course_code=course_code,
-            unit=unit_val,
-            semester=semester
-        )
-        db.session.add(new_course)
-        db.session.commit()
-        flash('Course assigned successfully!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
-        flash(f'Error adding course: {clean_error}', 'danger')
-
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
-@login_required
-def delete_course(course_id):
-    if current_user.role != 'admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
-
-    try:
-        course = db.get_or_404(Course, course_id)
-        db.session.delete(course)
-        db.session.commit()
-        flash('Course removed successfully!', 'info')
-    except Exception as e:
-        db.session.rollback()
-        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
-        flash(f'Error removing course: {clean_error}', 'danger')
-
     return redirect(url_for('admin_dashboard'))
 
 # --- MANAGE RESULT ROUTE ---
