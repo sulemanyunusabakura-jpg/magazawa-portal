@@ -351,10 +351,8 @@ def student_dashboard():
 
     user_id = current_user.id
     
-    # Registered Courses for this student (or general courses fallback)
     courses = Course.query.filter(or_(Course.student_id == user_id, Course.student_id == None)).all()
 
-    # Results for this student (matches by student_id or email/username reg_number)
     results = Result.query.filter(
         or_(
             Result.student_id == user_id,
@@ -363,7 +361,6 @@ def student_dashboard():
         )
     ).all()
     
-    # NBTE 4.0 Scale CGPA Calculation
     total_units = 0
     total_points = 0
     grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
@@ -377,7 +374,6 @@ def student_dashboard():
         
     cgpa = (total_points / total_units) if total_units > 0 else 0.0
 
-    # Lecture Materials & Messages
     materials = Material.query.all()
     messages = Message.query.filter_by(receiver_id=user_id).order_by(Message.timestamp.desc()).all()
 
@@ -490,6 +486,24 @@ def approve_payment(id):
         student.payment_status = "Paid"
         db.session.commit()
         flash(f'Payment confirmed for {student.full_name}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/toggle_user_status/<int:user_id>', methods=['POST'])
+@login_required
+def toggle_user_status(user_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    target_user = db.session.get(User, user_id)
+    if target_user:
+        target_user.is_approved = not target_user.is_approved
+        db.session.commit()
+        status_str = "approved" if target_user.is_approved else "suspended/disabled"
+        flash(f'Account status for {target_user.full_name} changed to {status_str}.', 'success')
+    else:
+        flash('User account not found.', 'warning')
+        
     return redirect(url_for('admin_dashboard'))
 
 # --- COURSE MANAGEMENT ROUTES ---
