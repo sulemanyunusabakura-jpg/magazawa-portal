@@ -1,4 +1,4 @@
-import os
+ADD
 import uuid
 from functools import wraps
 from flask import (
@@ -75,12 +75,21 @@ def auto_migrate_db():
         try:
             db.create_all()
             with db.engine.connect() as conn:
+                # Synchronize Course table
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS lecturer_id INTEGER;"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS code VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS title VARCHAR(200);"))
+                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS department VARCHAR(100);"))
+
                 # Synchronize Message table
                 conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;"))
                 conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS msg_type VARCHAR(50) DEFAULT 'text';"))
                 conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS file_path VARCHAR(255);"))
 
-                # Synchronize User table columns
+                # Synchronize User table
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS status VARCHAR(50);"))
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
@@ -105,15 +114,10 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
 
-                # Synchronize Course table
-                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
-                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
-                conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS student_id INTEGER;"))
-                
                 conn.commit()
         except Exception as e:
             print(f"Schema verification notice: {e}")
-
+            
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
     auto_migrate_db()
