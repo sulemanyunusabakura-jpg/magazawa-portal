@@ -268,7 +268,9 @@ def admin_dashboard():
         lecturers = User.query.filter_by(role='lecturer').all()
         all_users = User.query.filter(User.id != current_user.id).all()
         messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-        courses = Course.query.all()
+        
+        # Fetch ALL courses (both global curriculum courses and student-specific assignments)
+        courses = Course.query.order_by(Course.id.desc()).all()
     except Exception as e:
         db.session.rollback()
         flash(f"Database query notice: {str(e).split('[SQL:')[0].strip()}", "warning")
@@ -276,6 +278,69 @@ def admin_dashboard():
 
     return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
 
+
+@app.route('/admin/add_course', methods=['POST'])
+@login_required
+def add_course():
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    student_id = request.form.get('student_id')
+    course_name = request.form.get('course_name', '').strip() or request.form.get('title', '').strip()
+    course_code = request.form.get('course_code', '').strip() or request.form.get('code', '').strip()
+    unit = request.form.get('unit', '1')
+    semester = request.form.get('semester', '1')
+
+    if not course_name or not course_code:
+        flash('Course Name and Course Code are required.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    try:
+        unit_val = int(unit) if str(unit).isdigit() else 1
+        student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
+
+        new_course = Course(
+            student_id=student_id_val,
+            course_name=course_name,
+            title=course_name,
+            course_code=course_code,
+            code=course_code,
+            unit=unit_val,
+            semester=str(semester)
+        )
+        db.session.add(new_course)
+        db.session.commit()
+        flash('Course added to database successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
+        flash(f'Error adding course: {clean_error}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/delete_course/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+def delete_course(course_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        course = db.session.get(Course, course_id)
+        if course:
+            db.session.delete(course)
+            db.session.commit()
+            flash('Course removed successfully!', 'info')
+        else:
+            flash('Course not found or already deleted.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
+        flash(f'Error removing course: {clean_error}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
 @app.route('/dashboard/creator')
 @login_required
 def creator_dashboard():
