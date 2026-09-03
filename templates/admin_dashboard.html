@@ -462,37 +462,47 @@
         </div>
 
         <div class="table-responsive">
-            <table id="courseTable">
-                <thead>
-                    <tr>
-                        <th>Course Code</th>
-                        <th>Course Title</th>
-                        <th>Credit Unit</th>
-                        <th>Semester</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for course in courses %}
-                    <tr>
-                        <td><strong>{{ course.course_code }}</strong></td>
-                        <td>{{ course.course_name }}</td>
-                        <td>{{ course.unit if course.unit else 3 }} Units</td>
-                        <td>Semester {{ course.semester if course.semester else 1 }}</td>
-                        <td>
-                            <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Remove this course from curriculum?');">
-                                <button type="submit" class="btn btn-danger">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
+    <table class="table table-dark table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Units</th>
+                <th>Semester</th>
+                <th>Assigned Student</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course.id }}</td>
+                <td>{{ course.course_code or course.code }}</td>
+                <td>{{ course.course_name or course.title }}</td>
+                <td>{{ course.unit }}</td>
+                <td>{{ course.semester }}</td>
+                <td>
+                    {% if course.student_id %}
+                        Student ID: {{ course.student_id }}
                     {% else %}
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No active courses registered in system.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        <span class="badge bg-secondary">Global Course</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this course?');" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">No courses uploaded yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
     </section>
 
     <!-- ADMIN RESULT MANAGEMENT -->
