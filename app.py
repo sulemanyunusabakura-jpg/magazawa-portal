@@ -75,6 +75,11 @@ def auto_migrate_db():
         try:
             db.create_all()
             with db.engine.connect() as conn:
+                # Synchronize Message table
+                conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS msg_type VARCHAR(50) DEFAULT 'text';"))
+                conn.execute(text("ALTER TABLE message ADD COLUMN IF NOT EXISTS file_path VARCHAR(255);"))
+
                 # Synchronize User table columns
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS status VARCHAR(50);"))
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
