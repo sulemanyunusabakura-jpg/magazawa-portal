@@ -108,6 +108,7 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_name VARCHAR(200);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS course_code VARCHAR(100);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS score VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS grade_point FLOAT DEFAULT 0.0;"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS unit INTEGER DEFAULT 1;"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS semester VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
@@ -117,7 +118,7 @@ def auto_migrate_db():
                 conn.commit()
         except Exception as e:
             print(f"Schema verification notice: {e}")
-            
+
 # INITIALIZE DATABASE & ACCOUNTS ON STARTUP
 with app.app_context():
     auto_migrate_db()
@@ -363,12 +364,14 @@ def student_dashboard():
     
     total_units = 0
     total_points = 0
-    grade_points = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+    grade_points_map = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
     
     for row in results:
         unit = getattr(row, 'unit', 1) or 1
         grade = (getattr(row, 'grade', 'F') or 'F').upper().strip()
-        point = grade_points.get(grade, 0.0)
+        point = getattr(row, 'grade_point', None)
+        if point is None:
+            point = grade_points_map.get(grade, 0.0)
         total_units += unit
         total_points += (unit * point)
         
@@ -579,7 +582,7 @@ def manage_result():
         raw_title = request.form.get('title', '').strip() or request.form.get('course_name', '').strip()
         course_code = request.form.get('course_code', '').strip()
         score = request.form.get('score', '').strip()
-        grade = request.form.get('grade', '').strip()
+        grade = request.form.get('grade', '').strip().upper()
         unit = request.form.get('unit', '1')
         semester = request.form.get('semester', '1')
         level = request.form.get('level', 'HND1')
@@ -593,6 +596,10 @@ def manage_result():
             parts = raw_title.split()
             course_code = parts[-1] if len(parts) > 1 else raw_title
 
+        # Calculate Grade Point based on NBTE scale
+        grade_points_map = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
+        gp_val = grade_points_map.get(grade, 0.0)
+
         try:
             student_id_val = int(student_id)
             unit_val = int(unit) if str(unit).isdigit() else 1
@@ -600,19 +607,25 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
-            new_result = Result(
-                student_id=student_id_val,
-                reg_number=reg_num,
-                title=raw_title,
-                course_name=raw_title,
-                course_code=course_code,
-                score=score,
-                grade=grade,
-                unit=unit_val,
-                semester=str(semester),
-                level=level,
-                session=session_val
-            )
+            # Safely create Result object dynamically handling whether grade_point attribute exists in model
+            result_kwargs = {
+                'student_id': student_id_val,
+                'reg_number': reg_num,
+                'title': raw_title,
+                'course_name': raw_title,
+                'course_code': course_code,
+                'score': score,
+                'grade': grade,
+                'unit': unit_val,
+                'semester': str(semester),
+                'level': level,
+                'session': session_val
+            }
+
+            if hasattr(Result, 'grade_point'):
+                result_kwargs['grade_point'] = gp_val
+
+            new_result = Result(**result_kwargs)
 
             db.session.add(new_result)
             db.session.commit()
