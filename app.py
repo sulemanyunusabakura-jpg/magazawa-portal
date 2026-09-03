@@ -114,6 +114,7 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS level VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS session VARCHAR(20);"))
                 conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS reg_number VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE result ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"))
 
                 conn.commit()
         except Exception as e:
@@ -596,7 +597,6 @@ def manage_result():
             parts = raw_title.split()
             course_code = parts[-1] if len(parts) > 1 else raw_title
 
-        # Calculate Grade Point based on NBTE scale
         grade_points_map = {'A': 4.0, 'AB': 3.5, 'B': 3.0, 'BC': 2.5, 'C': 2.0, 'CD': 1.5, 'D': 1.0, 'F': 0.0}
         gp_val = grade_points_map.get(grade, 0.0)
 
@@ -607,7 +607,6 @@ def manage_result():
             target_student = db.session.get(User, student_id_val)
             reg_num = target_student.username if target_student else None
 
-            # Safely create Result object dynamically handling whether grade_point attribute exists in model
             result_kwargs = {
                 'student_id': student_id_val,
                 'reg_number': reg_num,
