@@ -19,7 +19,8 @@ from google.genai import types
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
 
-# DATABASE URI CONFIGURATION FOR RENDER & LOCAL DEVS
+# --- DATABASE CONNECTION & CONFIGURATION ---
+# Compatible with Neon.tech, Render Postgres, and local SQLite development
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -27,7 +28,7 @@ if db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Optimize PostgreSQL pooled connections & hide diagnostic parameters globally
+# Optimize cloud PostgreSQL pooled connections (Neon/Render)
 if 'postgresql' in db_url:
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -68,9 +69,9 @@ def payment_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- SAFE DB SCHEMA SYNC AND AUTO MIGRATION ---
+# --- AUTOMATIC DATABASE SCHEMA INITIALIZATION AND MIGRATION ---
 def auto_migrate_db():
-    """Safely checks and synchronizes database schema without throwing unhandled exceptions."""
+    """Creates tables and synchronizes database schema gracefully."""
     with app.app_context():
         try:
             db.create_all()
@@ -120,7 +121,7 @@ def auto_migrate_db():
         except Exception as e:
             print(f"Schema verification notice: {e}")
 
-# INITIALIZE DATABASE & ACCOUNTS ON STARTUP
+# INITIALIZE DATABASE & DEFAULT SYSTEM ACCOUNTS ON STARTUP
 with app.app_context():
     auto_migrate_db()
 
@@ -150,7 +151,7 @@ with app.app_context():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        print(f"Startup initialization error: {e}")
+        print(f"Startup initialization warning: {e}")
 
 # --- BASE ROUTES ---
 @app.route('/')
@@ -169,7 +170,6 @@ def login():
         password = request.form.get('password', '')
 
         try:
-            # Flexible user search across username, email, and registration number
             user = User.query.filter(
                 or_(
                     User.username.ilike(identifier),
@@ -179,7 +179,7 @@ def login():
             ).first()
         except Exception:
             db.session.rollback()
-            flash('Database error encountered. Please try logging in again.', 'danger')
+            flash('Database lookup error. Please try logging in again.', 'danger')
             return render_template('login.html')
 
         if user and check_password_hash(user.password, password):
@@ -216,7 +216,6 @@ def apply_student():
         full_name = request.form.get('full_name', '').strip()
         phone = request.form.get('phone', '').strip()
 
-        # Check for existing account
         existing = User.query.filter(or_(User.username.ilike(email), User.email.ilike(email))).first()
         if existing:
             flash('An account with this email already exists. Please log in.', 'info')
@@ -289,12 +288,10 @@ def admin_dashboard():
         lecturers = User.query.filter_by(role='lecturer').all()
         all_users = User.query.filter(User.id != current_user.id).all()
         messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.timestamp.desc()).all()
-        
-        # Fetch ALL courses (both global curriculum courses and student-specific assignments)
         courses = Course.query.order_by(Course.id.desc()).all()
     except Exception as e:
         db.session.rollback()
-        flash(f"Database query notice: {str(e).split('[SQL:')[0].strip()}", "warning")
+        flash(f"Database status notice: {str(e).split('[SQL:')[0].strip()}", "warning")
         students, lecturers, all_users, messages, courses = [], [], [], [], []
 
     return render_template('admin_dashboard.html', students=students, lecturers=lecturers, all_users=all_users, messages=messages, courses=courses)
@@ -331,7 +328,7 @@ def add_course():
         )
         db.session.add(new_course)
         db.session.commit()
-        flash('Course added to database successfully!', 'success')
+        flash('Course registered successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
