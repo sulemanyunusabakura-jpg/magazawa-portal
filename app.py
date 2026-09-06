@@ -1050,7 +1050,7 @@ def initialize_paystack():
   if current_user.role != 'student':
     return jsonify({'error': 'Unauthorized'}), 403
 
-  amount_kobo = 2500000  # Example tuition amount (25,000 NGN in Kobo)
+  amount_kobo = 5,000  # Example tuition amount (25,000 NGN in Kobo)
   url = 'https://api.paystack.co/transaction/initialize'
   headers = {
       'Authorization': f'Bearer {PAYSTACK_SECRET_KEY}',
@@ -1623,6 +1623,11 @@ def download_material(filename):
   return send_from_directory(
       app.config['UPLOAD_FOLDER'], filename, as_attachment=True
   )
+
+
+@app.route('/circuit_analyzer')
+def circuit_analyzer():
+    return render_template('circuit_analyzer.html')
 
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
