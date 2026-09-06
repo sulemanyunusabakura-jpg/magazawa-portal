@@ -1,9 +1,11 @@
 import os
 import uuid
+import io
+import requests
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, Response, 
-    send_from_directory, jsonify, session
+    send_from_directory, jsonify, session, send_file
 )
 from flask_login import (
     LoginManager, login_user, logout_user, login_required, current_user
@@ -16,11 +18,18 @@ from models import db, User, Material, Message, Course, Result
 from google import genai
 from google.genai import types
 
+# ReportLab Imports for Professional PDF Generation
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
 
+# --- PAYSTACK CONFIGURATION ---
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', 'sk_test_placeholder_key')
+
 # --- DATABASE CONNECTION & CONFIGURATION ---
-# Compatible with Neon.tech, Render Postgres, and local SQLite development
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///magazawa_portal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -28,7 +37,6 @@ if db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Optimize cloud PostgreSQL pooled connections (Neon/Render)
 if 'postgresql' in db_url:
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -328,7 +336,6 @@ def add_course():
         unit_val = int(unit) if str(unit).isdigit() else 1
         student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
-        # Pass only the standard attributes defined on the Course model
         new_course = Course(
             student_id=student_id_val,
             course_name=course_name,
@@ -481,6 +488,256 @@ def student_dashboard():
         cgpa=cgpa,
         materials=materials,
         messages=messages
+    )
+
+# --- PROFESSIONAL FEATURE 1: AUTOMATED PDF ADMISSION LETTER GENERATOR ---
+@app.route('/student/admission_letter')
+@login_required
+def download_admission_letter():
+    if current_user.role != 'student' or getattr(current_user, 'admission_status', '') != 'Admitted':
+        flash('Admission letter is only available for admitted students.', 'warning')
+        return redirect(url_for('student_dashboard'))
+
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    
+    # Official Letterhead Header
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.drawString(50, 740, "MAGAZAWA SKILLS AND TECHNOLOGY")
+    pdf.setFont("Helvetica", 10)
+    pdf.setFillColor(colors.HexColor("#475569"))
+    pdf.drawString(50, 725, "Office of the Registrar | Official Provisional Admission Letter")
+    pdf.setStrokeColor(colors.HexColor("#cbd5e1"))
+    pdf.line(50, 715, 560, 715)
+
+    # Student Details Box
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.setFillColor(colors.HexColor("#1e293b"))
+    pdf.drawString(50, 680, f"Date: September 2026")
+    pdf.drawString(50, 660, f"Candidate Name: {current_user.full_name}")
+    pdf.drawString(50, 640, f"Registration Email: {current_user.username}")
+    pdf.drawString(50, 620, f"Program: {getattr(current_user, 'program', '') or 'Computer Engineering & Applied Technology'}")
+
+    # Body Content
+    pdf.setFont("Helvetica", 11)
+    body_text = (
+        f"Dear {current_user.full_name},\n\n"
+        "We are pleased to inform you that you have been offered provisional admission into "
+        "Magazawa Skills and Technology for the current academic session.\n\n"
+        "Please proceed to your online portal dashboard to clear your tuition fees via our secure "
+        "payment system. Once verified, you will be granted access to download course materials, "
+        "print your Digital ID Card, and register your semester modules."
+    )
+    
+    text_obj = pdf.beginText(50, 570)
+    text_obj.setFont("Helvetica", 11)
+    text_obj.setLeading(16)
+    for line in body_text.split('\n'):
+        text_obj.textLine(line)
+    pdf.drawText(text_obj)
+
+    # Signature Block
+    pdf.line(50, 380, 560, 380)
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(50, 360, "Signed: Registrar's Office")
+    pdf.drawString(50, 345, "Magazawa Skills & Technology Portal Management")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"Admission_Letter_{current_user.username}.pdf",
+        mimetype='application/pdf'
+    )
+
+# --- PROFESSIONAL FEATURE 2: DIGITAL ID CARD GENERATOR ---
+@app.route('/student/id_card')
+@login_required
+def download_id_card():
+    if current_user.role != 'student':
+        return redirect(url_for('student_dashboard'))
+
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=(350, 220)) # ID Card Standard Dimensions
+
+    # Header Panel
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.rect(0, 170, 350, 50, fill=1)
+    
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(15, 195, "MAGAZAWA SKILLS & TECH")
+    pdf.setFont("Helvetica", 8)
+    pdf.drawString(15, 180, "STUDENT IDENTIFICATION CARD")
+
+    # Profile Photo Rendering
+    photo_path = None
+    if getattr(current_user, 'profile_picture', None):
+        possible_path = os.path.join(app.config['UPLOAD_FOLDER'], current_user.profile_picture)
+        if os.path.exists(possible_path):
+            photo_path = possible_path
+
+    if photo_path:
+        try:
+            pdf.drawImage(photo_path, 15, 65, width=80, height=95)
+        except Exception:
+            pdf.rect(15, 65, 80, 95)
+    else:
+        pdf.setStrokeColor(colors.gray)
+        pdf.rect(15, 65, 80, 95)
+        pdf.setFont("Helvetica", 8)
+        pdf.setFillColor(colors.black)
+        pdf.drawString(25, 105, "NO PHOTO")
+
+    # Student Info Text
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(110, 140, (current_user.full_name or "Student")[:22])
+    
+    pdf.setFont("Helvetica", 9)
+    pdf.drawString(110, 120, f"ID/Reg: {(current_user.username or '')[:20]}")
+    pdf.drawString(110, 105, f"Role: Student")
+    pdf.drawString(110, 90, f"Status: {getattr(current_user, 'admission_status', 'Admitted') or 'Admitted'}")
+    pdf.drawString(110, 75, f"Phone: {getattr(current_user, 'phone', 'N/A') or 'N/A'}")
+
+    # Card Bottom Strip
+    pdf.setFillColor(colors.HexColor("#2563eb"))
+    pdf.rect(0, 0, 350, 15, fill=1)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawCentredString(175, 4, "PROPERTY OF MAGAZINE SKILLS AND TECHNOLOGY PORTAL")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"ID_Card_{current_user.username}.pdf",
+        mimetype='application/pdf'
+    )
+
+# --- PROFESSIONAL FEATURE 3: ONLINE FEE PAYMENT INTEGRATION (PAYSTACK) ---
+@app.route('/paystack/initialize', methods=['POST'])
+@login_required
+def initialize_paystack():
+    if current_user.role != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    amount_kobo = 2500000  # Example tuition amount (25,000 NGN in Kobo)
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "email": current_user.email or current_user.username,
+        "amount": amount_kobo,
+        "callback_url": url_for('verify_paystack', _external=True)
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        res_data = response.json()
+        if res_data.get('status'):
+            return redirect(res_data['data']['authorization_url'])
+        else:
+            flash(f"Payment Initialization Failed: {res_data.get('message')}", "danger")
+    except Exception as e:
+        flash(f"Payment Gateway Error: {str(e)}", "danger")
+
+    return redirect(url_for('student_dashboard'))
+
+@app.route('/paystack/verify')
+@login_required
+def verify_paystack():
+    reference = request.args.get('reference')
+    if not reference:
+        flash("Invalid transaction reference.", "warning")
+        return redirect(url_for('student_dashboard'))
+
+    url = f"https://api.paystack.co/transaction/verify/{reference}"
+    headers = {"Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"}
+
+    try:
+        response = requests.get(url, headers=headers)
+        res_data = response.json()
+
+        if res_data.get('status') and res_data['data']['status'] == 'success':
+            current_user.payment_status = 'Paid'
+            current_user.remita_invoice = f"PST-{reference[:10].upper()}"
+            db.session.commit()
+            flash("Payment Successful! Your school fee status has been updated.", "success")
+        else:
+            flash("Payment Verification Failed.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Verification Error: {str(e)}", "danger")
+
+    return redirect(url_for('student_dashboard'))
+
+# --- PROFESSIONAL FEATURE 4: OFFICIAL RESULT SLIP GENERATOR ---
+@app.route('/student/result_slip')
+@login_required
+@payment_required
+def download_result_slip():
+    results = Result.query.filter(
+        or_(
+            Result.student_id == current_user.id,
+            Result.reg_number.ilike(current_user.username)
+        )
+    ).all()
+
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+
+    # Document Header
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.drawString(50, 750, "MAGAZAWA SKILLS AND TECHNOLOGY")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(50, 735, "OFFICIAL SEMESTER RESULT STATEMENT")
+    pdf.line(50, 725, 560, 725)
+
+    # Student Data
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(50, 700, f"Student Name: {current_user.full_name}")
+    pdf.drawString(50, 685, f"Registration Email/No: {current_user.username}")
+
+    # Table Header
+    y = 650
+    pdf.setFillColor(colors.HexColor("#f1f5f9"))
+    pdf.rect(50, y-5, 510, 20, fill=1)
+    pdf.setFillColor(colors.black)
+    pdf.drawString(55, y, "Course Title")
+    pdf.drawString(320, y, "Code")
+    pdf.drawString(410, y, "Score")
+    pdf.drawString(480, y, "Grade")
+
+    # Table Rows
+    y -= 25
+    pdf.setFont("Helvetica", 10)
+    for r in results:
+        pdf.drawString(55, y, (getattr(r, 'title', '') or getattr(r, 'course_name', 'Course'))[:35])
+        pdf.drawString(320, y, str(getattr(r, 'course_code', 'N/A')))
+        pdf.drawString(410, y, str(getattr(r, 'score', 'N/A')))
+        pdf.drawString(480, y, str(getattr(r, 'grade', 'N/A')))
+        y -= 20
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"Result_Slip_{current_user.username}.pdf",
+        mimetype='application/pdf'
     )
 
 # --- ADMIN ACTIONS ---
