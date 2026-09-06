@@ -2,6 +2,7 @@ import os
 import uuid
 import io
 import requests
+import qrcode
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, Response, 
@@ -22,6 +23,7 @@ from google.genai import types
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'magazawa_skills_technology_secret')
@@ -681,7 +683,64 @@ def verify_paystack():
 
     return redirect(url_for('student_dashboard'))
 
-# --- PROFESSIONAL FEATURE 4: OFFICIAL RESULT SLIP GENERATOR ---
+# --- PROFESSIONAL FEATURE 4: AUTOMATED FEE RECEIPT PDF GENERATOR ---
+@app.route('/download-receipt')
+@login_required
+@payment_required
+def download_receipt():
+    student_name = current_user.full_name or "Student"
+    student_id = getattr(current_user, 'reg_number', '') or current_user.username
+    amount = "25,000 NGN"
+    txn_ref = getattr(current_user, 'remita_invoice', '') or "PAYSTACK_REF_VERIFIED"
+    date_paid = "September 2026"
+
+    # 1. Create PDF in memory
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    
+    # Header
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(100, 750, "MAGAZAWA SKILLS & TECHNOLOGY")
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 730, "Official Fee Payment Receipt")
+    p.line(100, 720, 500, 720)
+
+    # Payment Details
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(100, 680, f"Student Name: {student_name}")
+    p.drawString(100, 660, f"Student ID / Reg: {student_id}")
+    p.drawString(100, 640, f"Amount Paid: {amount}")
+    p.drawString(100, 620, f"Transaction Ref: {txn_ref}")
+    p.drawString(100, 600, f"Payment Date: {date_paid}")
+    p.drawString(100, 580, "Status: SUCCESSFUL / PAID")
+
+    # 2. Generate Verification QR Code
+    verify_url = request.host_url.rstrip('/') + f"/verify/{txn_ref}"
+    qr_img = qrcode.make(verify_url)
+    qr_buffer = io.BytesIO()
+    qr_img.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+
+    # Draw QR Code on PDF
+    p.drawImage(ImageReader(qr_buffer), 380, 580, width=120, height=120)
+
+    # Footer
+    p.line(100, 550, 500, 550)
+    p.setFont("Helvetica-Oblique", 9)
+    p.drawString(100, 535, "This is a computer-generated receipt and requires no physical signature.")
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"Receipt_{student_id}.pdf",
+        mimetype='application/pdf'
+    )
+
+# --- PROFESSIONAL FEATURE 5: OFFICIAL RESULT SLIP GENERATOR ---
 @app.route('/student/result_slip')
 @login_required
 @payment_required
