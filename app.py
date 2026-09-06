@@ -1627,7 +1627,10 @@ def download_material(filename):
 
 @app.route('/circuit_analyzer')
 def circuit_analyzer():
-    return render_template('circuit_analyzer.html')
+    try:
+        return render_template('circuit_analyzer.html')
+    except Exception as e:
+        return f"<h3>Circuit Analyzer Route Ready</h3><p>Template error: {str(e)}</p>"
 
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
