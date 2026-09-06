@@ -419,6 +419,26 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5>Official Student Documents</h5>
+    </div>
+    <div class="card-body d-flex gap-3">
+        {% if student.admission_status == 'Admitted' %}
+            <a href="{{ url_for('download_admission_letter') }}" class="btn btn-outline-primary">
+                📄 Download Admission Letter
+            </a>
+            <a href="{{ url_for('download_id_card') }}" class="btn btn-outline-success">
+                🪪 Download Digital Student ID Card
+            </a>
+        {% else %}
+            <div class="alert alert-warning mb-0" role="alert">
+                Your admission is currently pending approval. Documents will be unlocked once approved by Admin.
+            </div>
+        {% endif %}
+    </div>
+</div>
+    
     <!-- Modals (Live Call, Payment, Receipt, Admission) -->
     <div class="modal fade no-print" id="voiceCallModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
