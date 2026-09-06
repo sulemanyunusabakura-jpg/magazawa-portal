@@ -317,25 +317,24 @@ def add_course():
         unit_val = int(unit) if str(unit).isdigit() else 1
         student_id_val = int(student_id) if student_id and str(student_id).isdigit() else None
 
+        # Pass only the standard attributes defined on the Course model
         new_course = Course(
             student_id=student_id_val,
             course_name=course_name,
-            title=course_name,
             course_code=course_code,
-            code=course_code,
             unit=unit_val,
             semester=str(semester)
         )
         db.session.add(new_course)
         db.session.commit()
-        flash('Course registered successfully!', 'success')
+        flash('Course added successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         clean_error = str(e).split('(Background on this error')[0].split('[SQL:')[0].strip()
         flash(f'Error adding course: {clean_error}', 'danger')
 
     return redirect(url_for('admin_dashboard'))
-
+    
 @app.route('/admin/delete_course/<int:course_id>', methods=['GET', 'POST'])
 @login_required
 def delete_course(course_id):
