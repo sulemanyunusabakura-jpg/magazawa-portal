@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto my-8 p-6 bg-slate-800 text-slate-100 rounded-xl shadow-lg border border-slate-700">
+  <h2 class="text-2xl font-bold text-indigo-400 mb-1">CMOS Gate Characterization</h2>
+  <p class="text-slate-400 text-sm mb-6">Calculate dynamic propagation delays & voltage noise margins.</p>
+
+  <form id="calcForm" action="/api/export-circuit-pdf" method="POST" class="space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">VDD (Supply Voltage)</label>
+        <input type="number" step="0.1" name="v_dd" value="3.3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">VIH (Input High)</label>
+        <input type="number" step="0.1" name="v_ih" value="2.0" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">VIL (Input Low)</label>
+        <input type="number" step="0.1" name="v_il" value="0.8" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">VOH (Output High)</label>
+        <input type="number" step="0.1" name="v_oh" value="2.4" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">VOL (Output Low)</label>
+        <input type="number" step="0.1" name="v_ol" value="0.4" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">tpHL (ns)</label>
+        <input type="number" step="0.1" name="t_phl" value="1.2" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 mb-1">tpLH (ns)</label>
+      <input type="number" step="0.1" name="t_plh" value="1.8" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
+    </div>
+
+    <div id="results" class="bg-slate-900 p-4 rounded-lg border border-slate-700 text-sm space-y-1">
+      <p><strong>Noise Margin High (NMH):</strong> <span id="nmhVal" class="text-indigo-400">0.4</span> V</p>
+      <p><strong>Noise Margin Low (NML):</strong> <span id="nmlVal" class="text-indigo-400">0.4</span> V</p>
+      <p><strong>Average Delay (tp):</strong> <span id="tpVal" class="text-indigo-400">1.5</span> ns</p>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="button" onclick="runCalculation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-semibold py-2 rounded text-sm transition">Analyze Circuit</button>
+      <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-semibold px-4 py-2 rounded text-sm transition">Export PDF</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  async function runCalculation() {
+    const form = document.getElementById('calcForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    const res = await fetch('/api/calculate-circuit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if(result.success) {
+      document.getElementById('nmhVal').innerText = result.data.nm_h;
+      document.getElementById('nmlVal').innerText = result.data.nm_l;
+      document.getElementById('tpVal').innerText = result.data.t_p;
+    }
+  }
+</script>
+{% endblock %}
