@@ -216,14 +216,15 @@ def apply_student():
         full_name = request.form.get('full_name', '').strip()
         phone = request.form.get('phone', '').strip()
 
+        # Check for existing account
         existing = User.query.filter(or_(User.username.ilike(email), User.email.ilike(email))).first()
         if existing:
             flash('An account with this email already exists. Please log in.', 'info')
             return redirect(url_for('login'))
 
+        # Certificate uploads
         p_cert = request.files.get('primary_cert')
         s_cert = request.files.get('sec_cert')
-
         p_filename, s_filename = "", ""
 
         if p_cert and allowed_file(p_cert.filename):
@@ -235,6 +236,14 @@ def apply_student():
             ext = os.path.splitext(s_cert.filename)[1].lstrip('.').lower()
             s_filename = secure_filename(f"sec_{uuid.uuid4().hex[:8]}.{ext}")
             s_cert.save(os.path.join(app.config['UPLOAD_FOLDER'], s_filename))
+
+        # Profile Picture upload
+        profile_pic = request.files.get('profile_picture')
+        pic_filename = ""
+        if profile_pic and allowed_file(profile_pic.filename):
+            ext = os.path.splitext(profile_pic.filename)[1].lstrip('.').lower()
+            pic_filename = secure_filename(f"profile_{uuid.uuid4().hex[:8]}.{ext}")
+            profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_filename))
 
         new_student = User(
             username=email,
@@ -248,14 +257,16 @@ def apply_student():
             primary_cert=p_filename,
             sec_school=request.form.get('sec_school', ''),
             sec_cert=s_filename,
-            is_approved=True,
-            admission_status='Admitted',
+            profile_picture=pic_filename,
+            is_approved=False,               # Requires admin approval
+            admission_status='Pending',      # Requires admin admission
             payment_status='Pending'
         )
         db.session.add(new_student)
         db.session.commit()
-        flash('Registration successful! You can now log in to your dashboard.', 'success')
+        flash('Application submitted successfully! Please wait for Admin approval before logging in.', 'success')
         return redirect(url_for('login'))
+        
     return render_template('apply_student.html')
 
 @app.route('/apply/lecturer', methods=['GET', 'POST'])
