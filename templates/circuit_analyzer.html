@@ -1,70 +1,143 @@
-{% block content %}
-<div class="max-w-2xl mx-auto my-8 p-6 bg-slate-800 text-slate-100 rounded-xl shadow-lg border border-slate-700">
-  <h2 class="text-2xl font-bold text-indigo-400 mb-1">CMOS Gate Characterization</h2>
-  <p class="text-slate-400 text-sm mb-6">Calculate dynamic propagation delays & voltage noise margins.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMOS Gate Characterization | Magazawa Portal</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jsPDF for direct PDF export in browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-light py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white p-3">
+                        <h4 class="mb-0 fs-5">CMOS Gate Characterization</h4>
+                        <small class="text-white-50">Calculate dynamic propagation delays & voltage noise margins</small>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="circuitForm">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">VDD (Supply Voltage)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="vdd" class="form-value form-control" value="3.3">
+                                        <span class="input-group-text">V</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">VIH (Input High)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="vih" class="form-value form-control" value="2.0">
+                                        <span class="input-group-text">V</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">VIL (Input Low)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="vil" class="form-value form-control" value="0.8">
+                                        <span class="input-group-text">V</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">VOH (Output High)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="voh" class="form-value form-control" value="2.4">
+                                        <span class="input-group-text">V</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">VOL (Output Low)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="vol" class="form-value form-control" value="0.4">
+                                        <span class="input-group-text">V</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">tpHL (Propagation High to Low)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="tphl" class="form-value form-control" value="1.2">
+                                        <span class="input-group-text">ns</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold">tpLH (Propagation Low to High)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" id="tplh" class="form-value form-control" value="1.8">
+                                        <span class="input-group-text">ns</span>
+                                    </div>
+                                </div>
+                            </div>
 
-  <form id="calcForm" action="/api/export-circuit-pdf" method="POST" class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">VDD (Supply Voltage)</label>
-        <input type="number" step="0.1" name="v_dd" value="3.3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">VIH (Input High)</label>
-        <input type="number" step="0.1" name="v_ih" value="2.0" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">VIL (Input Low)</label>
-        <input type="number" step="0.1" name="v_il" value="0.8" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">VOH (Output High)</label>
-        <input type="number" step="0.1" name="v_oh" value="2.4" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">VOL (Output Low)</label>
-        <input type="number" step="0.1" name="v_ol" value="0.4" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">tpHL (ns)</label>
-        <input type="number" step="0.1" name="t_phl" value="1.2" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-      </div>
+                            <hr class="my-4">
+
+                            <!-- Output Section -->
+                            <div class="bg-body-secondary p-3 rounded mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Noise Margin High (NMH):</span>
+                                    <strong id="nmhResult">0.4 V</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Noise Margin Low (NML):</span>
+                                    <strong id="nmlResult">0.4 V</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Average Delay (tp):</span>
+                                    <strong id="tpResult">1.5 ns</strong>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" onclick="calculateCircuit()" class="btn btn-primary flex-fill">Analyze Circuit</button>
+                                <button type="button" onclick="exportPDF()" class="btn btn-outline-secondary">Export PDF</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div>
-      <label class="block text-xs font-semibold text-slate-300 mb-1">tpLH (ns)</label>
-      <input type="number" step="0.1" name="t_plh" value="1.8" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200">
-    </div>
 
-    <div id="results" class="bg-slate-900 p-4 rounded-lg border border-slate-700 text-sm space-y-1">
-      <p><strong>Noise Margin High (NMH):</strong> <span id="nmhVal" class="text-indigo-400">0.4</span> V</p>
-      <p><strong>Noise Margin Low (NML):</strong> <span id="nmlVal" class="text-indigo-400">0.4</span> V</p>
-      <p><strong>Average Delay (tp):</strong> <span id="tpVal" class="text-indigo-400">1.5</span> ns</p>
-    </div>
+    <script>
+        function calculateCircuit() {
+            const voh = parseFloat(document.getElementById('voh').value) || 0;
+            const vih = parseFloat(document.getElementById('vih').value) || 0;
+            const vil = parseFloat(document.getElementById('vil').value) || 0;
+            const vol = parseFloat(document.getElementById('vol').value) || 0;
+            const tphl = parseFloat(document.getElementById('tphl').value) || 0;
+            const tplh = parseFloat(document.getElementById('tplh').value) || 0;
 
-    <div class="flex gap-3">
-      <button type="button" onclick="runCalculation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-semibold py-2 rounded text-sm transition">Analyze Circuit</button>
-      <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-semibold px-4 py-2 rounded text-sm transition">Export PDF</button>
-    </div>
-  </form>
-</div>
+            const nmh = (voh - vih).toFixed(2);
+            const nml = (vil - vol).toFixed(2);
+            const tp = ((tphl + tplh) / 2).toFixed(2);
 
-<script>
-  async function runCalculation() {
-    const form = document.getElementById('calcForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+            document.getElementById('nmhResult').innerText = nmh + ' V';
+            document.getElementById('nmlResult').innerText = nml + ' V';
+            document.getElementById('tpResult').innerText = tp + ' ns';
+        }
 
-    const res = await fetch('/api/calculate-circuit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await res.json();
-    if(result.success) {
-      document.getElementById('nmhVal').innerText = result.data.nm_h;
-      document.getElementById('nmlVal').innerText = result.data.nm_l;
-      document.getElementById('tpVal').innerText = result.data.t_p;
-    }
-  }
-</script>
-{% endblock %}
+        // Live update on input change
+        document.querySelectorAll('.form-value').forEach(input => {
+            input.addEventListener('input', calculateCircuit);
+        });
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(16);
+            doc.text("CMOS Gate Characterization Report", 20, 20);
+            
+            doc.setFontSize(11);
+            doc.text(`Noise Margin High (NMH): ${document.getElementById('nmhResult').innerText}`, 20, 40);
+            doc.text(`Noise Margin Low (NML): ${document.getElementById('nmlResult').innerText}`, 20, 50);
+            doc.text(`Average Delay (tp): ${document.getElementById('tpResult').innerText}`, 20, 60);
+            
+            doc.save("CMOS_Analysis_Report.pdf");
+        }
+    </script>
+</body>
+</html>
