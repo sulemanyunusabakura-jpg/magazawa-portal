@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CMOS Gate Characterization | Magazawa Portal</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- jsPDF for direct PDF export in browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="bg-light py-5">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="card shadow-sm border-0">
+            <div class="col-md-9 col-lg-8">
+                <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-dark text-white p-3">
-                        <h4 class="mb-0 fs-5">CMOS Gate Characterization</h4>
-                        <small class="text-white-50">Calculate dynamic propagation delays & voltage noise margins</small>
+                        <h4 class="mb-0 fs-5">CMOS Gate Characterization & Waveform</h4>
+                        <small class="text-white-50">Calculate propagation delays, noise margins & view timing response</small>
                     </div>
                     <div class="card-body p-4">
+                        
+                        <!-- Validation Alert Banner -->
+                        <div id="validationAlert" class="alert alert-warning d-none mb-3" role="alert"></div>
+
                         <form id="circuitForm">
                             <div class="row g-3">
                                 <div class="col-sm-6">
@@ -74,25 +76,33 @@
 
                             <hr class="my-4">
 
-                            <!-- Output Section -->
+                            <!-- Output Metrics Section -->
                             <div class="bg-body-secondary p-3 rounded mb-4">
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span>Noise Margin High (NMH):</span>
-                                    <strong id="nmhResult">0.4 V</strong>
+                                    <span>Noise Margin High (NMH = VOH - VIH):</span>
+                                    <strong id="nmhResult">0.40 V</strong>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span>Noise Margin Low (NML):</span>
-                                    <strong id="nmlResult">0.4 V</strong>
+                                    <span>Noise Margin Low (NML = VIL - VOL):</span>
+                                    <strong id="nmlResult">0.40 V</strong>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <span>Average Delay (tp):</span>
-                                    <strong id="tpResult">1.5 ns</strong>
+                                    <span>Average Delay (tp = (tpHL + tpLH) / 2):</span>
+                                    <strong id="tpResult">1.50 ns</strong>
+                                </div>
+                            </div>
+
+                            <!-- Waveform Canvas -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Signal Delay Simulation</label>
+                                <div class="border rounded p-2 bg-white text-center">
+                                    <canvas id="waveformCanvas" width="600" height="160" class="img-fluid"></canvas>
                                 </div>
                             </div>
 
                             <div class="d-flex gap-2">
                                 <button type="button" onclick="calculateCircuit()" class="btn btn-primary flex-fill">Analyze Circuit</button>
-                                <button type="button" onclick="exportPDF()" class="btn btn-outline-secondary">Export PDF</button>
+                                <button type="button" onclick="exportPDF()" class="btn btn-outline-secondary">Export Detailed PDF</button>
                             </div>
                         </form>
                     </div>
@@ -103,13 +113,27 @@
 
     <script>
         function calculateCircuit() {
-            const voh = parseFloat(document.getElementById('voh').value) || 0;
             const vih = parseFloat(document.getElementById('vih').value) || 0;
             const vil = parseFloat(document.getElementById('vil').value) || 0;
+            const voh = parseFloat(document.getElementById('voh').value) || 0;
             const vol = parseFloat(document.getElementById('vol').value) || 0;
             const tphl = parseFloat(document.getElementById('tphl').value) || 0;
             const tplh = parseFloat(document.getElementById('tplh').value) || 0;
 
+            // Form Validation Check
+            const alertBox = document.getElementById('validationAlert');
+            let errors = [];
+            if (vih < vil) errors.push("VIH should be greater than or equal to VIL.");
+            if (voh < vol) errors.push("VOH should be greater than or equal to VOL.");
+
+            if (errors.length > 0) {
+                alertBox.classList.remove('d-none');
+                alertBox.innerHTML = errors.join('<br>');
+            } else {
+                alertBox.classList.add('d-none');
+            }
+
+            // Perform Math Calculations
             const nmh = (voh - vih).toFixed(2);
             const nml = (vil - vol).toFixed(2);
             const tp = ((tphl + tplh) / 2).toFixed(2);
@@ -117,9 +141,59 @@
             document.getElementById('nmhResult').innerText = nmh + ' V';
             document.getElementById('nmlResult').innerText = nml + ' V';
             document.getElementById('tpResult').innerText = tp + ' ns';
+
+            // Draw Signal Diagram
+            drawWaveform(tphl, tplh);
         }
 
-        // Live update on input change
+        function drawWaveform(tphl, tplh) {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Canvas Grid & Labels
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, 40); ctx.lineTo(600, 40);
+            ctx.moveTo(0, 120); ctx.lineTo(600, 120);
+            ctx.stroke();
+
+            ctx.fillStyle = '#666';
+            ctx.font = '12px sans-serif';
+            ctx.fillText("Input Signal", 10, 20);
+            ctx.fillText("Output Signal (Inverted)", 10, 100);
+
+            // Input Waveform (Pulse)
+            ctx.strokeStyle = '#0d6efd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(100, 55);
+            ctx.lineTo(200, 55);
+            ctx.lineTo(200, 25);
+            ctx.lineTo(400, 25);
+            ctx.lineTo(400, 55);
+            ctx.lineTo(550, 55);
+            ctx.stroke();
+
+            // Dynamic offset based on propagation delays
+            const shiftHL = Math.min(Math.max(tphl * 12, 10), 80);
+            const shiftLH = Math.min(Math.max(tplh * 12, 10), 80);
+
+            // Output Waveform (Inverted + Delay)
+            ctx.strokeStyle = '#dc3545';
+            ctx.beginPath();
+            ctx.moveTo(100, 105);
+            ctx.lineTo(200 + shiftHL, 105);
+            ctx.lineTo(200 + shiftHL, 135);
+            ctx.lineTo(400 + shiftLH, 135);
+            ctx.lineTo(400 + shiftLH, 105);
+            ctx.lineTo(550, 105);
+            ctx.stroke();
+        }
+
+        // Run calculation on initial page load & dynamic input changes
+        document.addEventListener('DOMContentLoaded', calculateCircuit);
         document.querySelectorAll('.form-value').forEach(input => {
             input.addEventListener('input', calculateCircuit);
         });
@@ -132,10 +206,21 @@
             doc.text("CMOS Gate Characterization Report", 20, 20);
             
             doc.setFontSize(11);
-            doc.text(`Noise Margin High (NMH): ${document.getElementById('nmhResult').innerText}`, 20, 40);
-            doc.text(`Noise Margin Low (NML): ${document.getElementById('nmlResult').innerText}`, 20, 50);
-            doc.text(`Average Delay (tp): ${document.getElementById('tpResult').innerText}`, 20, 60);
+            doc.text(`VDD: ${document.getElementById('vdd').value} V`, 20, 35);
+            doc.text(`VIH: ${document.getElementById('vih').value} V`, 20, 43);
+            doc.text(`VIL: ${document.getElementById('vil').value} V`, 20, 51);
+            doc.text(`VOH: ${document.getElementById('voh').value} V`, 20, 59);
+            doc.text(`VOL: ${document.getElementById('vol').value} V`, 20, 67);
             
+            doc.text(`Noise Margin High (NMH): ${document.getElementById('nmhResult').innerText}`, 20, 80);
+            doc.text(`Noise Margin Low (NML): ${document.getElementById('nmlResult').innerText}`, 20, 88);
+            doc.text(`Average Delay (tp): ${document.getElementById('tpResult').innerText}`, 20, 96);
+            
+            // Render waveform canvas as image inside PDF
+            const canvas = document.getElementById('waveformCanvas');
+            const canvasImg = canvas.toDataURL('image/png');
+            doc.addImage(canvasImg, 'PNG', 20, 110, 170, 45);
+
             doc.save("CMOS_Analysis_Report.pdf");
         }
     </script>
