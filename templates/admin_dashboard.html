@@ -665,8 +665,21 @@
                                     <button type="button" onclick="confirmAction('{{ url_for('approve_student', id=std.id) }}', 'Approve Admission', 'Approve admission for {{ std.full_name }}?')" class="btn btn-success">Approve</button>
                                     <button type="button" onclick="confirmAction('{{ url_for('reject_student', id=std.id) }}', 'Reject Student', 'Reject application for {{ std.full_name }}?')" class="btn btn-danger">Reject</button>
                                 {% endif %}
+                                
+                                {% if std.payment_status != 'Paid' %}
+                                    <button type="button" onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
+                                {% endif %}
 
-                                <!-- Inside your Approved Students Table Row -->
+                                <button type="button" class="btn {{ 'btn-success' if std.status == 'suspended' else 'btn-warning' }}" onclick="confirmAction('{{ url_for('toggle_user_status', user_id=std.id) }}', '{{ 'Unsuspend' if std.status == 'suspended' else 'Suspend' }} User', 'Are you sure you want to {{ 'unsuspend' if std.status == 'suspended' else 'suspend' }} {{ std.full_name }}?')">
+                                    {{ 'Unsuspend' if std.status == 'suspended' else 'Suspend' }}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No student records found.</td></tr>
+                    {% endfor %}
+                    <!-- Inside your Approved Students Table Row -->
 <tr>
     <td>{{ student.full_name }}</td>
     <td>{{ student.email }}</td>
@@ -688,20 +701,6 @@
         </span>
     </td>
 </tr>
-                                
-                                {% if std.payment_status != 'Paid' %}
-                                    <button type="button" onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
-                                {% endif %}
-
-                                <button type="button" class="btn {{ 'btn-success' if std.status == 'suspended' else 'btn-warning' }}" onclick="confirmAction('{{ url_for('toggle_user_status', user_id=std.id) }}', '{{ 'Unsuspend' if std.status == 'suspended' else 'Suspend' }} User', 'Are you sure you want to {{ 'unsuspend' if std.status == 'suspended' else 'suspend' }} {{ std.full_name }}?')">
-                                    {{ 'Unsuspend' if std.status == 'suspended' else 'Suspend' }}
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No student records found.</td></tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
