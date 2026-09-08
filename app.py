@@ -1297,7 +1297,7 @@ def ask_gemini():
     return jsonify({'error': f'Gemini API Error: {str(e)}'}), 500
 
 
-@app.route('/admin/approve_student/<int:id>')
+@app.route('/admin/approve_student/<int:id>', methods=['GET', 'POST'])
 @login_required
 def approve_student(id):
   if current_user.role != 'admin':
@@ -1315,7 +1315,7 @@ def approve_student(id):
   return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/admin/reject_student/<int:id>')
+@app.route('/admin/reject_student/<int:id>', methods=['GET', 'POST'])
 @login_required
 def reject_student(id):
   if current_user.role != 'admin':
@@ -1328,7 +1328,7 @@ def reject_student(id):
   return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/admin/approve_lecturer/<int:id>')
+@app.route('/admin/approve_lecturer/<int:id>', methods=['GET', 'POST'])
 @login_required
 def approve_lecturer(id):
   if current_user.role != 'admin':
@@ -1341,7 +1341,7 @@ def approve_lecturer(id):
   return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/admin/reject_lecturer/<int:id>')
+@app.route('/admin/reject_lecturer/<int:id>', methods=['GET', 'POST'])
 @login_required
 def reject_lecturer(id):
   if current_user.role != 'admin':
@@ -1354,7 +1354,7 @@ def reject_lecturer(id):
   return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/admin/approve_payment/<int:id>')
+@app.route('/admin/approve_payment/<int:id>', methods=['GET', 'POST'])
 @login_required
 def approve_payment(id):
   if current_user.role != 'admin':
