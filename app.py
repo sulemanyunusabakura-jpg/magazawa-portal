@@ -1028,7 +1028,7 @@ def download_id_card():
   pdf.setFillColor(colors.white)
   pdf.setFont('Helvetica-Bold', 7)
   pdf.drawCentredString(
-      175, 4, 'PROPERTY OF MAGAZINE SKILLS AND TECHNOLOGY PORTAL'
+      175, 4, 'PROPERTY OF MAGAZAWA SKILLS AND TECHNOLOGY PORTAL'
   )
 
   pdf.showPage()
@@ -1050,7 +1050,7 @@ def initialize_paystack():
   if current_user.role != 'student':
     return jsonify({'error': 'Unauthorized'}), 403
 
-  amount_kobo = 5,000  # Example tuition amount (25,000 NGN in Kobo)
+  amount_kobo = 2500000  # Tuition amount (25,000 NGN in Kobo)
   url = 'https://api.paystack.co/transaction/initialize'
   headers = {
       'Authorization': f'Bearer {PAYSTACK_SECRET_KEY}',
