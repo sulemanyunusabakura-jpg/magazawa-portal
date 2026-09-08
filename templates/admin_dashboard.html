@@ -666,6 +666,29 @@
                                     <button type="button" onclick="confirmAction('{{ url_for('reject_student', id=std.id) }}', 'Reject Student', 'Reject application for {{ std.full_name }}?')" class="btn btn-danger">Reject</button>
                                 {% endif %}
 
+                                <!-- Inside your Approved Students Table Row -->
+<tr>
+    <td>{{ student.full_name }}</td>
+    <td>{{ student.email }}</td>
+    <td>
+        <!-- Registration Number Edit Form -->
+        <form action="{{ url_for('assign_reg_number', student_id=student.id) }}" method="POST" class="d-flex gap-2">
+            <input type="text" 
+                   name="reg_number" 
+                   value="{{ student.reg_number or '' }}" 
+                   placeholder="e.g. MST/ND/2026/001" 
+                   class="form-control form-control-sm" 
+                   required>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+        </form>
+    </td>
+    <td>
+        <span class="badge bg-{{ 'success' if student.payment_status == 'Paid' else 'warning' }}">
+            {{ student.payment_status or 'Pending' }}
+        </span>
+    </td>
+</tr>
+                                
                                 {% if std.payment_status != 'Paid' %}
                                     <button type="button" onclick="confirmAction('{{ url_for('approve_payment', id=std.id) }}', 'Confirm Payment', 'Confirm payment for {{ std.full_name }}?')" class="btn btn-primary">Confirm Payment</button>
                                 {% endif %}
