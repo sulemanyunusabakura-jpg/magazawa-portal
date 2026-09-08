@@ -101,7 +101,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* ================= WHATSAPP HUB COMPONENT ================= */
+        /* WHATSAPP HUB COMPONENT */
         .wa-chat-container {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -618,7 +618,7 @@
     <!-- STUDENT ADMISSIONS & PAYMENTS -->
     <section class="card" id="students-sec">
         <div class="card-header">
-            <h3 class="card-title">🎓 Student Admissions, Payments & Status</h3>
+            <h3 class="card-title">🎓 Student Admissions, Registration Numbers & Account Status</h3>
             <input type="text" id="studentSearch" class="search-box" placeholder="Filter students..." onkeyup="filterTable('studentSearch', 'studentTable')">
         </div>
         <div class="table-responsive">
@@ -626,7 +626,8 @@
                 <thead>
                     <tr>
                         <th>Student Name</th>
-                        <th>Email</th>
+                        <th>Email / Reg No.</th>
+                        <th>Assign / Update Reg No.</th>
                         <th>Admission</th>
                         <th>Payment Status</th>
                         <th>Account Status</th>
@@ -636,8 +637,26 @@
                 <tbody>
                     {% for std in students %}
                     <tr>
-                        <td>{{ std.full_name }}</td>
-                        <td>{{ std.email }}</td>
+                        <td><strong>{{ std.full_name }}</strong></td>
+                        <td>
+                            {{ std.email }}<br>
+                            <small style="color: var(--text-muted);">
+                                {{ std.reg_number if std.reg_number else 'No Reg No Assigned' }}
+                            </small>
+                        </td>
+                        <td>
+                            <form action="{{ url_for('assign_reg_number', student_id=std.id) }}" method="POST" style="display: flex; gap: 6px; align-items: center; margin-bottom: 0;">
+                                <input type="text" 
+                                       name="reg_number" 
+                                       value="{{ std.reg_number or '' }}" 
+                                       placeholder="e.g. MST/ND/2026/001" 
+                                       style="padding: 6px 10px; font-size: 0.8rem; margin-bottom: 0; min-width: 140px;" 
+                                       required>
+                                <button type="submit" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.75rem; white-space: nowrap;">
+                                    Save
+                                </button>
+                            </form>
+                        </td>
                         <td>
                             {% if std.is_approved %}
                                 <span class="badge bg-success">Admitted</span>
@@ -677,30 +696,10 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No student records found.</td></tr>
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted);">No student records found.</td>
+                    </tr>
                     {% endfor %}
-                    <!-- Inside your Approved Students Table Row -->
-<tr>
-    <td>{{ student.full_name }}</td>
-    <td>{{ student.email }}</td>
-    <td>
-        <!-- Registration Number Edit Form -->
-        <form action="{{ url_for('assign_reg_number', student_id=student.id) }}" method="POST" class="d-flex gap-2">
-            <input type="text" 
-                   name="reg_number" 
-                   value="{{ student.reg_number or '' }}" 
-                   placeholder="e.g. MST/ND/2026/001" 
-                   class="form-control form-control-sm" 
-                   required>
-            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-        </form>
-    </td>
-    <td>
-        <span class="badge bg-{{ 'success' if student.payment_status == 'Paid' else 'warning' }}">
-            {{ student.payment_status or 'Pending' }}
-        </span>
-    </td>
-</tr>
                 </tbody>
             </table>
         </div>
