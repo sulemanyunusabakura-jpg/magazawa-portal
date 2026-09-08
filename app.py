@@ -388,6 +388,16 @@ with app.app_context():
     print(f'Startup initialization warning: {e}')
 
 
+# --- FILE SERVING ROUTES FOR UPLOADED MEDIA ---
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/static/uploads/<path:filename>')
+def static_uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 # --- BASE ROUTES ---
 @app.route('/')
 def home():
@@ -1658,12 +1668,6 @@ def fix_results_db():
   except Exception as e:
     db.session.rollback()
     return f'Database Error: {str(e)}'
-
-
-# --- ROUTE TO SERVE UPLOADED FILES PERMANENTLY ---
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 if __name__ == '__main__':
