@@ -1,38 +1,55 @@
-﻿<!DOCTYPE html>
-<html>
-<head><title>Student Admission - MAGAZAWA SKILLS AND TECHNOLOGY</title></head>
-<body style="font-family: Arial, sans-serif; margin: 40px;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Admission - MAGAZAWA SKILLS AND TECHNOLOGY</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 600px; }
+        input[type="text"], input[type="email"], input[type="date"], input[type="password"], input[type="file"] {
+            width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 15px; box-sizing: border-box;
+        }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background-color: #0056b3; }
+        .form-group { margin-bottom: 15px; }
+    </style>
+</head>
+<body>
     <h2>MAGAZAWA SKILLS AND TECHNOLOGY</h2>
     <h3>Student Admission Form</h3>
-    <form method="POST" enctype="multipart/form-data">
-        <form action="{{ url_for('apply_student') }}" method="POST" enctype="multipart/form-data">
-    
-    <!-- Profile Picture Input Field -->
-    <div class="mb-3">
-        <label for="profile_picture" class="form-label">Passport Photo / Profile Picture</label>
-        <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*" required>
-    </div>
 
-    <!-- Rest of your existing application fields... -->
+    <form action="{{ url_for('apply_student') }}" method="POST" enctype="multipart/form-data">
+        
+        <!-- Passport Photo / Profile Picture -->
+        <div class="form-group">
+            <label for="profile_picture"><b>Passport Photo / Profile Picture:</b></label>
+            <input type="file" id="profile_picture" name="profile_picture" accept="image/*" required>
+        </div>
 
-    <button type="submit" class="btn btn-primary">Submit Application</button>
-</form>
         <h4>1. Personal Information</h4>
-        <input type="text" name="full_name" placeholder="Full Name" required><br><br>
-        <input type="email" name="email" placeholder="Email Address" required><br><br>
-        <input type="text" name="phone" placeholder="Phone Number" required><br><br>
-        <label>Date of Birth:</label><br>
-        <input type="date" name="dob" required><br><br>
-        <input type="password" name="password" placeholder="Create Password" required><br><br>
+        <input type="text" name="full_name" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email Address" required>
+        <input type="text" name="phone" placeholder="Phone Number" required>
+        
+        <label for="dob"><b>Date of Birth:</b></label>
+        <input type="date" id="dob" name="dob" required>
+        
+        <input type="password" name="password" placeholder="Create Password" required>
+
         <h4>2. Educational Background & Certificates</h4>
-        <input type="text" name="primary_school" placeholder="Primary School Name" required><br><br>
-        <label>Primary Certificate File:</label><br>
-        <input type="file" name="primary_cert" required><br><br>
-        <input type="text" name="sec_school" placeholder="Secondary School Name" required><br><br>
-        <label>Secondary Certificate File:</label><br>
-        <input type="file" name="sec_cert" required><br><br>
+        <input type="text" name="primary_school" placeholder="Primary School Name" required>
+        
+        <label for="primary_cert"><b>Primary Certificate File:</b></label>
+        <input type="file" id="primary_cert" name="primary_cert" required>
+        
+        <input type="text" name="sec_school" placeholder="Secondary School Name" required>
+        
+        <label for="sec_cert"><b>Secondary Certificate File:</b></label>
+        <input type="file" id="sec_cert" name="sec_cert" required>
+
         <button type="submit">Submit Application</button>
     </form>
-    <br><a href="/login">Back to Login</a>
+
+    <br><a href="{{ url_for('login') }}">Back to Login</a>
 </body>
 </html>
