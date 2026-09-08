@@ -98,3 +98,10 @@ class Result(db.Model):
     level = db.Column(db.String(20), nullable=True)
     session = db.Column(db.String(20), nullable=True)
     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Student(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(100), nullable=False)
+    payment_status = db.Column(db.String(20), default='Pending') # Pending or Paid
+    reg_number = db.Column(db.String(30), unique=True, nullable=True) # Generated after payment
