@@ -1643,6 +1643,33 @@ def circuit_analyzer():
         return f"<h3>Circuit Analyzer Route Ready</h3><p>Template error: {str(e)}</p>"
 
 
+# --- ADMIN ROUTE: ASSIGN / UPDATE REGISTRATION NUMBER ---
+@app.route('/admin/assign_reg_number/<int:student_id>', methods=['POST'])
+@login_required
+def assign_reg_number(student_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+    
+    new_reg_no = request.form.get('reg_number', '').strip()
+    student = db.session.get(User, student_id)
+    
+    if student and student.role == 'student':
+        student.reg_number = new_reg_no
+        
+        # Optionally sync existing orphaned results to this student
+        Result.query.filter(Result.reg_number.ilike(new_reg_no)).update(
+            {Result.student_id: student.id}, synchronize_session=False
+        )
+        
+        db.session.commit()
+        flash(f'Registration number for {student.full_name} updated to: {new_reg_no}', 'success')
+    else:
+        flash('Student record not found.', 'warning')
+        
+    return redirect(url_for('admin_dashboard'))
+
+
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix_results_db')
 def fix_results_db():
