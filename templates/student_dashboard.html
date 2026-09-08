@@ -361,6 +361,19 @@
                 <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
                     <div class="card shadow-sm border-0 rounded-3 mb-4">
                         <div class="card-body p-4">
+
+                            <div class="card p-3 mb-4 shadow-sm">
+    <h4>Welcome, {{ current_user.full_name }}</h4>
+    <p class="mb-1">
+        <strong>Registration Number:</strong> 
+        {% if current_user.reg_number %}
+            <span class="badge bg-info text-dark fs-6">{{ current_user.reg_number }}</span>
+        {% else %}
+            <span class="text-muted">Not Assigned Yet (Contact Admin)</span>
+        {% endif %}
+    </p>
+    <p class="mb-0"><strong>Program:</strong> {{ current_user.program or 'Computer Engineering & Applied Technology' }}</p>
+</div>
                             
                             <!-- Student Header Profile Info -->
                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom">
