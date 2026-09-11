@@ -36,8 +36,7 @@ from flask_login import (
     login_user,
     logout_user,
 )
-from models import Course, Material, Message, Result, User, db
-
+from models import Course, Material, Message, Result, User, AuditLog, db
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'magazawa_skills_technology_secret'
