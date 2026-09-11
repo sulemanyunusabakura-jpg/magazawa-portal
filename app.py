@@ -579,6 +579,20 @@ def admin_dashboard():
   )
 
 
+@app.route('/admin_dashboard')
+@login_required
+def admin_dashboard():
+    # ... your existing queries for students, courses, results ...
+
+    audit_logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
+
+    return render_template(
+        'admin_dashboard.html',
+        # ... your existing parameters ...
+        audit_logs=audit_logs
+    )
+
+
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
 def add_course():
