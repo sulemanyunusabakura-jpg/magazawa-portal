@@ -1,11 +1,7 @@
 from datetime import datetime, timezone
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime
-from extensions import db  # Adjust this import to match how db is initialized in your project
+from extensions import db  # Single db import from extensions
 
-
-db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -104,20 +100,22 @@ class Result(db.Model):
 
 
 class Student(db.Model):
+    __tablename__ = 'student'
+
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
-    payment_status = db.Column(db.String(20), default='Pending') # Pending or Paid
-    reg_number = db.Column(db.String(30), unique=True, nullable=True) # Generated after payment
+    payment_status = db.Column(db.String(20), default='Pending')  # Pending or Paid
+    reg_number = db.Column(db.String(30), unique=True, nullable=True)  # Generated after payment
 
 
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Fixed target table to 'user.id'
     action = db.Column(db.String(100), nullable=False)
     details = db.Column(db.Text, nullable=True)
     ip_address = db.Column(db.String(45), nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = db.relationship('User', backref='audit_logs')
