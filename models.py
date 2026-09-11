@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from datetime import datetime
+from extensions import db  # Adjust this import to match how db is initialized in your project
+
 
 db = SQLAlchemy()
 
@@ -106,9 +109,6 @@ class Student(db.Model):
     payment_status = db.Column(db.String(20), default='Pending') # Pending or Paid
     reg_number = db.Column(db.String(30), unique=True, nullable=True) # Generated after payment
 
-
-from datetime import datetime
-from extensions import db  # Adjust this import to match how db is initialized in your project
 
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
