@@ -1494,6 +1494,91 @@ def manage_result():
   return redirect(url_for('admin_dashboard'))
 
 
+# --- HELPER: AUDIT LOGGING ---
+def log_action(action, details=None):
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    user_id = current_user.id if current_user.is_authenticated else None
+    log_entry = AuditLog(user_id=user_id, action=action, details=details, ip_address=ip)
+    db.session.add(log_entry)
+    db.session.commit()
+
+# --- BULK CSV IMPORT FOR STUDENTS ---
+@app.route('/admin/import/students', methods=['POST'])
+@login_required
+def import_students_csv():
+    if not current_user.is_admin:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    file = request.files.get('file')
+    if not file or not file.filename.endswith('.csv'):
+        flash('Please upload a valid CSV file.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    stream = io.StringIO(file.stream.read().decode("UTF-8"), newline=None)
+    csv_reader = csv.DictReader(stream)
+
+    count = 0
+    for row in csv_reader:
+        full_name = row.get('full_name')
+        email = row.get('email')
+        reg_number = row.get('reg_number')
+
+        if email and not User.query.filter_by(email=email).first():
+            student = User(
+                full_name=full_name,
+                email=email,
+                reg_number=reg_number,
+                role='student',
+                is_approved=True
+            )
+            student.set_password('DefaultPassword123!')
+            db.session.add(student)
+            count += 1
+
+    db.session.commit()
+    log_action('BULK_STUDENT_IMPORT', f'Imported {count} students via CSV')
+    flash(f'Successfully imported {count} students!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# --- EXPORT DATA TO CSV ROUTE ---
+@app.route('/admin/export/<data_type>')
+@login_required
+def export_csv(data_type):
+    if not current_user.is_admin:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    if data_type == 'students':
+        writer.writerow(['ID', 'Full Name', 'Email', 'Reg Number', 'Payment Status', 'Account Status'])
+        students = User.query.filter_by(role='student').all()
+        for s in students:
+            writer.writerow([s.id, s.full_name, s.email, s.reg_number, s.payment_status, s.status])
+        filename = "students_export.csv"
+
+    elif data_type == 'results':
+        writer.writerow(['Student ID', 'Course Code', 'Course Title', 'Score', 'Grade', 'Semester', 'Level'])
+        results = Result.query.all()
+        for r in results:
+            writer.writerow([r.student_id, r.course_code, r.course_name, r.score, r.grade, r.semester, r.level])
+        filename = "results_export.csv"
+
+    else:
+        flash('Invalid export entity', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    log_action('DATA_EXPORT', f'Exported {data_type} to CSV')
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+            )
+
+
 @app.route('/admin/send_to_registrar', methods=['POST'])
 @login_required
 def send_to_registrar():
