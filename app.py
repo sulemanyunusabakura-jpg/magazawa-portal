@@ -1,3 +1,4 @@
+import csv
 import io
 import os
 import uuid
@@ -37,6 +38,7 @@ from flask_login import (
     logout_user,
 )
 from models import Course, Material, Message, Result, User, AuditLog, db
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'magazawa_skills_technology_secret'
@@ -390,11 +392,12 @@ with app.app_context():
 # --- FILE SERVING ROUTES FOR UPLOADED MEDIA ---
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+  return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 @app.route('/static/uploads/<path:filename>')
 def static_uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+  return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 # --- BASE ROUTES ---
@@ -549,6 +552,7 @@ def apply_lecturer():
 
 # --- DASHBOARD ROUTES ---
 @app.route('/dashboard/admin')
+@app.route('/admin_dashboard')
 @login_required
 def admin_dashboard():
   if current_user.role != 'admin':
@@ -564,10 +568,22 @@ def admin_dashboard():
         .all()
     )
     courses = Course.query.order_by(Course.id.desc()).all()
+    audit_logs = (
+        AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
+    )
   except Exception as e:
     db.session.rollback()
-    flash(f"Database status notice: {str(e).split('[SQL:')[0].strip()}", 'warning')
-    students, lecturers, all_users, messages, courses = [], [], [], [], []
+    flash(
+        f"Database status notice: {str(e).split('[SQL:')[0].strip()}", 'warning'
+    )
+    students, lecturers, all_users, messages, courses, audit_logs = (
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
 
   return render_template(
       'admin_dashboard.html',
@@ -576,21 +592,8 @@ def admin_dashboard():
       all_users=all_users,
       messages=messages,
       courses=courses,
+      audit_logs=audit_logs,
   )
-
-
-@app.route('/admin_dashboard')
-@login_required
-def admin_dashboard():
-    # ... your existing queries for students, courses, results ...
-
-    audit_logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
-
-    return render_template(
-        'admin_dashboard.html',
-        # ... your existing parameters ...
-        audit_logs=audit_logs
-    )
 
 
 @app.route('/admin/add_course', methods=['POST'])
@@ -1510,87 +1513,122 @@ def manage_result():
 
 # --- HELPER: AUDIT LOGGING ---
 def log_action(action, details=None):
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    user_id = current_user.id if current_user.is_authenticated else None
-    log_entry = AuditLog(user_id=user_id, action=action, details=details, ip_address=ip)
-    db.session.add(log_entry)
-    db.session.commit()
+  ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+  user_id = current_user.id if current_user.is_authenticated else None
+  log_entry = AuditLog(
+      user_id=user_id, action=action, details=details, ip_address=ip
+  )
+  db.session.add(log_entry)
+  db.session.commit()
+
 
 # --- BULK CSV IMPORT FOR STUDENTS ---
 @app.route('/admin/import/students', methods=['POST'])
 @login_required
 def import_students_csv():
-    if not current_user.is_admin:
-        flash('Unauthorized access', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    file = request.files.get('file')
-    if not file or not file.filename.endswith('.csv'):
-        flash('Please upload a valid CSV file.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    stream = io.StringIO(file.stream.read().decode("UTF-8"), newline=None)
-    csv_reader = csv.DictReader(stream)
-
-    count = 0
-    for row in csv_reader:
-        full_name = row.get('full_name')
-        email = row.get('email')
-        reg_number = row.get('reg_number')
-
-        if email and not User.query.filter_by(email=email).first():
-            student = User(
-                full_name=full_name,
-                email=email,
-                reg_number=reg_number,
-                role='student',
-                is_approved=True
-            )
-            student.set_password('DefaultPassword123!')
-            db.session.add(student)
-            count += 1
-
-    db.session.commit()
-    log_action('BULK_STUDENT_IMPORT', f'Imported {count} students via CSV')
-    flash(f'Successfully imported {count} students!', 'success')
+  if current_user.role != 'admin':
+    flash('Unauthorized access', 'danger')
     return redirect(url_for('admin_dashboard'))
+
+  file = request.files.get('file')
+  if not file or not file.filename.endswith('.csv'):
+    flash('Please upload a valid CSV file.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+  stream = io.StringIO(file.stream.read().decode('UTF-8'), newline=None)
+  csv_reader = csv.DictReader(stream)
+
+  count = 0
+  for row in csv_reader:
+    full_name = row.get('full_name')
+    email = row.get('email')
+    reg_number = row.get('reg_number')
+
+    if email and not User.query.filter_by(email=email).first():
+      student = User(
+          full_name=full_name,
+          email=email,
+          username=email,
+          reg_number=reg_number,
+          role='student',
+          is_approved=True,
+          password=generate_password_hash('DefaultPassword123!'),
+      )
+      db.session.add(student)
+      count += 1
+
+  db.session.commit()
+  log_action('BULK_STUDENT_IMPORT', f'Imported {count} students via CSV')
+  flash(f'Successfully imported {count} students!', 'success')
+  return redirect(url_for('admin_dashboard'))
+
 
 # --- EXPORT DATA TO CSV ROUTE ---
 @app.route('/admin/export/<data_type>')
 @login_required
 def export_csv(data_type):
-    if not current_user.is_admin:
-        flash('Unauthorized access', 'danger')
-        return redirect(url_for('admin_dashboard'))
+  if current_user.role != 'admin':
+    flash('Unauthorized access', 'danger')
+    return redirect(url_for('admin_dashboard'))
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+  output = io.StringIO()
+  writer = csv.writer(output)
 
-    if data_type == 'students':
-        writer.writerow(['ID', 'Full Name', 'Email', 'Reg Number', 'Payment Status', 'Account Status'])
-        students = User.query.filter_by(role='student').all()
-        for s in students:
-            writer.writerow([s.id, s.full_name, s.email, s.reg_number, s.payment_status, s.status])
-        filename = "students_export.csv"
+  if data_type == 'students':
+    writer.writerow([
+        'ID',
+        'Full Name',
+        'Email',
+        'Reg Number',
+        'Payment Status',
+        'Account Status',
+    ])
+    students = User.query.filter_by(role='student').all()
+    for s in students:
+      writer.writerow([
+          s.id,
+          s.full_name,
+          s.email,
+          s.reg_number,
+          s.payment_status,
+          getattr(s, 'status', 'Active'),
+      ])
+    filename = 'students_export.csv'
 
-    elif data_type == 'results':
-        writer.writerow(['Student ID', 'Course Code', 'Course Title', 'Score', 'Grade', 'Semester', 'Level'])
-        results = Result.query.all()
-        for r in results:
-            writer.writerow([r.student_id, r.course_code, r.course_name, r.score, r.grade, r.semester, r.level])
-        filename = "results_export.csv"
+  elif data_type == 'results':
+    writer.writerow([
+        'Student ID',
+        'Course Code',
+        'Course Title',
+        'Score',
+        'Grade',
+        'Semester',
+        'Level',
+    ])
+    results = Result.query.all()
+    for r in results:
+      writer.writerow([
+          r.student_id,
+          r.course_code,
+          r.course_name,
+          r.score,
+          r.grade,
+          r.semester,
+          r.level,
+      ])
+    filename = 'results_export.csv'
 
-    else:
-        flash('Invalid export entity', 'danger')
-        return redirect(url_for('admin_dashboard'))
+  else:
+    flash('Invalid export entity', 'danger')
+    return redirect(url_for('admin_dashboard'))
 
-    log_action('DATA_EXPORT', f'Exported {data_type} to CSV')
+  log_action('DATA_EXPORT', f'Exported {data_type} to CSV')
 
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename={filename}"}
-            )
+  return Response(
+      output.getvalue(),
+      mimetype='text/csv',
+      headers={'Content-Disposition': f'attachment;filename={filename}'},
+  )
 
 
 @app.route('/admin/send_to_registrar', methods=['POST'])
@@ -1735,37 +1773,43 @@ def download_material(filename):
 
 @app.route('/circuit_analyzer')
 def circuit_analyzer():
-    try:
-        return render_template('circuit_analyzer.html')
-    except Exception as e:
-        return f"<h3>Circuit Analyzer Route Ready</h3><p>Template error: {str(e)}</p>"
+  try:
+    return render_template('circuit_analyzer.html')
+  except Exception as e:
+    return (
+        f'<h3>Circuit Analyzer Route Ready</h3><p>Template error:'
+        f' {str(e)}</p>'
+    )
 
 
 # --- ADMIN ROUTE: ASSIGN / UPDATE REGISTRATION NUMBER ---
 @app.route('/admin/assign_reg_number/<int:student_id>', methods=['POST'])
 @login_required
 def assign_reg_number(student_id):
-    if current_user.role != 'admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
-    
-    new_reg_no = request.form.get('reg_number', '').strip()
-    student = db.session.get(User, student_id)
-    
-    if student and student.role == 'student':
-        student.reg_number = new_reg_no
-        
-        # Optionally sync existing orphaned results to this student
-        Result.query.filter(Result.reg_number.ilike(new_reg_no)).update(
-            {Result.student_id: student.id}, synchronize_session=False
-        )
-        
-        db.session.commit()
-        flash(f'Registration number for {student.full_name} updated to: {new_reg_no}', 'success')
-    else:
-        flash('Student record not found.', 'warning')
-        
-    return redirect(url_for('admin_dashboard'))
+  if current_user.role != 'admin':
+    flash('Unauthorized access.', 'danger')
+    return redirect(url_for('login'))
+
+  new_reg_no = request.form.get('reg_number', '').strip()
+  student = db.session.get(User, student_id)
+
+  if student and student.role == 'student':
+    student.reg_number = new_reg_no
+
+    # Optionally sync existing orphaned results to this student
+    Result.query.filter(Result.reg_number.ilike(new_reg_no)).update(
+        {Result.student_id: student.id}, synchronize_session=False
+    )
+
+    db.session.commit()
+    flash(
+        f'Registration number for {student.full_name} updated to: {new_reg_no}',
+        'success',
+    )
+  else:
+    flash('Student record not found.', 'warning')
+
+  return redirect(url_for('admin_dashboard'))
 
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
