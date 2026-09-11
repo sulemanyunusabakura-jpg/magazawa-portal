@@ -1249,5 +1249,59 @@
             }
         };
     </script>
+
+    <!-- SYSTEM AUDIT LOGS & BULK DATA MANAGEMENT -->
+<section class="card" id="audit-sec">
+    <div class="card-header">
+        <h3 class="card-title">🛡️ System Audit Logs & Bulk Operations</h3>
+        <div class="btn-group">
+            <a href="{{ url_for('export_csv', data_type='students') }}" class="btn btn-primary">📥 Export Students CSV</a>
+            <a href="{{ url_for('export_csv', data_type='results') }}" class="btn btn-primary">📥 Export Results CSV</a>
+        </div>
+    </div>
+
+    <!-- BULK CSV IMPORT FORM -->
+    <div style="background: var(--bg-input); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+        <h4 style="font-size: 0.95rem; margin-bottom: 8px;">📤 Bulk Import Students (CSV)</h4>
+        <form action="{{ url_for('import_students_csv') }}" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center; margin-bottom: 0;">
+            <input type="file" name="file" accept=".csv" required style="margin-bottom: 0;">
+            <button type="submit" class="btn btn-success" style="white-space: nowrap;">Upload & Import</button>
+        </form>
+        <small style="color: var(--text-muted); display: block; margin-top: 6px;">
+            Expected CSV headers: <code>full_name, email, reg_number</code>
+        </small>
+    </div>
+
+    <!-- AUDIT LOG TABLE -->
+    <h4 style="font-size: 1rem; margin-bottom: 12px;">Recent Administrative Actions</h4>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td style="white-space: nowrap;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td><strong>{{ log.user.full_name if log.user else 'System' }}</strong></td>
+                    <td><span class="badge bg-secondary">{{ log.action }}</span></td>
+                    <td>{{ log.details or 'N/A' }}</td>
+                    <td><code>{{ log.ip_address }}</code></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);">No audit logs recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 </body>
 </html>
