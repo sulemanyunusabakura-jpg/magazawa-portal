@@ -1278,15 +1278,20 @@ def ask_gemini():
   if current_user.role != 'admin':
     return jsonify({'error': 'Unauthorized access'}), 403
 
-  if not gemini_client:
-    return (
-        jsonify({
-            'error': (
-                'Gemini API key is not configured in environment variables.'
-            )
-        }),
-        500,
-    )
+  client = gemini_client
+  if not client:
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if api_key:
+      client = genai.Client(api_key=api_key)
+    else:
+      return (
+          jsonify({
+              'error': (
+                  'Gemini API key is not configured in environment variables.'
+              )
+          }),
+          500,
+      )
 
   data = request.get_json() or {}
   user_prompt = data.get('prompt', '').strip()
@@ -1306,7 +1311,7 @@ def ask_gemini():
   )
 
   try:
-    response = gemini_client.models.generate_content(
+    response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=user_prompt,
         config=types.GenerateContentConfig(
@@ -1317,7 +1322,8 @@ def ask_gemini():
             )
         ),
     )
-    return jsonify({'response': response.text})
+    res_text = response.text if hasattr(response, 'text') else str(response)
+    return jsonify({'response': res_text})
 
   except Exception as e:
     return jsonify({'error': f'Gemini API Error: {str(e)}'}), 500
