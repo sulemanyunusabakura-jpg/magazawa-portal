@@ -117,8 +117,8 @@ def payment_required(f):
         and getattr(current_user, 'payment_status', '') != 'Paid'
     ):
       flash(
-          'Access Restricted: Please complete your school fees payment to'
-          ' unlock this section.'uploads      'warning',
+          'Access Restricted: Please complete your school fees payment to unlock this section.',
+          'warning',
       )
       return redirect(url_for('student_dashboard'))
     return f(*args, **kwargs)
