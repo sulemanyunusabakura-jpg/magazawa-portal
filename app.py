@@ -118,8 +118,7 @@ def payment_required(f):
     ):
       flash(
           'Access Restricted: Please complete your school fees payment to'
-          ' unlock this section.',
-          'warning',
+          ' unlock this section.'uploads      'warning',
       )
       return redirect(url_for('student_dashboard'))
     return f(*args, **kwargs)
@@ -834,8 +833,25 @@ def student_dashboard():
 
 @app.route('/cbt')
 def cbt():
-    # You can pass quiz/exam data here later from SQLite or PostgreSQL
-    return render_template('cbt.html')
+    # Sample questions (replace with database query later)
+    questions = [
+        {
+            "id": 1,
+            "question": "Which protocol is used to securely transfer data on the web?",
+            "options": ["HTTP", "HTTPS", "FTP", "SMTP"]
+        },
+        {
+            "id": 2,
+            "question": "What does CPU stand for?",
+            "options": [
+                "Central Processing Unit", 
+                "Computer Personal Unit", 
+                "Central Process Utility", 
+                "Control Power Unit"
+            ]
+        }
+    ]
+    return render_template('cbt.html', questions=questions)
 
 
 # --- QR CODE GENERATION & VERIFICATION ROUTES ---
