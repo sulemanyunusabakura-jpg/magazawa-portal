@@ -2,11 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CBT Examination</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Examination Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .cbt-container { max-width: 600px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .timer-box { font-size: 1.2rem; font-weight: bold; color: #d9534f; margin-bottom: 20px; text-align: right; }
+        .question-card { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .question-title { font-weight: bold; margin-bottom: 10px; }
+        .option-label { display: block; margin: 6px 0; cursor: pointer; }
+        .btn-submit { background-color: #0275d8; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        .btn-submit:hover { background-color: #025aa5; }
+    </style>
 </head>
 <body>
-    <h1>Computer-Based Test (CBT)</h1>
-    <p>Welcome to the CBT portal. Questions will load here.</p>
+
+<div class="cbt-container">
+    <h2>Computer-Based Test (CBT)</h2>
+    <div class="timer-box">Time Remaining: <span id="timer">10:00</span></div>
+
+    <form id="cbtForm" action="/submit-cbt" method="POST">
+        {% for q in questions %}
+        <div class="question-card">
+            <div class="question-title">Q{{ loop.index }}: {{ q.question }}</div>
+            {% for option in q.options %}
+            <label class="option-label">
+                <input type="radio" name="q{{ q.id }}" value="{{ option }}" required>
+                {{ option }}
+            </label>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-submit">Submit Exam</button>
+    </form>
+</div>
+
+<script>
+    // 10-Minute Countdown Timer
+    let timeLimit = 600; 
+    const timerDisplay = document.getElementById('timer');
+
+    const countdown = setInterval(() => {
+        let minutes = Math.floor(timeLimit / 60);
+        let seconds = timeLimit % 60;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        timerDisplay.textContent = `${minutes}:${seconds}`;
+
+        if (timeLimit <= 0) {
+            clearInterval(countdown);
+            alert("Time is up! Submitting your test automatically.");
+            document.getElementById('cbtForm').submit();
+        }
+        timeLimit--;
+    }, 1000);
+</script>
+
 </body>
 </html>
