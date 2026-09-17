@@ -832,6 +832,12 @@ def student_dashboard():
   )
 
 
+@app.route('/cbt')
+def cbt():
+    # You can pass quiz/exam data here later from SQLite or PostgreSQL
+    return render_template('cbt.html')
+
+
 # --- QR CODE GENERATION & VERIFICATION ROUTES ---
 @app.route('/generate_qr/<int:student_id>')
 def generate_qr(student_id):
