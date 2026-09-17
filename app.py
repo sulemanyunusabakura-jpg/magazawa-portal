@@ -831,29 +831,6 @@ def student_dashboard():
   )
 
 
-@app.route('/cbt')
-def cbt():
-    # Sample questions (replace with database query later)
-    questions = [
-        {
-            "id": 1,
-            "question": "Which protocol is used to securely transfer data on the web?",
-            "options": ["HTTP", "HTTPS", "FTP", "SMTP"]
-        },
-        {
-            "id": 2,
-            "question": "What does CPU stand for?",
-            "options": [
-                "Central Processing Unit", 
-                "Computer Personal Unit", 
-                "Central Process Utility", 
-                "Control Power Unit"
-            ]
-        }
-    ]
-    return render_template('cbt.html', questions=questions)
-
-
 # --- QR CODE GENERATION & VERIFICATION ROUTES ---
 @app.route('/generate_qr/<int:student_id>')
 def generate_qr(student_id):
@@ -1838,6 +1815,29 @@ def assign_reg_number(student_id):
     flash('Student record not found.', 'warning')
 
   return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/cbt')
+def cbt():
+    # Sample questions (replace with database query later)
+    questions = [
+        {
+            "id": 1,
+            "question": "Which protocol is used to securely transfer data on the web?",
+            "options": ["HTTP", "HTTPS", "FTP", "SMTP"]
+        },
+        {
+            "id": 2,
+            "question": "What does CPU stand for?",
+            "options": [
+                "Central Processing Unit", 
+                "Computer Personal Unit", 
+                "Central Process Utility", 
+                "Control Power Unit"
+            ]
+        }
+    ]
+    return render_template('cbt.html', questions=questions)
 
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
