@@ -1840,6 +1840,28 @@ def cbt():
     return render_template('cbt.html', questions=questions)
 
 
+# --- CBT SUBMISSION ROUTE ---
+@app.route('/submit-cbt', methods=['POST'])
+def submit_cbt():
+    # Correct answers lookup table
+    correct_answers = {
+        'q1': 'HTTPS',
+        'q2': 'Central Processing Unit'
+    }
+    
+    score = 0
+    total = len(correct_answers)
+    
+    # Evaluate submitted choices
+    for q_id, correct_ans in correct_answers.items():
+        user_ans = request.form.get(q_id)
+        if user_ans == correct_ans:
+            score += 1
+
+    # Verify if route works correctly by rendering a temporary result page
+    return f"<h3>Exam Submitted!</h3><p>Your Score: {score} / {total}</p>"
+
+
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix_results_db')
 def fix_results_db():
