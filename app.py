@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import sqlite3
 import uuid
 from functools import wraps
 from google import genai
@@ -327,6 +328,22 @@ def auto_migrate_db():
                 'ALTER TABLE result ADD COLUMN IF NOT EXISTS uploaded_at'
                 ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP;'
             )
+        )
+
+        # Create CBT Exam Results table
+        conn.execute(
+            text('''
+                CREATE TABLE IF NOT EXISTS exam_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    student_name VARCHAR(150) NOT NULL,
+                    score INTEGER NOT NULL,
+                    total INTEGER NOT NULL,
+                    percentage FLOAT NOT NULL,
+                    status VARCHAR(50) DEFAULT 'Pending',
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
         )
 
         conn.commit()
@@ -765,6 +782,7 @@ def lecturer_dashboard():
   )
 
 
+@app.route('/dashboard')
 @app.route('/student_dashboard')
 @login_required
 def student_dashboard():
@@ -820,14 +838,28 @@ def student_dashboard():
       .all()
   )
 
+  # Query CBT Exam Result if released by admin
+  cbt_result = None
+  try:
+    with db.engine.connect() as conn:
+      res = conn.execute(
+          text("SELECT score, total, percentage, status FROM exam_results WHERE student_id = :sid AND status = 'Sent'"),
+          {"sid": user_id}
+      ).fetchone()
+      if res:
+        cbt_result = res
+  except Exception as e:
+    print(f"CBT result query notice: {e}")
+
   return render_template(
-      'student_dashboard.html',
+      'student dashboard.html',
       student=current_user,
       courses=courses,
       results=results,
       cgpa=cgpa,
       materials=materials,
       messages=messages,
+      cbt_result=cbt_result
   )
 
 
@@ -1817,17 +1849,18 @@ def assign_reg_number(student_id):
   return redirect(url_for('admin_dashboard'))
 
 
+# --- CBT EXAM ROUTES ---
 @app.route('/cbt')
+@login_required
 def cbt():
-    # Sample questions (replace with database query later)
     questions = [
         {
-            "id": 1,
+            "id": "q1",
             "question": "Which protocol is used to securely transfer data on the web?",
             "options": ["HTTP", "HTTPS", "FTP", "SMTP"]
         },
         {
-            "id": 2,
+            "id": "q2",
             "question": "What does CPU stand for?",
             "options": [
                 "Central Processing Unit", 
@@ -1840,50 +1873,84 @@ def cbt():
     return render_template('cbt.html', questions=questions)
 
 
-
 @app.route('/submit-cbt', methods=['POST'])
+@login_required
 def submit_cbt():
-    # Database or dictionary of questions and correct answers
     questions = [
-        {
-            'id': 'q1',
-            'question': 'Which protocol is used to securely transfer data on the web?',
-            'correct': 'HTTPS'
-        },
-        {
-            'id': 'q2',
-            'question': 'What does CPU stand for?',
-            'correct': 'Central Processing Unit'
-        }
+        {'id': 'q1', 'correct': 'HTTPS'},
+        {'id': 'q2', 'correct': 'Central Processing Unit'}
     ]
 
     score = 0
-    results = []
-
     for item in questions:
-        q_id = item['id']
-        user_ans = request.form.get(q_id)
-        correct_ans = item['correct']
-        is_correct = (user_ans == correct_ans)
-
-        if is_correct:
+        if request.form.get(item['id']) == item['correct']:
             score += 1
-
-        results.append({
-            'question': item['question'],
-            'user_ans': user_ans,
-            'correct_ans': correct_ans,
-            'is_correct': is_correct
-        })
 
     total = len(questions)
     percentage = round((score / total) * 100, 1)
 
-    return render_template('result.html', 
-                           score=score, 
-                           total=total, 
-                           percentage=percentage, 
-                           results=results)
+    # Store result in exam_results marked as Pending
+    try:
+        with db.engine.begin() as conn:
+            conn.execute(
+                text('''
+                    INSERT INTO exam_results (student_id, student_name, score, total, percentage, status)
+                    VALUES (:student_id, :student_name, :score, :total, :percentage, 'Pending')
+                '''),
+                {
+                    'student_id': current_user.id,
+                    'student_name': current_user.full_name or current_user.username,
+                    'score': score,
+                    'total': total,
+                    'percentage': percentage
+                }
+            )
+        flash('Exam submitted successfully! Results will be visible once reviewed by admin.', 'success')
+    except Exception as e:
+        flash(f'Error storing CBT exam results: {str(e)}', 'danger')
+
+    return render_template('submitted.html')
+
+
+# --- ADMIN CBT RESULTS MANAGEMENT ---
+@app.route('/admin/results')
+@login_required
+def admin_results():
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    submissions = []
+    try:
+        with db.engine.connect() as conn:
+            submissions = conn.execute(
+                text("SELECT id, student_name, score, total, percentage, status FROM exam_results ORDER BY submitted_at DESC")
+            ).fetchall()
+    except Exception as e:
+        flash(f'Error fetching submissions: {str(e)}', 'danger')
+
+    return render_template('admin_results.html', submissions=submissions)
+
+
+@app.route('/admin/send-score/<int:result_id>', methods=['POST'])
+@login_required
+def send_score(result_id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        with db.engine.begin() as conn:
+            conn.execute(
+                text("UPDATE exam_results SET status = 'Sent' WHERE id = :rid"),
+                {'rid': result_id}
+            )
+        flash('Exam score released to student successfully!', 'success')
+    except Exception as e:
+        flash(f'Error releasing score: {str(e)}', 'danger')
+
+    return redirect(url_for('admin_results'))
+
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix_results_db')
