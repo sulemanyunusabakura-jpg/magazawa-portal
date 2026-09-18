@@ -21,21 +21,10 @@
     <h2>Computer-Based Test (CBT)</h2>
     <div class="timer-box">Time Remaining: <span id="timer">10:00</span></div>
 
-    <form id="cbtForm" action="/submit-cbt" method="POST">
-        {% for q in questions %}
-        <div class="question-card">
-            <div class="question-title">Q{{ loop.index }}: {{ q.question }}</div>
-            {% for option in q.options %}
-            <label class="option-label">
-                <input type="radio" name="q{{ q.id }}" value="{{ option }}" required>
-                {{ option }}
-            </label>
-            {% endfor %}
-        </div>
-        {% endfor %}
-
-        <button type="submit" class="btn-submit">Submit Exam</button>
-    </form>
+   <form action="/submit-cbt" method="POST">
+    <!-- Your existing question radio inputs -->
+    <button type="submit" class="btn">Submit Exam</button>
+</form>
 </div>
 
 <script>
