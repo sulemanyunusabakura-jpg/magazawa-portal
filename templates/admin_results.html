@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - CBT Results</title>
+</head>
+<body style="padding: 30px; font-family: Arial, sans-serif;">
+    <h2>Student CBT Submissions</h2>
+    <table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th>Student Name</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in submissions %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }} / {{ row[3] }}</td>
+                <td>{{ row[4] }}%</td>
+                <td>{{ row[5] }}</td>
+                <td>
+                    {% if row[5] == 'Pending' %}
+                    <form action="/admin/send-score/{{ row[0] }}" method="POST">
+                        <button type="submit">Send Score to Student</button>
+                    </form>
+                    {% else %}
+                    <span style="color: green; font-weight: bold;">Released</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
