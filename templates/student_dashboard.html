@@ -163,7 +163,7 @@
                             <p class="text-muted small">Live student group & messages.</p>
                         </div>
                         <button class="btn text-white w-100 btn-sm mt-2" style="background-color: #00a884; border: none;" onclick="activateTab('messages-tab')">
-                            💬 Open Chat
+                            <i class="fas fa-comments me-1"></i> Open Chat
                         </button>
                     </div>
                 </div>
@@ -220,10 +220,10 @@
                         {% if student.admission_status == 'Admitted' %}
                             <div class="d-flex flex-column flex-sm-row gap-2">
                                 <a href="{{ url_for('download_admission_letter') }}" class="btn btn-outline-primary flex-fill">
-                                    📄 Download Admission Letter
+                                    <i class="fas fa-file-alt me-1"></i> Download Admission Letter
                                 </a>
                                 <a href="{{ url_for('download_id_card') }}" class="btn btn-outline-success flex-fill">
-                                    🪪 Download Digital Student ID Card
+                                    <i class="fas fa-id-badge me-1"></i> Download Digital Student ID Card
                                 </a>
                             </div>
                         {% else %}
@@ -247,6 +247,9 @@
                 <button type="button" class="btn btn-success btn-lg shadow-sm" onclick="activateTab('results-tab')">
                     <i class="fas fa-poll-h me-2"></i>2: Results & Grades
                 </button>
+                <button type="button" class="btn btn-info text-white btn-lg shadow-sm" onclick="activateTab('cbt-tab')">
+                    <i class="fas fa-laptop-code me-2"></i>3: CBT Exams & Online Tests
+                </button>
             </div>
         </div>
 
@@ -267,6 +270,11 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab" aria-controls="results" aria-selected="false">
                             <i class="fas fa-poll-h me-1"></i> Results
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="cbt-tab" data-bs-toggle="tab" data-bs-target="#cbt" type="button" role="tab" aria-controls="cbt" aria-selected="false">
+                            <i class="fas fa-laptop-code me-1"></i> CBT Portal
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -318,26 +326,9 @@
                     </div>
                 </div>
 
-                <!-- Inside templates/student dashboard.html -->
-<div class="card">
-    <h2>Available CBT Exams</h2>
-    <p>Computer-Based Test (General Knowledge)</p>
-    <a href="/cbt" class="btn">Take Exam</a>
-</div>
-
-<div class="card" style="margin-top: 20px;">
-    <h2>Your Exam Results</h2>
-    {% if result %}
-        <p><strong>Score:</strong> {{ result[0] }} / {{ result[1] }} ({{ result[2] }}%)</p>
-        <p><span style="color: green; font-weight: bold;">Status: Score Released</span></p>
-    {% else %}
-        <p>No results published yet. Pending admin approval.</p>
-    {% endif %}
-</div>
-
                 <!-- 2. Lecture Materials Tab -->
                 <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
-                    <h5 class="card-title mb-3">Course Lecture Materials</h5>
+                    <h5 class="card-title mb-3"><i class="fas fa-folder-open me-2 text-warning"></i>Course Lecture Materials</h5>
                     {% if is_paid %}
                         {% if materials %}
                             <div class="table-responsive">
@@ -367,7 +358,7 @@
                                 </table>
                             </div>
                         {% else %}
-                            <div class="alert alert-warning mb-0">No lecture materials uploaded yet.</div>
+                            <div class="alert alert-warning mb-0"><i class="fas fa-info-circle me-1"></i> No lecture materials uploaded yet.</div>
                         {% endif %}
                     {% else %}
                         <div class="alert alert-danger mb-0"><i class="fas fa-lock me-2"></i>Please complete your school fees payment to unlock course downloads.</div>
@@ -379,18 +370,19 @@
                     <div class="card shadow-sm border-0 rounded-3 mb-4">
                         <div class="card-body p-4">
 
-                            <div class="card p-3 mb-4 shadow-sm">
-    <h4>Welcome, {{ current_user.full_name }}</h4>
-    <p class="mb-1">
-        <strong>Registration Number:</strong> 
-        {% if current_user.reg_number %}
-            <span class="badge bg-info text-dark fs-6">{{ current_user.reg_number }}</span>
-        {% else %}
-            <span class="text-muted">Not Assigned Yet (Contact Admin)</span>
-        {% endif %}
-    </p>
-    <p class="mb-0"><strong>Program:</strong> {{ current_user.program or 'Computer Engineering & Applied Technology' }}</p>
-</div>
+                            <!-- Profile Summary Sub-Card -->
+                            <div class="card p-3 mb-4 shadow-sm bg-light border-0">
+                                <h4>Welcome, {{ student.full_name or student.username }}</h4>
+                                <p class="mb-1">
+                                    <strong>Registration Number:</strong> 
+                                    {% if student.reg_number %}
+                                        <span class="badge bg-info text-dark fs-6">{{ student.reg_number }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Not Assigned Yet (Contact Admin)</span>
+                                    {% endif %}
+                                </p>
+                                <p class="mb-0"><strong>Program:</strong> {{ student.program or 'Computer Engineering & Applied Technology' }}</p>
+                            </div>
                             
                             <!-- Student Header Profile Info -->
                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom">
@@ -412,7 +404,7 @@
                                 <!-- Highlights & CGPA Card -->
                                 <div class="bg-primary text-white p-3 rounded-3 text-center shadow-sm" style="min-width: 160px;">
                                     <div class="text-uppercase small fw-bold opacity-75">Cumulative GPA</div>
-                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa) }}</div>
+                                    <div class="display-6 fw-bold my-1">{{ "%.2f"|format(cgpa or 0.0) }}</div>
                                     <span class="badge bg-light text-primary fw-bold">4.0 Max Scale</span>
                                 </div>
                             </div>
@@ -449,7 +441,7 @@
                                                         {{ row.grade }}
                                                     </span>
                                                 </td>
-                                                <td class="text-center fw-bold text-success">{{ "%.2f"|format(cgpa) }}</td>
+                                                <td class="text-center fw-bold text-success">{{ "%.2f"|format(cgpa or 0.0) }}</td>
                                             </tr>
                                             {% endfor %}
                                         {% else %}
@@ -469,7 +461,40 @@
                     </div>
                 </div>
 
-                <!-- 4. Messages & Campus Chat Tab -->
+                <!-- 4. CBT Exams Tab -->
+                <div class="tab-pane fade" id="cbt" role="tabpanel" aria-labelledby="cbt-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0 h-100 p-3">
+                                <h4 class="fw-bold text-primary"><i class="fas fa-laptop-code me-2"></i>Available CBT Exams</h4>
+                                <p class="text-muted">Computer-Based Test (General Knowledge & Applied Subjects)</p>
+                                <div class="mt-auto">
+                                    <a href="/cbt" class="btn btn-primary w-100">
+                                        <i class="fas fa-play me-1"></i> Take CBT Exam Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0 h-100 p-3">
+                                <h4 class="fw-bold text-success"><i class="fas fa-chart-bar me-2"></i>Your CBT Exam Results</h4>
+                                {% if result %}
+                                    <div class="p-3 bg-light rounded border">
+                                        <p class="fs-5 mb-2"><strong>Score:</strong> {{ result[0] }} / {{ result[1] }} ({{ result[2] }}%)</p>
+                                        <p class="mb-0"><span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i> Status: Score Released</span></p>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-secondary mb-0">
+                                        <i class="fas fa-info-circle me-1"></i> No CBT test results published yet or pending administrator release.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Messages & Campus Chat Tab -->
                 <div class="tab-pane fade" id="messages" role="tabpanel" aria-labelledby="messages-tab">
                     <div class="row">
                         <div class="col-md-5 mb-4 mb-md-0">
