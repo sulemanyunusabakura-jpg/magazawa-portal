@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Results</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .score-summary {
+            background-color: #eef2f7;
+            border-radius: 6px;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .score-summary h2 {
+            font-size: 2.2rem;
+            color: #007bff;
+        }
+        .score-summary p {
+            color: #555;
+            margin-top: 5px;
+        }
+        .review-section {
+            margin-bottom: 25px;
+        }
+        .review-item {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 0;
+        }
+        .review-item:last-child {
+            border-bottom: none;
+        }
+        .q-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #222;
+        }
+        .ans-text {
+            font-size: 0.95rem;
+            margin: 3px 0;
+        }
+        .correct {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px 24px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Test Completed</h1>
+
+        <div class="score-summary">
+            <h2>{{ score }} / {{ total }}</h2>
+            <p>Percentage: {{ percentage }}%</p>
+        </div>
+
+        <div class="review-section">
+            <h3>Question Breakdown</h3>
+            
+            {% for result in results %}
+            <div class="review-item">
+                <p class="q-title">{{ loop.index }}. {{ result.question }}</p>
+                <p class="ans-text">
+                    Your Answer: 
+                    <span class="{{ 'correct' if result.is_correct else 'incorrect' }}">
+                        {{ result.user_ans if result.user_ans else 'Not Answered' }}
+                    </span>
+                </p>
+                {% if not result.is_correct %}
+                <p class="ans-text">Correct Answer: <span class="correct">{{ result.correct_ans }}</span></p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="btn-container">
+            <a href="/cbt" class="btn">Retake Test</a>
+        </div>
+    </div>
+
+</body>
+</html>
