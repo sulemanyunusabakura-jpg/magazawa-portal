@@ -1840,27 +1840,50 @@ def cbt():
     return render_template('cbt.html', questions=questions)
 
 
-# --- CBT SUBMISSION ROUTE ---
+
 @app.route('/submit-cbt', methods=['POST'])
 def submit_cbt():
-    # Correct answers lookup table
-    correct_answers = {
-        'q1': 'HTTPS',
-        'q2': 'Central Processing Unit'
-    }
-    
+    # Database or dictionary of questions and correct answers
+    questions = [
+        {
+            'id': 'q1',
+            'question': 'Which protocol is used to securely transfer data on the web?',
+            'correct': 'HTTPS'
+        },
+        {
+            'id': 'q2',
+            'question': 'What does CPU stand for?',
+            'correct': 'Central Processing Unit'
+        }
+    ]
+
     score = 0
-    total = len(correct_answers)
-    
-    # Evaluate submitted choices
-    for q_id, correct_ans in correct_answers.items():
+    results = []
+
+    for item in questions:
+        q_id = item['id']
         user_ans = request.form.get(q_id)
-        if user_ans == correct_ans:
+        correct_ans = item['correct']
+        is_correct = (user_ans == correct_ans)
+
+        if is_correct:
             score += 1
 
-    # Verify if route works correctly by rendering a temporary result page
-    return f"<h3>Exam Submitted!</h3><p>Your Score: {score} / {total}</p>"
+        results.append({
+            'question': item['question'],
+            'user_ans': user_ans,
+            'correct_ans': correct_ans,
+            'is_correct': is_correct
+        })
 
+    total = len(questions)
+    percentage = round((score / total) * 100, 1)
+
+    return render_template('result.html', 
+                           score=score, 
+                           total=total, 
+                           percentage=percentage, 
+                           results=results)
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix_results_db')
