@@ -1861,73 +1861,95 @@ def assign_reg_number(student_id):
   return redirect(url_for('admin_dashboard'))
 
 
+# --- ADMIN ROUTE: SET CBT QUESTIONS ---
+@app.route('/admin/add_question', methods=['POST'])
+@login_required
+def add_question():
+  if current_user.role != 'admin':
+    flash('Unauthorized access.', 'danger')
+    return redirect(url_for('login'))
+
+  question_text = request.form.get('question_text', '').strip()
+  opt_a = request.form.get('option_a', '').strip()
+  opt_b = request.form.get('option_b', '').strip()
+  opt_c = request.form.get('option_c', '').strip()
+  opt_d = request.form.get('option_d', '').strip()
+  correct_opt = request.form.get('correct_option', '').strip().upper()
+
+  if not (question_text and opt_a and opt_b and opt_c and opt_d and correct_opt):
+    flash('All question fields are required.', 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+  new_q = Question(
+      question_text=question_text,
+      option_a=opt_a,
+      option_b=opt_b,
+      option_c=opt_c,
+      option_d=opt_d,
+      correct_option=correct_opt,
+  )
+  db.session.add(new_q)
+  db.session.commit()
+  flash('Question added to CBT test bank successfully!', 'success')
+  return redirect(url_for('admin_dashboard'))
+
+
+# --- STUDENT CBT TEST ROUTE ---
 @app.route('/cbt')
+@login_required
 def cbt():
-    # Sample questions (replace with database query later)
-    questions = [
-        {
-            "id": 1,
-            "question": "Which protocol is used to securely transfer data on the web?",
-            "options": ["HTTP", "HTTPS", "FTP", "SMTP"]
-        },
-        {
-            "id": 2,
-            "question": "What does CPU stand for?",
-            "options": [
-                "Central Processing Unit", 
-                "Computer Personal Unit", 
-                "Central Process Utility", 
-                "Control Power Unit"
-            ]
-        }
-    ]
-    return render_template('cbt.html', questions=questions)
+  questions = Question.query.all()
+  return render_template('cbt.html', questions=questions)
 
 
-
+# --- SUBMIT CBT & AUTO-GRADE ---
 @app.route('/submit-cbt', methods=['POST'])
+@login_required
 def submit_cbt():
-    # Database or dictionary of questions and correct answers
-    questions = [
-        {
-            'id': 'q1',
-            'question': 'Which protocol is used to securely transfer data on the web?',
-            'correct': 'HTTPS'
-        },
-        {
-            'id': 'q2',
-            'question': 'What does CPU stand for?',
-            'correct': 'Central Processing Unit'
-        }
-    ]
+  questions = Question.query.all()
+  total = len(questions)
 
-    score = 0
-    results = []
+  if total == 0:
+    flash('No CBT questions found.', 'warning')
+    return redirect(url_for('student_dashboard'))
 
-    for item in questions:
-        q_id = item['id']
-        user_ans = request.form.get(q_id)
-        correct_ans = item['correct']
-        is_correct = (user_ans == correct_ans)
+  score = 0
+  results = []
 
-        if is_correct:
-            score += 1
+  for q in questions:
+    user_ans = request.form.get(f'q_{q.id}', '').strip().upper()
+    is_correct = user_ans == q.correct_option.strip().upper()
+    if is_correct:
+      score += 1
 
-        results.append({
-            'question': item['question'],
-            'user_ans': user_ans,
-            'correct_ans': correct_ans,
-            'is_correct': is_correct
-        })
+    results.append({
+        'question': q.question_text,
+        'user_ans': user_ans,
+        'correct_ans': q.correct_option,
+        'is_correct': is_correct,
+    })
 
-    total = len(questions)
-    percentage = round((score / total) * 100, 1)
+  percentage = round((score / total) * 100, 2) if total > 0 else 0.0
 
-    return render_template('result.html', 
-                           score=score, 
-                           total=total, 
-                           percentage=percentage, 
-                           results=results)
+  # Save result to database for Admin and Student views
+  exam_res = ExamResult(
+      student_id=current_user.id,
+      score=score,
+      total=total,
+      percentage=percentage,
+      status='Sent',
+  )
+  db.session.add(exam_res)
+  db.session.commit()
+
+  return render_template(
+      'result.html',
+      score=score,
+      total=total,
+      percentage=percentage,
+      results=results,
+  )
+
 
 # --- MANUAL DATABASE SCHEMA FIX ROUTE ---
 @app.route('/fix_results_db')
