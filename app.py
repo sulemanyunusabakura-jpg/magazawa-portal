@@ -419,10 +419,6 @@ with app.app_context():
     print(f'Startup initialization warning: {e}')
 
 
-with app.app_context():
-    db.create_all()  # Generates any missing CBT tables in Neon Postgres
-
-
 # --- FILE SERVING ROUTES FOR UPLOADED MEDIA ---
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -1998,7 +1994,7 @@ def fix_results_db():
     db.session.rollback()
     return f'Database Error: {str(e)}'
 
-    
+
 if __name__ == '__main__':
   port = int(os.environ.get('PORT', 5000))
   app.run(host='0.0.0.0', port=port)
