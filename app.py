@@ -17,18 +17,20 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
-from flask import (
-    Flask,
-    Response,
-    jsonify,
-    flash,
-    redirect,
-    render_template,
-    request,
-    send_file,
-    send_from_directory,
-    session,
-    url_for,
+from models import (
+    AuditLog,
+    Course,
+    Exam,
+    ExamResult,
+    ExamSession,
+    Material,
+    Message,
+    Question,
+    Result,
+    Student,
+    StudentAnswer,
+    User,
+    db,
 )
 from flask_login import (
     LoginManager,
