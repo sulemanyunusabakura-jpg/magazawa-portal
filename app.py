@@ -1994,7 +1994,9 @@ def fix_results_db():
     db.session.rollback()
     return f'Database Error: {str(e)}'
 
-
+with app.app_context():
+    db.create_all()  # Generates any missing CBT tables in Neon Postgres
+    
 if __name__ == '__main__':
   port = int(os.environ.get('PORT', 5000))
   app.run(host='0.0.0.0', port=port)
