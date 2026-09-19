@@ -1,59 +1,64 @@
-{% extends "base.html" %}
-
-{% block title %}CBT Examination Portal{% endblock %}
-
-{% block content %}
-<div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Computer-Based Test (CBT)</h2>
-        <div id="timer" class="badge bg-danger fs-6 p-2">Time Remaining: --:--</div>
-    </div>
-
-    {% if questions %}
-        <form action="{{ url_for('submit_cbt') }}" method="POST" id="cbtForm">
-            {% for q in questions %}
-                <div class="card p-3 my-3 shadow-sm">
-                    <h5 class="card-title">{{ loop.index }}. {{ q.question_text }}</h5>
-                    
-                    {% if q.option_a %}
-                    <div class="form-check my-1">
-                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="A" id="q{{ q.id }}a">
-                        <label class="form-check-label" for="q{{ q.id }}a"><strong>A)</strong> {{ q.option_a }}</label>
-                    </div>
-                    {% endif %}
-
-                    {% if q.option_b %}
-                    <div class="form-check my-1">
-                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="B" id="q{{ q.id }}b">
-                        <label class="form-check-label" for="q{{ q.id }}b"><strong>B)</strong> {{ q.option_b }}</label>
-                    </div>
-                    {% endif %}
-
-                    {% if q.option_c %}
-                    <div class="form-check my-1">
-                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="C" id="q{{ q.id }}c">
-                        <label class="form-check-label" for="q{{ q.id }}c"><strong>C)</strong> {{ q.option_c }}</label>
-                    </div>
-                    {% endif %}
-
-                    {% if q.option_d %}
-                    <div class="form-check my-1">
-                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="D" id="q{{ q.id }}d">
-                        <label class="form-check-label" for="q{{ q.id }}d"><strong>D)</strong> {{ q.option_d }}</label>
-                    </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-
-            <button type="submit" class="btn btn-success mt-3 px-4 fw-bold" onclick="return confirm('Are you sure you want to submit your exam?')">
-                Submit Exam
-            </button>
-        </form>
-    {% else %}
-        <div class="alert alert-warning my-4" role="alert">
-            <h4 class="alert-heading">No Questions Available!</h4>
-            <p>There are currently no questions added for this exam. Please contact your instructor or administrator.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Examination Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Computer-Based Test (CBT)</h2>
+            <div id="timer" class="badge bg-danger fs-6 p-2">Time Remaining: --:--</div>
         </div>
-    {% endif %}
-</div>
-{% endblock %}
+
+        {% if questions %}
+            <form action="{{ url_for('submit_cbt') }}" method="POST" id="cbtForm">
+                {% for q in questions %}
+                    <div class="card p-3 my-3 shadow-sm">
+                        <h5 class="card-title">{{ loop.index }}. {{ q.question_text }}</h5>
+                        
+                        {% if q.option_a %}
+                        <div class="form-check my-1">
+                            <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="A" id="q{{ q.id }}a">
+                            <label class="form-check-label" for="q{{ q.id }}a"><strong>A)</strong> {{ q.option_a }}</label>
+                        </div>
+                        {% endif %}
+
+                        {% if q.option_b %}
+                        <div class="form-check my-1">
+                            <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="B" id="q{{ q.id }}b">
+                            <label class="form-check-label" for="q{{ q.id }}b"><strong>B)</strong> {{ q.option_b }}</label>
+                        </div>
+                        {% endif %}
+
+                        {% if q.option_c %}
+                        <div class="form-check my-1">
+                            <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="C" id="q{{ q.id }}c">
+                            <label class="form-check-label" for="q{{ q.id }}c"><strong>C)</strong> {{ q.option_c }}</label>
+                        </div>
+                        {% endif %}
+
+                        {% if q.option_d %}
+                        <div class="form-check my-1">
+                            <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="D" id="q{{ q.id }}d">
+                            <label class="form-check-label" for="q{{ q.id }}d"><strong>D)</strong> {{ q.option_d }}</label>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-success mt-3 px-4 fw-bold" onclick="return confirm('Are you sure you want to submit your exam?')">
+                    Submit Exam
+                </button>
+            </form>
+        {% else %}
+            <div class="alert alert-warning my-4" role="alert">
+                <h4 class="alert-heading">No Questions Available!</h4>
+                <p>There are currently no questions added for this exam. Please contact your instructor or administrator.</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
