@@ -203,23 +203,61 @@ class Exam(db.Model):
 
 class Question(db.Model):
   __tablename__ = 'questions'
+
   id = db.Column(db.Integer, primary_key=True)
+  exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=True)
   question_text = db.Column(db.Text, nullable=False)
   option_a = db.Column(db.String(255), nullable=False)
   option_b = db.Column(db.String(255), nullable=False)
   option_c = db.Column(db.String(255), nullable=False)
   option_d = db.Column(db.String(255), nullable=False)
-  correct_option = db.Column(db.String(10), nullable=False)  # 'A', 'B', 'C', or 'D'
+  correct_option = db.Column(db.String(10), nullable=False)  # 'A', 'B', 'C', 'D'
+
+
+class ExamSession(db.Model):
+  __tablename__ = 'exam_session'
+
+  id = db.Column(db.Integer, primary_key=True)
+  student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+  exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=True)
+  start_time = db.Column(
+      db.DateTime, default=lambda: datetime.now(timezone.utc)
+  )
+  end_time = db.Column(db.DateTime, nullable=True)
+  is_completed = db.Column(db.Boolean, default=False)
+  score = db.Column(db.Float, default=0.0)
+
+  # Relationships
+  answers = db.relationship(
+      'StudentAnswer', backref='session', lazy=True, cascade='all, delete-orphan'
+  )
+
+
+class StudentAnswer(db.Model):
+  __tablename__ = 'student_answer'
+
+  id = db.Column(db.Integer, primary_key=True)
+  session_id = db.Column(
+      db.Integer, db.ForeignKey('exam_session.id'), nullable=False
+  )
+  question_id = db.Column(
+      db.Integer, db.ForeignKey('questions.id'), nullable=False
+  )
+  selected_option = db.Column(db.String(10), nullable=True)
+  is_correct = db.Column(db.Boolean, default=False)
 
 
 class ExamResult(db.Model):
   __tablename__ = 'exam_results'
+
   id = db.Column(db.Integer, primary_key=True)
   student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
   score = db.Column(db.Integer, nullable=False)
   total = db.Column(db.Integer, nullable=False)
   percentage = db.Column(db.Numeric(5, 2))
   status = db.Column(db.String(50), default='Sent')
-  created_at = db.Column(db.DateTime, default=datetime.utcnow)
+  created_at = db.Column(
+      db.DateTime, default=lambda: datetime.now(timezone.utc)
+  )
 
   student = db.relationship('User', backref='cbt_results')
