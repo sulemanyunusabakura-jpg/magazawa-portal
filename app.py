@@ -17,6 +17,19 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    send_from_directory,
+    send_file,
+    jsonify,
+    Response,
+)
+
 from models import (
     AuditLog,
     Course,
@@ -39,7 +52,6 @@ from flask_login import (
     login_user,
     logout_user,
 )
-from models import Course, Material, Message, Result, User, AuditLog, db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get(
@@ -589,12 +601,14 @@ def admin_dashboard():
     audit_logs = (
         AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
     )
+    exam_results = ExamResult.query.order_by(ExamResult.created_at.desc()).all()
   except Exception as e:
     db.session.rollback()
     flash(
         f"Database status notice: {str(e).split('[SQL:')[0].strip()}", 'warning'
     )
-    students, lecturers, all_users, messages, courses, audit_logs = (
+    students, lecturers, all_users, messages, courses, audit_logs, exam_results = (
+        [],
         [],
         [],
         [],
@@ -611,8 +625,9 @@ def admin_dashboard():
       messages=messages,
       courses=courses,
       audit_logs=audit_logs,
+      exam_results=exam_results,
   )
-exam_results = ExamResult.query.order_by(ExamResult.created_at.desc()).all()
+
 
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
