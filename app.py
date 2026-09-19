@@ -610,7 +610,7 @@ def admin_dashboard():
       courses=courses,
       audit_logs=audit_logs,
   )
-
+exam_results = ExamResult.query.order_by(ExamResult.created_at.desc()).all()
 
 @app.route('/admin/add_course', methods=['POST'])
 @login_required
