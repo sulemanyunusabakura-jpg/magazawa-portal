@@ -1272,6 +1272,37 @@
         </small>
     </div>
 
+    {% extends "base.html" %}
+{% block content %}
+<div class="container my-4">
+  <h2>Computer-Based Test (CBT)</h2>
+  <form action="{{ url_for('submit_cbt') }}" method="POST">
+    {% for q in questions %}
+      <div class="card p-3 my-2">
+        <h5>{{ loop.index }}. {{ q.question_text }}</h5>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="A" id="q{{ q.id }}a">
+          <label class="form-check-label" for="q{{ q.id }}a">A) {{ q.option_a }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="B" id="q{{ q.id }}b">
+          <label class="form-check-label" for="q{{ q.id }}b">B) {{ q.option_b }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="C" id="q{{ q.id }}c">
+          <label class="form-check-label" for="q{{ q.id }}c">C) {{ q.option_c }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="D" id="q{{ q.id }}d">
+          <label class="form-check-label" for="q{{ q.id }}d">D) {{ q.option_d }}</label>
+        </div>
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-success mt-3">Submit Exam</button>
+  </form>
+</div>
+{% endblock %}
+    
     <!-- AUDIT LOG TABLE -->
     <h4 style="font-size: 1rem; margin-bottom: 12px;">Recent Administrative Actions</h4>
     <div class="table-responsive">
