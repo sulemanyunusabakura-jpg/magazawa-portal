@@ -202,62 +202,24 @@ class Exam(db.Model):
 
 
 class Question(db.Model):
-  __tablename__ = 'question'
-
+  __tablename__ = 'questions'
   id = db.Column(db.Integer, primary_key=True)
-  exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=False)
   question_text = db.Column(db.Text, nullable=False)
-  option_a = db.Column(db.Text, nullable=False)
-  option_b = db.Column(db.Text, nullable=False)
-  option_c = db.Column(db.Text, nullable=False)
-  option_d = db.Column(db.Text, nullable=False)
-  correct_option = db.Column(
-      db.String(1), nullable=False
-  )  # 'A', 'B', 'C', or 'D'
-  marks = db.Column(db.Float, default=1.0)
+  option_a = db.Column(db.String(255), nullable=False)
+  option_b = db.Column(db.String(255), nullable=False)
+  option_c = db.Column(db.String(255), nullable=False)
+  option_d = db.Column(db.String(255), nullable=False)
+  correct_option = db.Column(db.String(10), nullable=False)  # 'A', 'B', 'C', or 'D'
 
 
-class ExamSession(db.Model):
-  __tablename__ = 'exam_session'
-
+class ExamResult(db.Model):
+  __tablename__ = 'exam_results'
   id = db.Column(db.Integer, primary_key=True)
   student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-  exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=False)
-  status = db.Column(
-      db.String(20), default='IN_PROGRESS'
-  )  # IN_PROGRESS, SUBMITTED, TERMINATED
-  score = db.Column(db.Float, nullable=True)
-  total_questions = db.Column(db.Integer, default=0)
-  correct_answers = db.Column(db.Integer, default=0)
-  warnings_count = db.Column(
-      db.Integer, default=0
-  )  # Tracks proctoring flag attempts
-  start_time = db.Column(
-      db.DateTime, default=lambda: datetime.now(timezone.utc)
-  )
-  end_time = db.Column(db.DateTime, nullable=True)
+  score = db.Column(db.Integer, nullable=False)
+  total = db.Column(db.Integer, nullable=False)
+  percentage = db.Column(db.Numeric(5, 2))
+  status = db.Column(db.String(50), default='Sent')
+  created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-  # Relationships
-  answers = db.relationship(
-      'StudentAnswer',
-      backref='session',
-      lazy=True,
-      cascade='all, delete-orphan',
-  )
-
-
-class StudentAnswer(db.Model):
-  __tablename__ = 'student_answer'
-
-  id = db.Column(db.Integer, primary_key=True)
-  session_id = db.Column(
-      db.Integer, db.ForeignKey('exam_session.id'), nullable=False
-  )
-  question_id = db.Column(
-      db.Integer, db.ForeignKey('question.id'), nullable=False
-  )
-  selected_option = db.Column(db.String(1), nullable=True)  # 'A', 'B', 'C', 'D'
-  is_correct = db.Column(db.Boolean, default=False)
-
-  # Relationship
-  question = db.relationship('Question', backref='student_answers')
+  student = db.relationship('User', backref='cbt_results')
