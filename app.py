@@ -437,9 +437,8 @@ def home():
 
 
 @app.route('/robots.txt')
-def robots():
-  content = 'User-agent: *\nAllow: /\n'
-  return Response(content, mimetype='text/plain')
+def robots_txt():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'robots.txt')
 
 
 @app.route('/login', methods=['GET', 'POST'])
